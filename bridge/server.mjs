@@ -3,18 +3,18 @@
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { existsSync, readFileSync } from 'node:fs';
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
 import { timingSafeEqual } from 'node:crypto';
 import { extname, join, normalize } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { executable } from './platform.mjs';
 import * as o from './orca.mjs';
 import * as secrets from './secrets.mjs';
 import { transcribe } from './whisper.mjs';
 
-const here = new URL('.', import.meta.url).pathname;
+const here = fileURLToPath(new URL('.', import.meta.url));
 const DIST = join(here, '../app/dist');
 const PORT = Number(process.env.PORT || 8787);
-const HOST = process.env.HOST || '0.0.0.0';
+const HOST = process.env.HOST || '127.0.0.1';
 // config.json(共有の既定値)に config.local.json(各自の環境・git 管理外)を上書きする
 const config = JSON.parse(readFileSync(join(here, 'config.json'), 'utf8'));
 const localFile = join(here, 'config.local.json');
@@ -28,14 +28,8 @@ function authorized(req) {
   return got.length === want.length && timingSafeEqual(got, want);
 }
 
-const run = promisify(execFile);
 async function installed(cmd) {
-  try {
-    await run('/bin/sh', ['-lc', `command -v ${cmd}`]);
-    return true;
-  } catch {
-    return false;
-  }
+  return !!executable(cmd);
 }
 
 // アプリから届く ?lang= に合わせた文言(日本語・英語)
@@ -71,7 +65,7 @@ async function providers(q) {
   const lang = langOf(q);
   const limits = await o.usage().catch(() => ({}));
   return Promise.all(
-    config.agents.map(async (a) => {
+    config.agents.filter(a => a.id === 'codex').map(async (a) => {
       const has = await installed(a.command);
       const lim = limitSummary(limits[a.id], lang);
       return { id: a.id, models: a.models, ok: has && lim.ok, note: has ? lim.note : msg(lang, 'notInstalled') };
@@ -100,13 +94,16 @@ async function body(req) {
 
 const routes = {
   'GET /api/threads': () => o.listThreads(),
-  'GET /api/thread': (q) => o.readThread(q.get('handle')).then((text) => ({ text })),
-  'GET /api/replies': (q) => config.replies.map((r) => pick(r.label, langOf(q))),
+  'GET /api/capabilities': () => ({ voice: !!executable('whisper-cli') && existsSync(process.env.WHISPER_MODEL || '') }),
+  'GET /api/thread': (q) => o.readThread(q.get('handle')),
+  'POST /api/choice': (_q, b) => o.choose(b.handle, b.menuId, b.value),
+  'GET /api/replies': (q) => config.replies.filter(r => r.enter).map((r) => pick(r.label, langOf(q))),
   'POST /api/reply': async (q, b) => {
     const lang = langOf(q);
-    const r = config.replies[b.index];
+    const r = config.replies.filter(r => r.enter)[b.index];
     if (!r) throw new Error('unknown reply');
     const text = pick(r.text, lang);
+    if ((await o.readThread(b.handle)).menu) throw new Error('Use the current question choices, not a text reply');
     // Enter なしの数字は選択肢用。選択肢が無い時に送ると入力欄に数字が残り次の返信に混ざる
     if (!r.enter && /^\d+$/.test(text) && !(await o.hasNumberedMenu(b.handle))) {
       throw new Error(msg(lang, 'noMenu'));
@@ -117,6 +114,7 @@ const routes = {
   // 音声入力: 文字起こしと、確認後の自由文送信
   'POST /api/transcribe': async (q, pcm) => ({ text: pcm.length ? await transcribe(pcm, langOf(q)) : '' }),
   'POST /api/say': async (_q, b) => {
+    if ((await o.readThread(b.handle)).menu) throw new Error('Use the current question choices, not a text reply');
     const text = String(b.text || '').trim();
     if (!text || text.length > 2000) throw new Error('bad text');
     await o.sendToThread(b.handle, text, true);
@@ -131,7 +129,7 @@ const routes = {
     const lang = langOf(q);
     const agent = config.agents.find((a) => a.id === b.agent);
     const prompt = config.prompts[b.prompt];
-    if (!agent || !prompt || !agent.models.includes(b.model)) throw new Error('bad session request');
+    if (!agent || agent.id !== 'codex' || !prompt || !agent.models.includes(b.model)) throw new Error('Only Codex sessions are enabled');
     const command = b.model === 'default' ? agent.command : `${agent.command} --model ${b.model}`;
     const r = await o.startSession({ workspaceId: b.workspaceId, command, prompt: pick(prompt.text, lang) });
     return r.reason ? { ...r, reason: msg(lang, r.reason) } : r;

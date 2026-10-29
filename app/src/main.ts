@@ -125,14 +125,36 @@ function thread(t: Thread, note = '') {
 
 function replies(t: Thread) {
   return guard(t.title, async () => {
+    const { menu } = await api.thread(t.handle);
+    if (menu) {
+      await show({
+        kind: 'list', title: t.title,
+        items: menu.options.map(o => `${o.value}. ${o.label}`),
+        onPick: (i) => {
+          const option = menu.options[i];
+          if (!option) return;
+          show({ kind: 'text', title: 'Click to choose / Double-click to cancel',
+            text: `${menu.question}\n\n${option.value}. ${option.label}`,
+            onBack: () => replies(t),
+            onClick: () => guard(t.title, async () => {
+              const result = await api.choice(t.handle, menu.id, option.value);
+              await thread(t, `Input sent: ${result.sent}`);
+            }, () => thread(t)),
+          });
+        },
+        onBack: () => thread(t),
+      });
+      return;
+    }
     const labels = await api.replies();
+    const { voice } = await api.capabilities().catch(() => ({ voice: false }));
     await show({
       kind: 'list',
       title: tr('replyTitle', t.title),
-      items: [tr('voice'), ...labels],
+      items: [...(voice ? [tr('voice')] : []), ...labels],
       onPick: async (i) => {
-        if (i === 0) return record(t);
-        const r = await api.reply(t.handle, i - 1).catch((e: Error) => ({ sent: tr('failed', e.message) }));
+        if (voice && i === 0) return record(t);
+        const r = await api.reply(t.handle, i - (voice ? 1 : 0)).catch((e: Error) => ({ sent: tr('failed', e.message) }));
         thread(t, tr('sent', r.sent));
       },
       onBack: () => thread(t),

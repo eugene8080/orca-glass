@@ -1,14 +1,17 @@
 // orca CLI の薄いラッパー。全て `--json` で呼び、result を返す。
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
+import { orcaExecutable } from './platform.mjs';
+import { parseChoices, validateChoice } from './choices.mjs';
 
 const run = promisify(execFile);
-const ORCA = process.env.ORCA_BIN || 'orca';
+const ORCA = orcaExecutable();
 
 export async function orca(args, { timeoutMs = 15000 } = {}) {
   const { stdout } = await run(ORCA, [...args, '--json'], {
     timeout: timeoutMs,
     maxBuffer: 16 * 1024 * 1024,
+    windowsHide: true,
   });
   const out = JSON.parse(stdout);
   if (!out.ok) throw new Error(out.error?.message || JSON.stringify(out.error || out));
@@ -26,7 +29,7 @@ function stateFromTitle(title) {
 export async function listThreads() {
   const { terminals } = await orca(['terminal', 'list']);
   return terminals
-    .filter((t) => t.connected && !t.orphaned && t.agentIdentity)
+    .filter((t) => t.connected && !t.orphaned && t.agentIdentity === 'codex')
     .map((t) => ({
       handle: t.handle,
       title: (t.title || 'Untitled').replace(/^[✳◐◓◑◒⠁-⣿]\s*/u, ''),
@@ -150,12 +153,31 @@ async function agentOf(handle) {
 }
 
 export async function readThread(handle) {
+  await requireCodex(handle);
   const { terminal } = await orca(['terminal', 'read', '--terminal', handle, '--screen']);
   const lines = terminal.tail || [];
+  const menu = parseChoices(lines);
   const agent = await agentOf(handle);
   const pick = agent === 'claude' ? answersOnly : agent === 'codex' ? codexAnswersOnly : null;
   const answer = pick && cleanScreen(pick(lines));
-  return answer || cleanScreen(lines);
+  return { text: menu ? lines.join('\n') : answer || cleanScreen(lines), menu };
+}
+
+export async function requireCodex(handle) {
+  if (typeof handle !== 'string' || !handle) throw new Error('Missing terminal handle');
+  const { terminal } = await orca(['terminal', 'show', '--terminal', handle]);
+  if (terminal?.agentIdentity !== 'codex' || !terminal.connected || terminal.orphaned) {
+    throw new Error('Only connected Codex terminals are enabled. Claude is disabled.');
+  }
+}
+
+export async function choose(handle, id, value) {
+  const snapshot = await readThread(handle);
+  const digit = validateChoice(snapshot.menu, id, value);
+  // Recheck immediately before input. Orca has no atomic compare-and-send API;
+  // a terminal transition in the remaining interval cannot be ruled out.
+  await sendToThread(handle, digit, false);
+  return { sent: snapshot.menu.options.find(o => o.value === digit).label };
 }
 
 // 番号付きの選択肢(❯ 1. Yes / 2. … )が画面に出ているか
@@ -169,6 +191,7 @@ export async function hasNumberedMenu(handle) {
 }
 
 export async function sendToThread(handle, text, enter) {
+  await requireCodex(handle);
   const args = ['terminal', 'send', '--terminal', handle, '--text', text];
   if (enter) args.push('--enter');
   return orca(args);
@@ -176,7 +199,7 @@ export async function sendToThread(handle, text, enter) {
 
 export async function usage() {
   const { rateLimits } = await orca(['account', 'list']);
-  return rateLimits;
+  return { codex: rateLimits.codex };
 }
 
 export async function listWorkspaces() {
@@ -185,11 +208,12 @@ export async function listWorkspaces() {
     .filter((w) => !w.isArchived)
     .map((w) => ({
       id: w.id,
-      name: w.path.split('/').pop() + (w.isMainWorktree ? '' : `:${w.displayName}`),
+      name: w.path.split(/[\\/]/).pop() + (w.isMainWorktree ? '' : `:${w.displayName}`),
     }));
 }
 
 export async function startSession({ workspaceId, command, prompt }) {
+  if (command !== 'codex') throw new Error('Only default Codex sessions are enabled');
   const created = await orca(['terminal', 'create', '--worktree', `id:${workspaceId}`, '--command', command]);
   const handle = created.terminal?.handle || created.handle;
   if (!handle) throw new Error('terminal create returned no handle');

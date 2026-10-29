@@ -1,8 +1,9 @@
 // 接続コード eho1.<トピック>.<トークン> を表示し、macOS ならクリップボードにも入れる
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
-const dir = new URL('../bridge/', import.meta.url).pathname;
+const dir = fileURLToPath(new URL('../bridge/', import.meta.url));
 for (const f of ['.token', '.topic']) {
   if (!existsSync(dir + f)) {
     console.error(`bridge/${f} がありません。先に npm start で一度起動してください。`);
@@ -11,9 +12,9 @@ for (const f of ['.token', '.topic']) {
 }
 const code = `eho1.${readFileSync(dir + '.topic', 'utf8').trim()}.${readFileSync(dir + '.token', 'utf8').trim()}`;
 try {
-  execFileSync('pbcopy', { input: code });
-  console.log('接続コードをクリップボードにコピーしました。iPhone の Orca Glass に貼り付けてください。');
+  execFileSync(process.platform === 'win32' ? 'clip.exe' : 'pbcopy', { input: code, windowsHide: true });
+  console.log('Pairing code copied. Paste it into Orca Glass in the Even Realities app on your phone.');
 } catch {
-  console.log('接続コード(iPhone の Orca Glass に貼り付け):');
+  console.log('Pairing code (paste into Orca Glass on your phone):');
   console.log(code);
 }

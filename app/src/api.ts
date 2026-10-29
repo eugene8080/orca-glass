@@ -43,6 +43,8 @@ async function call<T>(method: 'GET' | 'POST', path: string, body?: unknown): Pr
   try {
     res = await req();
   } catch (e) {
+    // A disconnected POST may already have delivered input. Never replay it.
+    if (method === 'POST') throw new Error('Delivery uncertain. Reopen the thread before sending again.');
     // つながらない = トンネルの URL が変わった可能性。連絡板で最新を引き直して1回だけやり直す
     const next = resolveBase && (await resolveBase().catch(() => null));
     if (!next || next === base) throw e;
@@ -55,15 +57,18 @@ async function call<T>(method: 'GET' | 'POST', path: string, body?: unknown): Pr
 }
 
 export type Thread = { handle: string; title: string; agent: string; state: 'idle' | 'busy' | 'unknown' };
+export type ChoiceMenu = { id: string; question: string; options: { value: string; label: string }[] };
 export type Provider = { id: string; models: string[]; ok: boolean; note: string };
 export type Workspace = { id: string; name: string };
 type Limit = { usedPercent: number; resetDescription: string } | null;
 export type Usage = Record<string, { status: string; error?: string | null; session?: Limit; weekly?: Limit }>;
 
 export const api = {
+  capabilities: () => call<{ voice: boolean }>('GET', '/api/capabilities'),
   health: () => call<{ ok: boolean }>('GET', '/healthz'),
   threads: () => call<Thread[]>('GET', '/api/threads'),
-  thread: (handle: string) => call<{ text: string }>('GET', `/api/thread?handle=${encodeURIComponent(handle)}`),
+  thread: (handle: string) => call<{ text: string; menu?: ChoiceMenu | null }>('GET', `/api/thread?handle=${encodeURIComponent(handle)}`),
+  choice: (handle: string, menuId: string, value: string) => call<{ sent: string }>('POST', '/api/choice', { handle, menuId, value }),
   replies: () => call<string[]>('GET', '/api/replies'),
   reply: (handle: string, index: number) => call<{ sent: string }>('POST', '/api/reply', { handle, index }),
   transcribe: (pcm: Uint8Array) => call<{ text: string }>('POST', '/api/transcribe', pcm),

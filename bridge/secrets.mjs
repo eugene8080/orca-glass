@@ -2,8 +2,9 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { randomBytes } from 'node:crypto';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const dir = new URL('.', import.meta.url).pathname;
+const dir = fileURLToPath(new URL('.', import.meta.url));
 
 function secret(name, make) {
   const file = join(dir, name);

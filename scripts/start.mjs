@@ -1,12 +1,14 @@
 // 中継サーバとトンネル監視をまとめて起動する(どちらかが落ちたら両方止める)
 import { spawn } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 
-const here = new URL('..', import.meta.url).pathname;
+const here = fileURLToPath(new URL('..', import.meta.url));
 const procs = [
   ['bridge', ['bridge/server.mjs'], { HOST: '127.0.0.1' }],
   ['tunnel', ['tunnel/watch.mjs'], {}],
 ].map(([name, args, env]) => {
-  const p = spawn(process.execPath, args, { cwd: here, env: { ...process.env, ...env }, stdio: ['ignore', 'pipe', 'pipe'] });
+  const p = spawn(process.execPath, args, { cwd: here, windowsHide: true, env: { ...process.env, ...env }, stdio: ['ignore', 'pipe', 'pipe'] });
+  p.on('error', (error) => { console.error(error.message); process.exit(1); });
   const out = (b) => String(b).trimEnd().split('\n').forEach((l) => console.log(`[${name}] ${l.replace(/token=\S+/, 'token=***')}`));
   p.stdout.on('data', out);
   p.stderr.on('data', out);

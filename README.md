@@ -1,3 +1,25 @@
+# Windows / Android fork
+Updated: 2026-10-29
+
+**Current setup: use [native Even Terminal with Codex](docs/native-terminal.md).**
+The official package supports Windows and the Android app's Terminal Mode, with
+structured Codex questions and approvals. The native host is configured over
+Tailscale; phone/glasses verification is pending.
+
+This fork also contains an experimental Windows port of Orca Glass using a
+local Node bridge plus an HTTPS Quick Tunnel. That bridge is currently stopped.
+**Codex only. Claude testing is prohibited until explicitly authorized.**
+
+For that alternative, read [Windows / Android setup](docs/windows-android.md) and [current status](TODOS.md).
+Run `npm --prefix app ci`, `npm --prefix app run build`, `npm run doctor`, then
+`npm start`. The original store app is not this fork: load our build with a
+developer QR. Hardware verification is still pending.
+
+Based on 2ero20ne's MIT-licensed Orca Glass. The original README follows for
+provenance; its Mac setup and store listing describe the upstream project.
+
+---
+
 # Orca Glass
 
 [日本語](README.ja.md)

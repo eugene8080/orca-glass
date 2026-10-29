@@ -9,6 +9,8 @@
   "scripts": {
     "start": "node scripts/start.mjs",
     "pair": "node scripts/pair.mjs",
-    "doctor": "sh scripts/doctor.sh"
+    "doctor": "node scripts/doctor.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "pair:native": "node scripts/pair-native.mjs"
   }
 }

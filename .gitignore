@@ -14,3 +14,5 @@ store/screenshots/review-*/
 .env.*
 !.env.example
 .DS_Store
+.local/
+even-terminal-*.log

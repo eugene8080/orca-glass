@@ -5,8 +5,9 @@ import { appendFileSync, writeFileSync } from 'node:fs';
 import { createHmac } from 'node:crypto';
 import * as secrets from '../bridge/secrets.mjs';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const here = new URL('.', import.meta.url).pathname;
+const here = fileURLToPath(new URL('.', import.meta.url));
 const LOG = join(here, 'log.tsv');
 const CURRENT = join(here, 'current-url');
 const ORIGIN = process.env.ORIGIN || 'http://127.0.0.1:8787';
@@ -17,7 +18,7 @@ const DEAD_AFTER = 5; // 連続失敗がこの回数(=5分)でトンネル死亡
 const NTFY = process.env.NTFY || 'https://ntfy.sh';
 const PUBLISH_MS = 60 * 60_000; // ntfy.sh の保持期限より短い間隔で書き直す
 const TOPIC = secrets.topic();
-const TOKEN = secrets.token();
+const TOKEN = process.env.EHO_TOKEN || secrets.token();
 
 async function publish() {
   if (!url) return;
@@ -44,9 +45,11 @@ function log(event, detail = '') {
 function start() {
   url = null;
   fails = 0;
-  child = spawn('cloudflared', ['tunnel', '--no-autoupdate', '--url', ORIGIN], { stdio: ['ignore', 'ignore', 'pipe'] });
+  child = spawn('cloudflared', ['tunnel', '--config', join(here, 'quick.yml'), '--no-autoupdate', '--protocol', 'http2', '--url', ORIGIN], { windowsHide: true, stdio: ['ignore', 'ignore', 'pipe'] });
+  child.on('error', (error) => { console.error(error.message); process.exit(1); });
   log('start', `pid=${child.pid}`);
   child.stderr.on('data', (buf) => {
+    appendFileSync(join(here, 'cloudflared.log'), String(buf));
     const m = String(buf).match(/https:\/\/[a-z0-9-]+\.trycloudflare\.com/);
     if (m && m[0] !== url) {
       url = m[0];
