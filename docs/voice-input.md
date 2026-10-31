@@ -61,5 +61,5 @@ restart native Even Terminal, alter proxy routing, or publish a marketplace app.
 nine Codex terminals. The hash-verified Windows engine and base.en model were
 installed locally. whisper.cpp's public JFK WAV was decoded to PCM and transcribed
 through bridge/whisper.mjs successfully. This is a local speech-engine test, not
-a Codex inference or live terminal submission. The custom server/tunnel remains
-stopped; Android/G2 pairing is the next deployment check.
+a Codex inference or live terminal submission. The custom server/tunnel was then
+started with local/HTTPS checks passing; Android/G2 pairing remains the next check.

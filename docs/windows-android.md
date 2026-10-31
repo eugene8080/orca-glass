@@ -1,10 +1,10 @@
 # Windows + Android setup
-Updated: 2026-10-29
+Updated: 2026-11-01
 
 This fork uses Codex only. Claude testing is prohibited until the user authorizes it.
 
-The active setup now uses [native Even Terminal](native-terminal.md). This
-experimental bridge is retained as an alternative and is currently stopped.
+The custom bridge is now running for the first Android/G2 hardware test.
+[Native Even Terminal](native-terminal.md) is separate and was not restarted.
 
 ## Connection
 
@@ -50,8 +50,9 @@ The stale-screen check is not atomic with terminal input: Orca does not expose a
 compare-and-send operation here. A successful input send is not proof that Codex
 accepted the choice. Check the following screen before repeating any action.
 
-Voice is hidden unless whisper-cli is available and WHISPER_MODEL names an existing
-model. Voice installation/testing is outside this first numbered-choice setup.
+Voice uses the Windows local Whisper setup documented in [voice-input.md](voice-input.md).
+The engine and English model are installed and passed a public speech-fixture test.
+Tap an ordinary session to record; explicit choice menus retain their actual options.
 
 QR development sessions differ from installed beta builds; do not assume phone
 lock/background persistence. A personal beta requires developer portal access
@@ -65,6 +66,14 @@ timestamp, and HMAC signature, never the pairing token. Quick Tunnels have no
 uptime guarantee. QR files containing a pairing code are credentials.
 
 ## Verification
+
+2026-11-01: custom supervisor started hidden, PID recorded in ignored
+`.local/custom.pid`. Loopback and current HTTPS tunnel health/capabilities checks
+passed; voice=true, nine live Codex terminals. Tunnel URL publication succeeded.
+`node scripts/pair-custom.mjs` generated ignored `.local/custom-pairing.html` and
+PNG with the pairing code and English preference prefilled. No agent input sent.
+Scan using Even Hub Developer/Prototype Mode, not the native Terminal scanner.
+Phone/G2 display and microphone capture remain awaiting Eugene's check.
 
 Desktop builds and synthetic menu tests do not establish Android/G2 compatibility.
 Hardware acceptance requires opening the fork from Android, reading a real Codex
