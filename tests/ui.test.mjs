@@ -116,7 +116,7 @@ test('slow polls do not overlap or overwrite a different session screen', async 
   assert.equal(h.pages.at(-1).textObject[1].content, 'Other session');
 });
 
-test('hold release waits for explicit transcription, then a separate send confirmation', async () => {
+test('hold release immediately transcribes but still requires send confirmation', async () => {
   const h = await harness(2, true, 'hold');
   await h.pick(3);
   h.press();
@@ -125,16 +125,13 @@ test('hold release waits for explicit transcription, then a separate send confir
   h.release();
   await h.flush();
   assert.deepEqual(h.mic, [true, false]);
-  assert.equal(h.transcriptions.length, 0);
-  assert.equal(h.sends.length, 0);
-  await h.tap();
   assert.equal(h.transcriptions.length, 1);
   assert.equal(h.sends.length, 0);
   await h.tap();
   assert.equal(h.sends.length, 1);
 });
 
-test('hold recording can be discarded without transcription or input', async () => {
+test('hold transcript can be discarded without sending input', async () => {
   const h = await harness(2, true, 'hold');
   await h.pick(3);
   h.press();
@@ -143,7 +140,7 @@ test('hold recording can be discarded without transcription or input', async () 
   h.release();
   await h.flush();
   await h.back();
-  assert.equal(h.transcriptions.length, 0);
+  assert.equal(h.transcriptions.length, 1);
   assert.equal(h.sends.length, 0);
 });
 

@@ -210,7 +210,7 @@ function replies(t: Thread, hold = false) {
     const { voice } = await api.capabilities().catch(() => ({ voice: false }));
     if (voice && (recordingMode === 'tap' || hold)) return record(t, hold);
     if (voice) {
-      return show({ kind: 'text', title: t.title, text: 'Hold to talk. Wait for Recording, then speak. Release to finish.\nAfter release: click to transcribe / double-click to cancel.',
+      return show({ kind: 'text', title: t.title, text: 'Hold to talk. Wait for Recording, then speak. Release to transcribe.\nReview the text: click to send / double-click to cancel.',
         onHold: () => { void record(t, true); }, onBack: () => thread(t) });
     }
     await show({
@@ -287,10 +287,7 @@ async function record(t: Thread, hold = false) {
       });
     }, () => thread(t));
     };
-    if (hold) {
-      await show({ kind: 'text', title: 'Recording stopped', text: 'Click to transcribe\nDouble-click to discard recording',
-        onClick: () => { void transcribe(); }, onBack: () => thread(t) });
-    } else { await transcribe(); }
+    await transcribe();
   };
   if (hold) releaseCapture = () => { void stop(true); };
   const hint = hold ? 'Release to finish\nDouble-click to cancel' : tr('recordingHint');

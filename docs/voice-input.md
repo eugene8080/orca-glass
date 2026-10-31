@@ -3,6 +3,11 @@ Updated: 2026-11-01
 
 ## Hardware results and recording modes
 
+Latest update, 2026-11-01: Eugene confirmed hold-to-talk works on the G2.
+Release now starts transcription immediately, removing the extra confirmation.
+The resulting transcript still requires a click to send; double-click discards it.
+This supersedes the initial hold flow described below. Fourteen tests/build pass.
+
 2026-11-01: Eugene confirmed the G2 session list, accurate microphone transcription,
 and a test sentence received in this Codex session. Reported stop-to-transcript
 delay: approximately 2–3 seconds. Tap recording is hardware tested.
