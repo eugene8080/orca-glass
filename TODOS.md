@@ -3,6 +3,7 @@ Updated: 2026-11-01
 
 | Task | Status | Evidence / remaining work |
 | --- | --- | --- |
+| Native Even AI voice route | Echo prototype; hardware pending | User prefers built-in live captions/release-to-send. Official custom-agent endpoint confirmed. Separate Tailscale echo-only server on 8788; private settings page generated. Twelve automated tests pass. No routing into Codex yet. See docs/native-ai-voice.md. |
 | Recording mode / status correction | Implemented; hold hardware pending | 2026-11-01: truthful connected-terminal header; persisted tap/hold setting. Hold release waits for click-to-transcribe or double-click discard. Ten automated checks and build pass; reload phone app for hardware test. |
 | First G2 voice test | Passed | Eugene confirmed session list, accurate transcription and about 2–3 seconds delay. Test sentence reached this Codex conversation. No Claude interaction. |
 | Live Orca workflow | Running; hardware pending | 2026-11-01 custom supervisor started; local/HTTPS health and capabilities passed, nine Codex terminals. Private custom pairing QR generated. Seven automated tests, build and doctor passed. Await Android/G2 scan. |
