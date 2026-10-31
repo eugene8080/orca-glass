@@ -67,6 +67,7 @@ export const api = {
   capabilities: () => call<{ voice: boolean }>('GET', '/api/capabilities'),
   health: () => call<{ ok: boolean }>('GET', '/healthz'),
   threads: () => call<Thread[]>('GET', '/api/threads'),
+  history: (handle: string) => call<{ text: string }>('GET', `/api/history?handle=${encodeURIComponent(handle)}`),
   thread: (handle: string) => call<{ text: string; menu?: ChoiceMenu | null }>('GET', `/api/thread?handle=${encodeURIComponent(handle)}`),
   choice: (handle: string, menuId: string, value: string) => call<{ sent: string }>('POST', '/api/choice', { handle, menuId, value }),
   replies: () => call<string[]>('GET', '/api/replies'),

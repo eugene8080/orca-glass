@@ -4,6 +4,9 @@ import vm from 'node:vm';
 import { readFileSync } from 'node:fs';
 import ts from '../app/node_modules/typescript/lib/typescript.js';
 
+const textExports = {};
+vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../app/src/text.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, { exports: textExports, TextEncoder });
+
 // Exercise the real controller with a simulated Even bridge: no agent input,
 // microphone access, network, or hardware claims.
 async function harness(count = 2, voice = false, mode = 'tap') {
@@ -18,6 +21,7 @@ async function harness(count = 2, voice = false, mode = 'tap') {
   const api = {
     threads: async () => threads,
     thread: async h => ({ text: `Content ${h}` }),
+    history: async () => ({ text: 'Older terminal output' }),
     capabilities: async () => ({ voice }),
     transcribe: async pcm => { transcriptions.push(pcm); return { text: 'A voice test.' }; },
     say: async (handle, text) => { sends.push({ handle, text }); return { sent: text }; },
@@ -31,13 +35,13 @@ async function harness(count = 2, voice = false, mode = 'tap') {
     audioControl: async on => { mic.push(on); return true; },
   };
   class Property { constructor(value) { Object.assign(this, value); } }
-  const sdk = new Proxy({ waitForEvenAppBridge: async () => bridge, AudioInputSource: { Glasses: 0 }, OsEventTypeList: { CLICK_EVENT: 0, DOUBLE_CLICK_EVENT: 1, SYSTEM_EXIT_EVENT: 2, ABNORMAL_EXIT_EVENT: 3, LONG_PRESS_EVENT: 9, LONG_PRESS_RELEASE_EVENT: 10 } }, { get: (target, key) => target[key] ?? Property });
+  const sdk = new Proxy({ waitForEvenAppBridge: async () => bridge, AudioInputSource: { Glasses: 0 }, OsEventTypeList: { CLICK_EVENT: 0, SCROLL_TOP_EVENT: 1, SCROLL_BOTTOM_EVENT: 2, DOUBLE_CLICK_EVENT: 3, SYSTEM_EXIT_EVENT: 7, ABNORMAL_EXIT_EVENT: 6, LONG_PRESS_EVENT: 9, LONG_PRESS_RELEASE_EVENT: 10 } }, { get: (target, key) => target[key] ?? Property });
   const imports = {
     '@evenrealities/even_hub_sdk': sdk,
     './api': { api, setDemo() {}, setApiLang() {}, currentBase: () => '' },
     './pairing': { parseCode: () => null },
     './i18n': { applyPage() {}, detectLang: () => 'en', setLang() {}, t: key => key },
-    './text': { clipBytes: x => x, tailBytes: x => x, tailRows: x => x },
+    './text': textExports,
   };
   const source = ts.transpileModule(readFileSync(new URL('../app/src/main.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
   vm.runInNewContext(source, {
@@ -54,7 +58,8 @@ async function harness(count = 2, voice = false, mode = 'tap') {
     audio: () => { event({ audioEvent: { audioPcm: new Uint8Array([0, 0, 1, 0]) } }); },
     pick: async i => { event({ listEvent: { currentSelectItemIndex: i, eventType: 0 } }); await flush(); },
     tap: async () => { event({ textEvent: { eventType: 0 } }); await flush(); },
-    back: async () => { event({ textEvent: { eventType: 1 } }); await flush(); },
+    back: async () => { event({ textEvent: { eventType: 3 } }); await flush(); },
+    scroll: async direction => { event({ textEvent: { eventType: direction === 'up' ? 1 : 2 } }); await flush(); },
   };
 }
 
@@ -149,4 +154,28 @@ test('release before asynchronous menu checks finish never leaves the microphone
   h.release();
   await h.flush();
   assert.deepEqual(h.mic, []);
+});
+
+test('text pages preserve long Unicode output within row and byte limits', () => {
+  const text = '語'.repeat(1000);
+  const pages = textExports.textPages(text);
+  assert.equal(pages.join('').replaceAll('\n', ''), text);
+  assert.ok(pages.every(p => new TextEncoder().encode(p).length <= 999 && p.split('\n').length <= 8));
+});
+
+test('scroll reads earlier pages, holds position during polling, and loads retained history', async () => {
+  const h = await harness();
+  h.api.thread = async () => ({ text: Array.from({ length: 20 }, (_, i) => `Line ${i}`).join('\n') });
+  await h.pick(3);
+  assert.match(h.pages.at(-1).textObject[1].content, /Line 19/);
+  await h.scroll('up');
+  assert.match(h.upgrades.at(-1).content, /Line 8/);
+  const before = h.upgrades.length;
+  await [...h.timers.values()][0]();
+  assert.equal(h.upgrades.length, before);
+  await h.scroll('up');
+  await h.scroll('up');
+  assert.equal(h.pages.at(-1).textObject[1].content, 'Older terminal output');
+  await h.scroll('down');
+  assert.match(h.pages.at(-1).textObject[1].content, /Line 19/);
 });

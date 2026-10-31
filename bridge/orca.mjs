@@ -163,6 +163,13 @@ export async function readThread(handle) {
   return { text: menu ? lines.join('\n') : answer || cleanScreen(lines), menu };
 }
 
+export async function readHistory(handle) {
+  await requireCodex(handle);
+  const { terminal } = await orca(['terminal', 'read', '--terminal', handle, '--limit', '1000']);
+  // This is bounded Orca scrollback, not an invented or inferred conversation.
+  return { text: (terminal.tail || []).join('\n'), limited: !!terminal.limited, source: terminal.source };
+}
+
 export async function requireCodex(handle) {
   if (typeof handle !== 'string' || !handle) throw new Error('Missing terminal handle');
   const { terminal } = await orca(['terminal', 'show', '--terminal', handle]);

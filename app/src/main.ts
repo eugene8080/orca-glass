@@ -14,7 +14,7 @@ import {
 import { api, currentBase, setApiLang, setConnection, setDemo, type Provider, type Thread, type Workspace } from './api';
 import { parseCode, resolveBase } from './pairing';
 import { applyPage, detectLang, setLang, t as tr } from './i18n';
-import { clipBytes, tailBytes, tailRows } from './text';
+import { clipBytes, textPages } from './text';
 
 // 画面 576x288。上に見出し(テキスト)、下に本文(リスト or テキスト)の2段構成で統一する。
 const HEAD = { containerID: 1, containerName: 'head', xPosition: 0, yPosition: 0, width: 576, height: 36 };
@@ -28,7 +28,7 @@ const POLL_MS = 1000;
 
 type Screen =
   | { kind: 'list'; title: string; items: string[]; onPick: (i: number) => void; onBack?: () => void }
-  | { kind: 'text'; title: string; text: string; tail?: boolean; onClick?: () => void; onBack?: () => void; onHold?: () => void };
+  | { kind: 'text'; title: string; text: string; tail?: boolean; page?: number; onClick?: () => void; onBack?: () => void; onHold?: () => void; onOlder?: () => void; onNewer?: () => void };
 
 let bridge: EvenAppBridge;
 let current: Screen | null = null;
@@ -52,14 +52,23 @@ function selectThread(t: Thread | null) {
 }
 
 // スレッドは最新行(末尾)、それ以外は先頭から見せる
-function bodyText(s: { text: string; tail?: boolean }) {
-  return s.tail ? tailBytes(tailRows(s.text, BODY_ROWS), TEXT_BYTES) : clipBytes(s.text, TEXT_BYTES);
+function bodyText(s: { text: string; tail?: boolean; page?: number }) {
+  const pages = textPages(s.text, BODY_ROWS, TEXT_BYTES);
+  s.page = Math.max(0, Math.min(s.page ?? (s.tail ? pages.length - 1 : 0), pages.length - 1));
+  return pages[s.page];
+}
+
+function screenTitle(s: Screen) {
+  if (s.kind !== 'text') return s.title;
+  bodyText(s);
+  const count = textPages(s.text, BODY_ROWS, TEXT_BYTES).length;
+  return `${s.page! + 1}/${count} ${s.title}`;
 }
 
 async function show(s: Screen) {
   clearInterval(poll);
   current = s;
-  const head = new TextContainerProperty({ ...HEAD, content: clipBytes(s.title, TEXT_BYTES), isEventCapture: 0 });
+  const head = new TextContainerProperty({ ...HEAD, content: clipBytes(screenTitle(s), TEXT_BYTES), isEventCapture: 0 });
   const page =
     s.kind === 'list'
       ? {
@@ -94,7 +103,7 @@ function updateText(title: string, text: string) {
   current.text = text;
   const { containerID: hid, containerName: hname } = HEAD;
   const { containerID: bid, containerName: bname } = BODY;
-  bridge.textContainerUpgrade(new TextContainerUpgrade({ containerID: hid, containerName: hname, content: clipBytes(title, TEXT_BYTES) }));
+  bridge.textContainerUpgrade(new TextContainerUpgrade({ containerID: hid, containerName: hname, content: clipBytes(screenTitle(current), TEXT_BYTES) }));
   bridge.textContainerUpgrade(new TextContainerUpgrade({ containerID: bid, containerName: bname, content: bodyText(current) }));
 }
 
@@ -140,18 +149,34 @@ function thread(t: Thread, note = '') {
     const title = () => `${t.title}${note ? `  ${note}` : ''}`;
     const { text } = await api.thread(t.handle);
     await show({ kind: 'text', title: title(), text, tail: true, onClick: () => replies(t), onBack: home,
+      onOlder: () => { void history(t); },
       onHold: () => { if (recordingMode === 'hold') void replies(t, true); } });
     const screen = current;
     let reading = false;
     poll = setInterval(async () => {
       if (reading || current !== screen) return;
+      if (current?.kind === 'text' && current.page !== textPages(current.text, BODY_ROWS, TEXT_BYTES).length - 1) return;
       reading = true;
       const r = await api.thread(t.handle).catch(() => null);
       reading = false;
       // A slow response from the previous session must never overwrite a new screen.
-      if (r && current === screen && current?.kind === 'text' && r.text !== current.text) updateText(title(), r.text);
+      if (r && current === screen && current?.kind === 'text' && r.text !== current.text && current.page === textPages(current.text, BODY_ROWS, TEXT_BYTES).length - 1) {
+        current.page = undefined;
+        updateText(title(), r.text);
+      }
     }, POLL_MS);
   }, home);
+}
+
+function history(t: Thread) {
+  const previous = current;
+  return guard(t.title, async () => {
+    const r = await api.history(t.handle);
+    if (current !== previous) return;
+    await show({ kind: 'text', title: 'Retained terminal history', text: r.text || 'No older terminal output is retained.', tail: true,
+      onBack: () => thread(t), onNewer: () => { void thread(t); },
+      onClick: () => replies(t) });
+  }, () => thread(t));
 }
 
 function replies(t: Thread, hold = false) {
@@ -399,6 +424,19 @@ function onEvent(e: EvenHubEvent) {
   if (!ev) return;
   // CLICK_EVENT(0) は既定値のため JSON から省かれて届くことがある
   const type = ev.eventType ?? OsEventTypeList.CLICK_EVENT;
+  if (s.kind === 'text' && (type === OsEventTypeList.SCROLL_TOP_EVENT || type === OsEventTypeList.SCROLL_BOTTOM_EVENT)) {
+    const pages = textPages(s.text, BODY_ROWS, TEXT_BYTES);
+    const page = s.page ?? 0;
+    if (type === OsEventTypeList.SCROLL_TOP_EVENT) {
+      if (page === 0) { s.onOlder?.(); return; }
+      s.page = page - 1;
+    } else {
+      if (page === pages.length - 1) { s.onNewer?.(); return; }
+      s.page = page + 1;
+    }
+    updateText(s.title, s.text);
+    return;
+  }
   if (type === OsEventTypeList.LONG_PRESS_EVENT) {
     if (!holding) {
       holding = true;

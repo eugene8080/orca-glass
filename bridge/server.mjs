@@ -96,6 +96,7 @@ const routes = {
   'GET /api/threads': () => o.listThreads(),
   'GET /api/capabilities': () => ({ voice: voiceAvailable() }),
   'GET /api/thread': (q) => o.readThread(q.get('handle')),
+  'GET /api/history': (q) => o.readHistory(q.get('handle')),
   'POST /api/choice': (_q, b) => o.choose(b.handle, b.menuId, b.value),
   'GET /api/replies': (q) => config.replies.filter(r => r.enter).map((r) => pick(r.label, langOf(q))),
   'POST /api/reply': async (q, b) => {

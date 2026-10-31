@@ -27,6 +27,31 @@ export function tailBytes(s: string, max: number): string {
 const COLS = 54;
 const width = (s: string) => [...s].reduce((n, c) => n + (/[ᄀ-￿]/.test(c) ? 2 : 1), 0);
 
+// Keep every character while fitting both display rows and the SDK byte budget.
+export function textPages(text: string, maxRows = 8, maxBytes = 999): string[] {
+  const rows: string[] = [];
+  for (const line of text.split('\n')) {
+    let row = '', columns = 0;
+    for (const ch of line) {
+      const w = width(ch);
+      if (columns + w > COLS) { rows.push(row); row = ''; columns = 0; }
+      row += ch;
+      columns += w;
+    }
+    rows.push(row);
+  }
+  const pages: string[] = [];
+  let page: string[] = [];
+  for (const row of rows) {
+    if (page.length && (page.length >= maxRows || enc.encode([...page, row].join('\n')).length > maxBytes)) {
+      pages.push(page.join('\n')); page = [];
+    }
+    page.push(row);
+  }
+  if (page.length) pages.push(page.join('\n'));
+  return pages.length ? pages : [''];
+}
+
 export function tailRows(s: string, maxRows: number): string {
   const out: string[] = [];
   let rows = 0;

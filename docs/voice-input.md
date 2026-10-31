@@ -20,6 +20,18 @@ The home header now counts connected terminals instead of reporting a misleading
 waiting count. Orca terminal-list metadata does not establish agent waiting state;
 connected terminals can include a shell after its agent exits.
 
+Eugene's later screenshot shows the Recording mode selector is present and set to
+Tap to start / tap to finish. The prior report of absent hold settings is therefore
+not evidence that the SDK failed to deliver hold events.
+
+Text screens now paginate all received text within the eight-row/999-byte display
+budget. Scroll up/down moves between pages; the title shows page/total. Live polling
+does not overwrite older pages. Scrolling above the first current-response page
+loads up to 1,000 retained terminal rows; scrolling past the last history page or
+double-tapping returns to live output. This is bounded terminal scrollback, which
+may include TUI redraw artifacts, not a full saved Codex transcript. A restarted
+terminal may retain little history. Fourteen automated checks and the build pass.
+
 The custom app reuses the Mac upstream implementation in app/src/main.ts,
 bridge/whisper.mjs and bridge/orca.mjs: glasses microphone PCM, local whisper.cpp,
 transcript review, then ordinary text sent to the selected Orca terminal. Codex
