@@ -28,7 +28,7 @@ const POLL_MS = 1000;
 
 type Screen =
   | { kind: 'list'; title: string; items: string[]; onPick: (i: number) => void; onBack?: () => void }
-  | { kind: 'text'; title: string; text: string; tail?: boolean; onClick?: () => void; onBack?: () => void };
+  | { kind: 'text'; title: string; text: string; tail?: boolean; onClick?: () => void; onBack?: () => void; onHold?: () => void };
 
 let bridge: EvenAppBridge;
 let current: Screen | null = null;
@@ -36,6 +36,9 @@ let started = false;
 let poll: ReturnType<typeof setInterval> | undefined;
 let selectedThread: Thread | null = null;
 let sending = false;
+let recordingMode: 'tap' | 'hold' = 'tap';
+let holding = false;
+let releaseCapture: (() => void) | null = null;
 
 function selectThread(t: Thread | null) {
   if (selectedThread?.handle !== t?.handle) {
@@ -105,7 +108,6 @@ async function guard(title: string, f: () => Promise<void>, back: () => void) {
 
 // ---- 画面 ----
 
-const MARK = { idle: '● ', busy: '◌ ', unknown: '  ' } as const;
 
 function home(page = 0) {
   selectThread(null);
@@ -119,13 +121,13 @@ function home(page = 0) {
       { label: 'Refresh sessions', run: () => home(page) },
       { label: tr('newSession'), run: newSession },
       { label: tr('usage'), run: usage },
-      ...visible.map(t => ({ label: `${MARK[t.state]}${t.title} · ${t.handle.slice(-6)}`, run: () => thread(t) })),
+      ...visible.map(t => ({ label: `${t.title} · ${t.handle.slice(-6)}`, run: () => thread(t) })),
     ];
     if (page > 0) actions.push({ label: 'Previous page', run: () => home(page - 1) });
     if ((page + 1) * pageSize < threads.length) actions.push({ label: 'Next page', run: () => home(page + 1) });
     await show({
       kind: 'list',
-      title: tr('homeTitle', threads.filter((t) => t.state === 'idle').length, threads.length),
+      title: tr('homeTitle', threads.length),
       items: actions.map(a => a.label),
       onPick: (i) => { actions[i]?.run(); },
     });
@@ -137,7 +139,8 @@ function thread(t: Thread, note = '') {
   return guard(t.title, async () => {
     const title = () => `${t.title}${note ? `  ${note}` : ''}`;
     const { text } = await api.thread(t.handle);
-    await show({ kind: 'text', title: title(), text, tail: true, onClick: () => replies(t), onBack: home });
+    await show({ kind: 'text', title: title(), text, tail: true, onClick: () => replies(t), onBack: home,
+      onHold: () => { if (recordingMode === 'hold') void replies(t, true); } });
     const screen = current;
     let reading = false;
     poll = setInterval(async () => {
@@ -151,7 +154,7 @@ function thread(t: Thread, note = '') {
   }, home);
 }
 
-function replies(t: Thread) {
+function replies(t: Thread, hold = false) {
   return guard(t.title, async () => {
     const { menu } = await api.thread(t.handle);
     if (menu) {
@@ -180,7 +183,11 @@ function replies(t: Thread) {
       return;
     }
     const { voice } = await api.capabilities().catch(() => ({ voice: false }));
-    if (voice) return record(t);
+    if (voice && (recordingMode === 'tap' || hold)) return record(t, hold);
+    if (voice) {
+      return show({ kind: 'text', title: t.title, text: 'Hold to talk. Wait for Recording, then speak. Release to finish.\nAfter release: click to transcribe / double-click to cancel.',
+        onHold: () => { void record(t, true); }, onBack: () => thread(t) });
+    }
     await show({
       kind: 'text',
       title: tr('replyTitle', t.title),
@@ -197,7 +204,8 @@ let recording: Uint8Array[] | null = null;
 let cancelCapture: (() => void) | null = null;
 const MAX_REC_SEC = 60;
 
-async function record(t: Thread) {
+async function record(t: Thread, hold = false) {
+  if (hold && !holding) return;
   if (recording !== null) return;
   recording = [];
   const t0 = Date.now();
@@ -208,6 +216,7 @@ async function record(t: Thread) {
     clearInterval(tick);
     recording = null;
     cancelCapture = null;
+    releaseCapture = null;
     void bridge.audioControl(false).catch(() => {});
   };
   const stop = async (send: boolean) => {
@@ -217,6 +226,7 @@ async function record(t: Thread) {
     const chunks = recording ?? [];
     recording = null;
     cancelCapture = null;
+    releaseCapture = null;
     await bridge.audioControl(false);
     if (!send) return thread(t);
     const pcm = new Uint8Array(chunks.reduce((n, c) => n + c.length, 0));
@@ -225,6 +235,10 @@ async function record(t: Thread) {
       pcm.set(c, off);
       off += c.length;
     }
+    let transcriptionStarted = false;
+    const transcribe = async () => {
+    if (transcriptionStarted) return;
+    transcriptionStarted = true;
     await show({ kind: 'text', title: tr('transcribing'), text: tr('processing', (pcm.length / 32000).toFixed(1)) });
     await guard(tr('voiceTitle'), async () => {
       const { text } = await api.transcribe(pcm);
@@ -247,19 +261,26 @@ async function record(t: Thread) {
         onBack: () => thread(t),
       });
     }, () => thread(t));
+    };
+    if (hold) {
+      await show({ kind: 'text', title: 'Recording stopped', text: 'Click to transcribe\nDouble-click to discard recording',
+        onClick: () => { void transcribe(); }, onBack: () => thread(t) });
+    } else { await transcribe(); }
   };
+  if (hold) releaseCapture = () => { void stop(true); };
+  const hint = hold ? 'Release to finish\nDouble-click to cancel' : tr('recordingHint');
   await show({
     kind: 'text',
     title: tr('recording', 0),
-    text: tr('recordingHint'),
-    onClick: () => stop(true),
+    text: hint,
+    onClick: hold ? undefined : () => stop(true),
     onBack: () => stop(false),
   });
   if (stopped) return;
   tick = setInterval(() => {
     const sec = Math.floor((Date.now() - t0) / 1000);
     if (sec >= MAX_REC_SEC) return void stop(true);
-    updateText(tr('recording', sec), tr('recordingHint'));
+    updateText(tr('recording', sec), hint);
   }, 1000);
   const ok = await bridge.audioControl(true, AudioInputSource.Glasses).catch(() => false);
   if (stopped) { await bridge.audioControl(false); return; }
@@ -268,6 +289,7 @@ async function record(t: Thread) {
     clearInterval(tick);
     recording = null;
     cancelCapture = null;
+    releaseCapture = null;
     await show({ kind: 'text', title: tr('voiceTitle'), text: tr('micFailed'), onClick: () => thread(t), onBack: () => thread(t) });
   }
 }
@@ -377,6 +399,18 @@ function onEvent(e: EvenHubEvent) {
   if (!ev) return;
   // CLICK_EVENT(0) は既定値のため JSON から省かれて届くことがある
   const type = ev.eventType ?? OsEventTypeList.CLICK_EVENT;
+  if (type === OsEventTypeList.LONG_PRESS_EVENT) {
+    if (!holding) {
+      holding = true;
+      if (s.kind === 'text') s.onHold?.();
+    }
+    return;
+  }
+  if (type === OsEventTypeList.LONG_PRESS_RELEASE_EVENT) {
+    holding = false;
+    releaseCapture?.();
+    return;
+  }
   if (type === OsEventTypeList.DOUBLE_CLICK_EVENT) {
     if (s.onBack) s.onBack();
     else bridge.shutDownPageContainer(1);
@@ -451,6 +485,8 @@ async function main() {
   const pref = (await bridge.getLocalStorage('lang')) || 'auto';
   $('lang').value = pref;
   useLang(pref);
+  recordingMode = await bridge.getLocalStorage('recording-mode') === 'hold' ? 'hold' : 'tap';
+  $('recording-mode').value = recordingMode;
   const draft = document.getElementById('reply-text') as HTMLTextAreaElement;
   const send = document.getElementById('send-reply') as HTMLButtonElement;
   const status = document.getElementById('reply-status')!;
@@ -482,6 +518,10 @@ async function main() {
   });
   $('conn').addEventListener('submit', async (ev) => {
     ev.preventDefault();
+    cancelCapture?.();
+    holding = false;
+    recordingMode = $('recording-mode').value === 'hold' ? 'hold' : 'tap';
+    await bridge.setLocalStorage('recording-mode', recordingMode);
     await bridge.setLocalStorage('lang', $('lang').value);
     useLang($('lang').value);
     const code = $('code').value.trim();

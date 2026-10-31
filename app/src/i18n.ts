@@ -4,7 +4,7 @@ export type Lang = 'ja' | 'en';
 const dict = {
   ja: {
     error: 'エラー: {0}',
-    homeTitle: 'Orca  ●入力待ち {0} / {1}',
+    homeTitle: 'Orca 接続端末 {0}',
     newSession: '＋ 新規セッション',
     usage: '◇ 使用量',
     replyTitle: '返信 → {0}',
@@ -48,7 +48,7 @@ const dict = {
     setupTitle: 'はじめに(PC 側の準備)',
     setupSteps: '<li>PC に Orca を入れておく</li><li>PC のエージェント(Claude Code など)に「Orca Glass をセットアップして」と頼む(スキル: <a href="https://github.com/eugene8080/orca-glass">github.com/eugene8080/orca-glass</a>)</li><li>最後に出る「接続コード」を下の欄に貼って保存</li>',
     opsTitle: 'グラスでの操作',
-    opsList: '<li>上下スワイプ: 選ぶ / クリック: 決定 / ダブルクリック: 戻る</li><li>●入力待ち ◌作業中。スレッドを開いてクリックで返信メニュー</li><li>[音声] 話して返信: 話してクリック → 文字を確認してクリックで送信</li><li>＋新規セッション: 作業場所・エージェント・モデル・最初の指示を選んで起動</li>',
+    opsList: '<li>上下スワイプ: 選ぶ / クリック: 決定 / ダブルクリック: 戻る</li><li>接続端末数を表示します。入力待ち状態は判定しません。</li><li>タップ録音: タップして話す → タップで文字起こし → 確認して送信</li><li>長押し録音: 長押しして話す → 離して停止 → タップで文字起こし、ダブルタップで中止</li>',
     codeLabel: '接続コード(PC で <code>npm run pair</code> を実行して貼り付け)',
     langLabel: '言語',
     save: '保存して再接続',
@@ -58,7 +58,7 @@ const dict = {
   },
   en: {
     error: 'Error: {0}',
-    homeTitle: 'Orca  ●waiting {0} / {1}',
+    homeTitle: 'Orca · {0} connected terminals',
     newSession: '＋ New session',
     usage: '◇ Usage',
     replyTitle: 'Reply → {0}',
@@ -101,7 +101,7 @@ const dict = {
     setupTitle: 'Getting started (on your PC)',
     setupSteps: '<li>Install Orca on your PC</li><li>Ask Codex to "set up Orca Glass" (skill: <a href="https://github.com/eugene8080/orca-glass">github.com/eugene8080/orca-glass</a>)</li><li>Paste the pairing code it gives you below and save</li>',
     opsTitle: 'On the glasses',
-    opsList: '<li>Swipe up/down: select / Click: open / Double-click: back</li><li>● waiting for you ◌ working. Open a thread and click for replies</li><li>[Voice] Speak a reply: speak, click, check the text, click to send</li><li>＋ New session: pick workspace, agent, model and first prompt</li>',
+    opsList: '<li>Swipe up/down: select / Click: open / Double-click: back</li><li>The header counts connected terminals; waiting status is not inferred.</li><li>Tap mode: tap to record, tap to transcribe, review the text, then tap to send.</li><li>Hold mode: hold until Recording appears, speak, release to stop. Tap to transcribe or double-click to discard. Review the transcript, then tap to send.</li><li>Choose Recording mode below and Save and reconnect. Hold requires long-press/release support from your app and firmware.</li>',
     codeLabel: 'Pairing code (run <code>npm run pair</code> on your PC and paste)',
     langLabel: 'Language',
     save: 'Save and reconnect',

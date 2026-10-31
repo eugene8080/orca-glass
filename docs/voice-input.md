@@ -1,6 +1,25 @@
 # Windows voice and live sessions
 Updated: 2026-11-01
 
+## Hardware results and recording modes
+
+2026-11-01: Eugene confirmed the G2 session list, accurate microphone transcription,
+and a test sentence received in this Codex session. Reported stop-to-transcript
+delay: approximately 2–3 seconds. Tap recording is hardware tested.
+
+The phone settings now offer Tap to start / tap to finish (default) and Hold to
+talk / release to finish. Save and reconnect persists the selected mode. In hold
+mode, long press from the session screen starts capture; wait for Recording before
+speaking. Release stops capture, then click to transcribe or double-click to discard.
+Transcription is still reviewed before a separate click sends it. A short hold
+released before microphone startup is ignored. Hold mode uses SDK 0.0.16 events 9
+and 10 and is automated-test verified, but remains unverified on Eugene's firmware.
+If the OS intercepts long press, retain tap mode.
+
+The home header now counts connected terminals instead of reporting a misleading
+waiting count. Orca terminal-list metadata does not establish agent waiting state;
+connected terminals can include a shell after its agent exits.
+
 The custom app reuses the Mac upstream implementation in app/src/main.ts,
 bridge/whisper.mjs and bridge/orca.mjs: glasses microphone PCM, local whisper.cpp,
 transcript review, then ordinary text sent to the selected Orca terminal. Codex
