@@ -55,6 +55,11 @@ not prove that an already-running ordinary Orca terminal is synchronized.
 
 ## Verification on 2026-10-29
 
+For the later read-only proxy audit, see
+[2026-10-31 proxy inspection](proxy-inspection-20261031.md). The native host and
+Codex app-server lack explicit proxy environment variables. Claude separately
+has user-settings proxy defaults; this distinction is not runtime egress proof.
+
 - Installed vendor version 0.10.5; `even-terminal --version` passed.
 - Authenticated `/api/info?provider=codex` reported Codex CLI 0.163.0-alpha.11.
 - Authenticated `/api/sessions?provider=codex&limit=3` returned three sessions
