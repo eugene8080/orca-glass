@@ -1,5 +1,5 @@
 # Orca Glass fork
-Updated: 2026-10-29
+Updated: 2026-11-01
 
 Read the machine-level instructions first. This fork targets Windows desktop
 Orca, the Even Realities Android app, and G2 glasses.
@@ -15,6 +15,10 @@ upstream Claude code is not evidence of authorization to test it.
 Read TODOS.md and docs/native-terminal.md before continuing setup. The active
 route is official Even Terminal over Tailscale, with Codex as default. Its
 provider default does not prohibit a client from selecting another provider.
+The user chose to develop the custom Orca bridge on 2026-10-31, with sentences as
+primary input and exact choices only for explicit menus. Reuse upstream code.
+Public Even Hub SDK exposes PCM, not native transcription; reuse the upstream
+Whisper flow with Windows support. See docs/voice-input.md for verified scope.
 The experimental fork uses a local Node bridge and an HTTPS Cloudflare Quick Tunnel;
 that runtime is stopped, with local tests passed but hardware unverified.
 Direct Even WebView-to-Orca mobile protocol transport is not implemented.

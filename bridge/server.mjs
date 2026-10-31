@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { executable } from './platform.mjs';
 import * as o from './orca.mjs';
 import * as secrets from './secrets.mjs';
-import { transcribe } from './whisper.mjs';
+import { transcribe, voiceAvailable } from './whisper.mjs';
 
 const here = fileURLToPath(new URL('.', import.meta.url));
 const DIST = join(here, '../app/dist');
@@ -94,7 +94,7 @@ async function body(req) {
 
 const routes = {
   'GET /api/threads': () => o.listThreads(),
-  'GET /api/capabilities': () => ({ voice: !!executable('whisper-cli') && existsSync(process.env.WHISPER_MODEL || '') }),
+  'GET /api/capabilities': () => ({ voice: voiceAvailable() }),
   'GET /api/thread': (q) => o.readThread(q.get('handle')),
   'POST /api/choice': (_q, b) => o.choose(b.handle, b.menuId, b.value),
   'GET /api/replies': (q) => config.replies.filter(r => r.enter).map((r) => pick(r.label, langOf(q))),

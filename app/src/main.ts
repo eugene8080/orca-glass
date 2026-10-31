@@ -24,7 +24,7 @@ const LIST_MAX = 20;
 const TEXT_BYTES = 999;
 // 本文欄に収まるのは約8行。最新行を見せるため末尾だけ送る
 const BODY_ROWS = 8;
-const POLL_MS = 3000;
+const POLL_MS = 1000;
 
 type Screen =
   | { kind: 'list'; title: string; items: string[]; onPick: (i: number) => void; onBack?: () => void }
@@ -34,6 +34,19 @@ let bridge: EvenAppBridge;
 let current: Screen | null = null;
 let started = false;
 let poll: ReturnType<typeof setInterval> | undefined;
+let selectedThread: Thread | null = null;
+let sending = false;
+
+function selectThread(t: Thread | null) {
+  if (selectedThread?.handle !== t?.handle) {
+    (document.getElementById('reply-text') as HTMLTextAreaElement).value = '';
+    document.getElementById('send-reply')!.hidden = true;
+    document.getElementById('reply-status')!.textContent = '';
+  }
+  selectedThread = t;
+  document.getElementById('composer')!.hidden = !t;
+  document.getElementById('reply-target')!.textContent = t ? `Reply to: ${t.title} (${t.handle.slice(-8)})` : '';
+}
 
 // スレッドは最新行(末尾)、それ以外は先頭から見せる
 function bodyText(s: { text: string; tail?: boolean }) {
@@ -94,31 +107,46 @@ async function guard(title: string, f: () => Promise<void>, back: () => void) {
 
 const MARK = { idle: '● ', busy: '◌ ', unknown: '  ' } as const;
 
-function home() {
+function home(page = 0) {
+  selectThread(null);
   return guard('Orca', async () => {
     const threads = await api.threads();
+    // Leave room for navigation; never silently truncate live terminals.
+    const pageSize = LIST_MAX - 5;
+    page = Math.max(0, Math.min(page, Math.ceil(threads.length / pageSize) - 1));
+    const visible = threads.slice(page * pageSize, (page + 1) * pageSize);
+    const actions: { label: string; run: () => unknown }[] = [
+      { label: 'Refresh sessions', run: () => home(page) },
+      { label: tr('newSession'), run: newSession },
+      { label: tr('usage'), run: usage },
+      ...visible.map(t => ({ label: `${MARK[t.state]}${t.title} · ${t.handle.slice(-6)}`, run: () => thread(t) })),
+    ];
+    if (page > 0) actions.push({ label: 'Previous page', run: () => home(page - 1) });
+    if ((page + 1) * pageSize < threads.length) actions.push({ label: 'Next page', run: () => home(page + 1) });
     await show({
       kind: 'list',
       title: tr('homeTitle', threads.filter((t) => t.state === 'idle').length, threads.length),
-      items: [tr('newSession'), tr('usage'), ...threads.map((t) => `${MARK[t.state]}${t.title} [${t.agent}]`)],
-      onPick: (i) => {
-        if (i === 0) return newSession();
-        if (i === 1) return usage();
-        const t = threads[i - 2];
-        if (t) thread(t);
-      },
+      items: actions.map(a => a.label),
+      onPick: (i) => { actions[i]?.run(); },
     });
   }, home);
 }
 
 function thread(t: Thread, note = '') {
+  selectThread(t);
   return guard(t.title, async () => {
     const title = () => `${t.title}${note ? `  ${note}` : ''}`;
     const { text } = await api.thread(t.handle);
     await show({ kind: 'text', title: title(), text, tail: true, onClick: () => replies(t), onBack: home });
+    const screen = current;
+    let reading = false;
     poll = setInterval(async () => {
+      if (reading || current !== screen) return;
+      reading = true;
       const r = await api.thread(t.handle).catch(() => null);
-      if (r && current?.kind === 'text' && r.text !== current.text) updateText(title(), r.text);
+      reading = false;
+      // A slow response from the previous session must never overwrite a new screen.
+      if (r && current === screen && current?.kind === 'text' && r.text !== current.text) updateText(title(), r.text);
     }, POLL_MS);
   }, home);
 }
@@ -137,8 +165,13 @@ function replies(t: Thread) {
             text: `${menu.question}\n\n${option.value}. ${option.label}`,
             onBack: () => replies(t),
             onClick: () => guard(t.title, async () => {
-              const result = await api.choice(t.handle, menu.id, option.value);
-              await thread(t, `Input sent: ${result.sent}`);
+              if (sending) return;
+              sending = true;
+              try {
+                await show({ kind: 'text', title: t.title, text: 'Sending…' });
+                const result = await api.choice(t.handle, menu.id, option.value);
+                await thread(t, `Input sent: ${result.sent}`);
+              } finally { sending = false; }
             }, () => thread(t)),
           });
         },
@@ -146,36 +179,46 @@ function replies(t: Thread) {
       });
       return;
     }
-    const labels = await api.replies();
     const { voice } = await api.capabilities().catch(() => ({ voice: false }));
+    if (voice) return record(t);
     await show({
-      kind: 'list',
+      kind: 'text',
       title: tr('replyTitle', t.title),
-      items: [...(voice ? [tr('voice')] : []), ...labels],
-      onPick: async (i) => {
-        if (voice && i === 0) return record(t);
-        const r = await api.reply(t.handle, i - (voice ? 1 : 0)).catch((e: Error) => ({ sent: tr('failed', e.message) }));
-        thread(t, tr('sent', r.sent));
-      },
+      text: 'Open Orca Glass on your phone to type or dictate a message. Review it, then send to this session. Glasses voice is available when local transcription is configured.',
+      onClick: () => thread(t),
       onBack: () => thread(t),
     });
   }, () => thread(t));
 }
 
-// ---- 音声入力: G2 マイク → Mac の whisper.cpp → 確認して送信 ----
+// Upstream voice flow: G2 PCM → local whisper.cpp → review → ordinary Orca text.
 
 let recording: Uint8Array[] | null = null;
+let cancelCapture: (() => void) | null = null;
 const MAX_REC_SEC = 60;
 
 async function record(t: Thread) {
+  if (recording !== null) return;
   recording = [];
   const t0 = Date.now();
+  let stopped = false;
+  let tick: ReturnType<typeof setInterval> | undefined;
+  cancelCapture = () => {
+    stopped = true;
+    clearInterval(tick);
+    recording = null;
+    cancelCapture = null;
+    void bridge.audioControl(false).catch(() => {});
+  };
   const stop = async (send: boolean) => {
+    if (stopped) return;
+    stopped = true;
     clearInterval(tick);
     const chunks = recording ?? [];
     recording = null;
+    cancelCapture = null;
     await bridge.audioControl(false);
-    if (!send) return replies(t);
+    if (!send) return thread(t);
     const pcm = new Uint8Array(chunks.reduce((n, c) => n + c.length, 0));
     let off = 0;
     for (const c of chunks) {
@@ -185,18 +228,25 @@ async function record(t: Thread) {
     await show({ kind: 'text', title: tr('transcribing'), text: tr('processing', (pcm.length / 32000).toFixed(1)) });
     await guard(tr('voiceTitle'), async () => {
       const { text } = await api.transcribe(pcm);
-      if (!text) return void (await show({ kind: 'text', title: tr('voiceTitle'), text: tr('notHeard'), onClick: () => replies(t), onBack: () => replies(t) }));
+      if (!text) return void (await show({ kind: 'text', title: tr('voiceTitle'), text: tr('notHeard'), onClick: () => thread(t), onBack: () => thread(t) }));
       await show({
         kind: 'text',
         title: tr('confirmSend'),
         text,
         onClick: async () => {
-          const r = await api.say(t.handle, text).catch((e: Error) => ({ sent: tr('failed', e.message) }));
-          thread(t, tr('sent', clipBytes(r.sent, 30)));
+          if (sending) return;
+          sending = true;
+          await show({ kind: 'text', title: t.title, text: 'Sending…' });
+          try {
+            const r = await api.say(t.handle, text);
+            await thread(t, tr('sent', clipBytes(r.sent, 30)));
+          } catch (e) {
+            await show({ kind: 'text', title: t.title, text: (e as Error).message, onBack: () => thread(t), onClick: () => thread(t) });
+          } finally { sending = false; }
         },
-        onBack: () => replies(t),
+        onBack: () => thread(t),
       });
-    }, () => replies(t));
+    }, () => thread(t));
   };
   await show({
     kind: 'text',
@@ -205,16 +255,20 @@ async function record(t: Thread) {
     onClick: () => stop(true),
     onBack: () => stop(false),
   });
-  const tick = setInterval(() => {
+  if (stopped) return;
+  tick = setInterval(() => {
     const sec = Math.floor((Date.now() - t0) / 1000);
     if (sec >= MAX_REC_SEC) return void stop(true);
     updateText(tr('recording', sec), tr('recordingHint'));
   }, 1000);
-  const ok = await bridge.audioControl(true, AudioInputSource.Glasses);
+  const ok = await bridge.audioControl(true, AudioInputSource.Glasses).catch(() => false);
+  if (stopped) { await bridge.audioControl(false); return; }
   if (!ok) {
+    stopped = true;
     clearInterval(tick);
     recording = null;
-    await show({ kind: 'text', title: tr('voiceTitle'), text: tr('micFailed'), onClick: () => replies(t), onBack: () => replies(t) });
+    cancelCapture = null;
+    await show({ kind: 'text', title: tr('voiceTitle'), text: tr('micFailed'), onClick: () => thread(t), onBack: () => thread(t) });
   }
 }
 
@@ -307,6 +361,12 @@ function confirm(w: Workspace, p: Provider, model: string, prompt: number, label
 // ---- 入力 ----
 
 function onEvent(e: EvenHubEvent) {
+  const systemType = e.sysEvent?.eventType;
+  if (systemType === OsEventTypeList.SYSTEM_EXIT_EVENT || systemType === OsEventTypeList.ABNORMAL_EXIT_EVENT) {
+    clearInterval(poll);
+    cancelCapture?.();
+    return;
+  }
   if (e.audioEvent) {
     recording?.push(e.audioEvent.audioPcm);
     return;
@@ -391,6 +451,35 @@ async function main() {
   const pref = (await bridge.getLocalStorage('lang')) || 'auto';
   $('lang').value = pref;
   useLang(pref);
+  const draft = document.getElementById('reply-text') as HTMLTextAreaElement;
+  const send = document.getElementById('send-reply') as HTMLButtonElement;
+  const status = document.getElementById('reply-status')!;
+  let reviewed: { handle: string; text: string } | null = null;
+  draft.addEventListener('input', () => { reviewed = null; send.hidden = true; });
+  document.getElementById('reply-form')!.addEventListener('submit', ev => {
+    ev.preventDefault();
+    if (!selectedThread || sending || !draft.value.trim()) return;
+    reviewed = { handle: selectedThread.handle, text: draft.value.trim() };
+    status.textContent = `Ready to send to ${selectedThread.title}: ${reviewed.text}`;
+    send.hidden = false;
+  });
+  send.addEventListener('click', async () => {
+    if (sending || !reviewed || reviewed.handle !== selectedThread?.handle || reviewed.text !== draft.value.trim()) return;
+    const message = reviewed;
+    reviewed = null;
+    sending = true;
+    send.hidden = true;
+    status.textContent = 'Sending…';
+    try {
+      await api.say(message.handle, message.text);
+      if (selectedThread?.handle === message.handle) {
+        draft.value = '';
+        status.textContent = 'Sent.';
+      }
+    } catch (e) {
+      if (selectedThread?.handle === message.handle) status.textContent = (e as Error).message;
+    } finally { sending = false; }
+  });
   $('conn').addEventListener('submit', async (ev) => {
     ev.preventDefault();
     await bridge.setLocalStorage('lang', $('lang').value);
@@ -405,6 +494,7 @@ async function main() {
     await connect();
   });
   bridge.onEvenHubEvent(onEvent);
+  window.addEventListener('pagehide', () => { clearInterval(poll); cancelCapture?.(); });
   await connect();
 }
 
