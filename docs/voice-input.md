@@ -3,6 +3,12 @@ Updated: 2026-11-01
 
 ## Hardware results and recording modes
 
+Latest reader update, 2026-11-01: removed page counters and page-sized jumps.
+Each scroll event shifts one wrapped line in an eight-line viewport. The SDK
+delivers discrete scroll events, so this is incremental line scrolling, not
+continuous pixel animation. Position remains fixed while reading older output;
+return to the bottom to resume live updates. Native Even AI retains its own UI.
+
 Latest update, 2026-11-01: Eugene confirmed hold-to-talk works on the G2.
 Release now starts transcription immediately, removing the extra confirmation.
 The resulting transcript still requires a click to send; double-click discards it.

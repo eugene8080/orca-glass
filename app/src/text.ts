@@ -52,6 +52,20 @@ export function textPages(text: string, maxRows = 8, maxBytes = 999): string[] {
   return pages.length ? pages : [''];
 }
 
+export function textLines(text: string): string[] {
+  return textPages(text, 1, 999);
+}
+
+export function lastLineOffset(text: string, rows = 8): number {
+  return Math.max(0, textLines(text).length - rows);
+}
+
+export function textWindow(text: string, offset: number, rows = 8, bytes = 999): string {
+  const lines = textLines(text).slice(offset, offset + rows);
+  while (lines.length > 1 && enc.encode(lines.join('\n')).length > bytes) lines.pop();
+  return lines.join('\n');
+}
+
 export function tailRows(s: string, maxRows: number): string {
   const out: string[] = [];
   let rows = 0;

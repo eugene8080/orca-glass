@@ -160,18 +160,18 @@ test('text pages preserve long Unicode output within row and byte limits', () =>
   assert.ok(pages.every(p => new TextEncoder().encode(p).length <= 999 && p.split('\n').length <= 8));
 });
 
-test('scroll reads earlier pages, holds position during polling, and loads retained history', async () => {
+test('scroll moves one line, has no page counter, holds position and loads retained history', async () => {
   const h = await harness();
   h.api.thread = async () => ({ text: Array.from({ length: 20 }, (_, i) => `Line ${i}`).join('\n') });
   await h.pick(3);
   assert.match(h.pages.at(-1).textObject[1].content, /Line 19/);
+  assert.doesNotMatch(h.pages.at(-1).textObject[0].content, /\d+\/\d+/);
   await h.scroll('up');
-  assert.match(h.upgrades.at(-1).content, /Line 8/);
+  assert.equal(h.upgrades.at(-1).content.split('\n')[0], 'Line 11');
   const before = h.upgrades.length;
   await [...h.timers.values()][0]();
   assert.equal(h.upgrades.length, before);
-  await h.scroll('up');
-  await h.scroll('up');
+  for (let i = 0; i < 12; i++) await h.scroll('up');
   assert.equal(h.pages.at(-1).textObject[1].content, 'Older terminal output');
   await h.scroll('down');
   assert.match(h.pages.at(-1).textObject[1].content, /Line 19/);

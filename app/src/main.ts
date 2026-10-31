@@ -14,7 +14,7 @@ import {
 import { api, currentBase, setApiLang, setConnection, setDemo, type Provider, type Thread, type Workspace } from './api';
 import { parseCode, resolveBase } from './pairing';
 import { applyPage, detectLang, setLang, t as tr } from './i18n';
-import { clipBytes, textPages } from './text';
+import { clipBytes, lastLineOffset, textWindow } from './text';
 
 // 画面 576x288。上に見出し(テキスト)、下に本文(リスト or テキスト)の2段構成で統一する。
 const HEAD = { containerID: 1, containerName: 'head', xPosition: 0, yPosition: 0, width: 576, height: 36 };
@@ -28,7 +28,7 @@ const POLL_MS = 1000;
 
 type Screen =
   | { kind: 'list'; title: string; items: string[]; onPick: (i: number) => void; onBack?: () => void }
-  | { kind: 'text'; title: string; text: string; tail?: boolean; page?: number; onClick?: () => void; onBack?: () => void; onHold?: () => void; onOlder?: () => void; onNewer?: () => void };
+  | { kind: 'text'; title: string; text: string; tail?: boolean; offset?: number; onClick?: () => void; onBack?: () => void; onHold?: () => void; onOlder?: () => void; onNewer?: () => void };
 
 let bridge: EvenAppBridge;
 let current: Screen | null = null;
@@ -52,17 +52,14 @@ function selectThread(t: Thread | null) {
 }
 
 // スレッドは最新行(末尾)、それ以外は先頭から見せる
-function bodyText(s: { text: string; tail?: boolean; page?: number }) {
-  const pages = textPages(s.text, BODY_ROWS, TEXT_BYTES);
-  s.page = Math.max(0, Math.min(s.page ?? (s.tail ? pages.length - 1 : 0), pages.length - 1));
-  return pages[s.page];
+function bodyText(s: { text: string; tail?: boolean; offset?: number }) {
+  const last = lastLineOffset(s.text, BODY_ROWS);
+  s.offset = Math.max(0, Math.min(s.offset ?? (s.tail ? last : 0), last));
+  return textWindow(s.text, s.offset, BODY_ROWS, TEXT_BYTES);
 }
 
 function screenTitle(s: Screen) {
-  if (s.kind !== 'text') return s.title;
-  bodyText(s);
-  const count = textPages(s.text, BODY_ROWS, TEXT_BYTES).length;
-  return `${s.page! + 1}/${count} ${s.title}`;
+  return s.title;
 }
 
 async function show(s: Screen) {
@@ -155,13 +152,13 @@ function thread(t: Thread, note = '') {
     let reading = false;
     poll = setInterval(async () => {
       if (reading || current !== screen) return;
-      if (current?.kind === 'text' && current.page !== textPages(current.text, BODY_ROWS, TEXT_BYTES).length - 1) return;
+      if (current?.kind === 'text' && current.offset !== lastLineOffset(current.text, BODY_ROWS)) return;
       reading = true;
       const r = await api.thread(t.handle).catch(() => null);
       reading = false;
       // A slow response from the previous session must never overwrite a new screen.
-      if (r && current === screen && current?.kind === 'text' && r.text !== current.text && current.page === textPages(current.text, BODY_ROWS, TEXT_BYTES).length - 1) {
-        current.page = undefined;
+      if (r && current === screen && current?.kind === 'text' && r.text !== current.text && current.offset === lastLineOffset(current.text, BODY_ROWS)) {
+        current.offset = undefined;
         updateText(title(), r.text);
       }
     }, POLL_MS);
@@ -422,14 +419,14 @@ function onEvent(e: EvenHubEvent) {
   // CLICK_EVENT(0) は既定値のため JSON から省かれて届くことがある
   const type = ev.eventType ?? OsEventTypeList.CLICK_EVENT;
   if (s.kind === 'text' && (type === OsEventTypeList.SCROLL_TOP_EVENT || type === OsEventTypeList.SCROLL_BOTTOM_EVENT)) {
-    const pages = textPages(s.text, BODY_ROWS, TEXT_BYTES);
-    const page = s.page ?? 0;
+    const last = lastLineOffset(s.text, BODY_ROWS);
+    const offset = s.offset ?? 0;
     if (type === OsEventTypeList.SCROLL_TOP_EVENT) {
-      if (page === 0) { s.onOlder?.(); return; }
-      s.page = page - 1;
+      if (offset === 0) { s.onOlder?.(); return; }
+      s.offset = offset - 1;
     } else {
-      if (page === pages.length - 1) { s.onNewer?.(); return; }
-      s.page = page + 1;
+      if (offset === last) { s.onNewer?.(); return; }
+      s.offset = offset + 1;
     }
     updateText(s.title, s.text);
     return;

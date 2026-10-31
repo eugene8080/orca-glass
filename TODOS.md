@@ -3,6 +3,7 @@ Updated: 2026-11-01
 
 | Task | Status | Evidence / remaining work |
 | --- | --- | --- |
+| Native Codex routing and incremental scrolling | Implemented; hardware check pending | 2026-11-01: native echo confirmed by Eugene. Same endpoint now routes after explicit voice session selection; mocked send/dedup/menu/incarnation tests pass. Custom reader moves one line per scroll, no page counters. Twenty tests/build pass. |
 | Hold release transcription | Implemented | 2026-11-01: user confirmed hold capture works; release now transcribes immediately. Final send/cancel remains. Fourteen tests/build pass; reload app. |
 | Text scrolling | Implemented; hardware pending | 2026-11-01: page counters, scroll up/down, preserve reading position, retained terminal history endpoint (up to 1,000 rows). Full archived Codex transcript is not implemented. Fourteen tests/build pass. |
 | Native Even AI voice route | Echo prototype; hardware pending | User prefers built-in live captions/release-to-send. Official custom-agent endpoint confirmed. Separate Tailscale echo-only server on 8788; private settings page generated. Twelve automated tests pass. No routing into Codex yet. See docs/native-ai-voice.md. |

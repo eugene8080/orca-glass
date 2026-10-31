@@ -21,7 +21,10 @@ Public Even Hub SDK exposes PCM, not native transcription; reuse the upstream
 Whisper flow with Windows support. See docs/voice-input.md for verified scope.
 The experimental fork uses a local Node bridge and an HTTPS Cloudflare Quick Tunnel;
 that runtime was started for hardware testing on 2026-11-01. Local/HTTPS checks
-passed; phone/G2 remains unverified. See docs/windows-android.md and .local/custom.pid.
+passed; Eugene confirmed G2 display, tap/hold capture and correct local transcription.
+See docs/windows-android.md and .local/custom.pid. Native Even AI echo was also
+confirmed; its endpoint now runs in Codex-routing mode after explicit voice target
+selection. See docs/native-ai-voice.md. Native Codex send awaits hardware verification.
 Direct Even WebView-to-Orca mobile protocol transport is not implemented.
 Do not claim phone or glasses verification from desktop tests or mock menus.
 

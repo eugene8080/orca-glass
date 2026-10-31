@@ -12,14 +12,14 @@ export function lastUserText(body) {
   return text.trim();
 }
 
-export function createEchoServer(token, report = () => {}) {
+export function createEchoServer(token, report = () => {}, respond = null) {
   if (!token || token.length < 24) throw new Error('A strong echo-only token is required');
   const json = (res, status, body) => {
     res.writeHead(status, { 'content-type': 'application/json', 'cache-control': 'no-store' });
     res.end(JSON.stringify(body));
   };
   return createServer(async (req, res) => {
-    if (req.method === 'GET' && req.url === '/healthz') return json(res, 200, { ok: true, mode: 'echo-only' });
+    if (req.method === 'GET' && req.url === '/healthz') return json(res, 200, { ok: true, mode: respond ? 'codex-router' : 'echo-only' });
     if (req.method !== 'POST' || req.url?.split('?')[0] !== '/v1/chat/completions') return json(res, 404, { error: 'not found' });
     const got = Buffer.from(req.headers.authorization?.replace(/^Bearer /i, '') || '');
     const want = Buffer.from(token);
@@ -34,8 +34,8 @@ export function createEchoServer(token, report = () => {}) {
       }
       const body = JSON.parse(Buffer.concat(chunks).toString('utf8'));
       const text = lastUserText(body);
-      const content = `Voice test received: ${text.slice(0, 240)}. Nothing was sent to Codex.`;
-      const base = { id: `chatcmpl-${randomUUID()}`, created: Math.floor(Date.now() / 1000), model: 'orca-voice-echo' };
+      const content = respond ? await respond(text) : `Voice test received: ${text.slice(0, 240)}. Nothing was sent to Codex.`;
+      const base = { id: `chatcmpl-${randomUUID()}`, created: Math.floor(Date.now() / 1000), model: respond ? 'orca-codex' : 'orca-voice-echo' };
       // Store only protocol metadata, never the spoken sentence or credentials.
       report({ at: new Date().toISOString(), stream: body.stream === true, messageCount: body.messages.length, characters: text.length });
       if (body.stream === true) {

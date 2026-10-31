@@ -160,7 +160,12 @@ export async function readThread(handle) {
   const agent = await agentOf(handle);
   const pick = agent === 'claude' ? answersOnly : agent === 'codex' ? codexAnswersOnly : null;
   const answer = pick && cleanScreen(pick(lines));
-  return { text: menu ? lines.join('\n') : answer || cleanScreen(lines), menu };
+  // Orca's agentIdentity can survive after Codex exits back to PowerShell.
+  // Native voice must see a current Codex input row, never type into that shell.
+  const bottom = lines.slice(-12);
+  const inputReady = bottom.some(l => /^\s*›(?:\s|$)/.test(l)) &&
+    !bottom.slice(-4).some(l => /^\s*(?:PS\s+.+>|[A-Za-z]:\\[^>]*>)/.test(l));
+  return { text: menu ? lines.join('\n') : answer || cleanScreen(lines), menu, inputReady };
 }
 
 export async function readHistory(handle) {
