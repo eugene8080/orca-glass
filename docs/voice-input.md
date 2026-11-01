@@ -1,6 +1,40 @@
 # Windows voice and live sessions
 Updated: 2026-11-01
 
+## Current implementation: warm Whisper and native scrolling
+
+This supersedes the older line-window and hold-review instructions below.
+The requested UI stays in Orca Glass; the native Even AI spoken-navigation router
+is not the desired workflow.
+
+- Reuse installed whisper.cpp server and base.en CPU model. One hidden loopback
+  worker keeps the model loaded. No cloud transcription or GPU configuration.
+- During recording, decode accumulated PCM snapshots at most once per 1.5 seconds,
+  without overlapping requests. These are provisional repeated decodes, not a
+  token-streaming model. Maximum recording length is 60 seconds.
+- Hold until Recording appears, speak with provisional captions, release to finalize
+  and send once. Double-click before sending cancels, including pending transcription.
+  Tap mode retains transcript review. Preview errors never send text.
+- Public JFK fixture: warm startup 246 ms; 3/6/11-second clips decoded in
+  473/486/515 ms. Excludes Android, tunnel, BLE and display latency. No agent prompt
+  was submitted. Hardware caption timing remains unverified.
+- Intact sections of up to 990 UTF-16 code units use isEventCapture=1; firmware
+  performs overflow scrolling. Gestures no longer replace text. Scrolling pauses
+  updates to preserve position. Click for Reply, Earlier/Later text, Latest output
+  to resume, or retained terminal history. Hold can record directly from the reader.
+- Native smoothness needs G2 confirmation. Long text still requires sections due
+  to the SDK content limit; history is the bounded terminal buffer, not the full
+  archived conversation.
+
+Validation: 23 automated tests, TypeScript/Vite build and doctor passed. Custom
+bridge restarted (supervisor PID 37876); authenticated silence returned empty text,
+and the public JFK recording transcribed through the running bridge in 525 ms.
+Pairing helper verified the replacement HTTPS tunnel and regenerated the private QR.
+No Claude launch/test or live Codex inference was performed.
+
+References: https://hub.evenrealities.com/docs/build/display and
+https://github.com/ggml-org/whisper.cpp/tree/master/examples/server .
+
 ## Hardware results and recording modes
 
 Latest reader update, 2026-11-01: removed page counters and page-sized jumps.

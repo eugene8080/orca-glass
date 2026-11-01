@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { executable } from './platform.mjs';
 import * as o from './orca.mjs';
 import * as secrets from './secrets.mjs';
-import { transcribe, voiceAvailable } from './whisper.mjs';
+import { transcribe, voiceAvailable, warmWhisper } from './whisper.mjs';
 
 const here = fileURLToPath(new URL('.', import.meta.url));
 const DIST = join(here, '../app/dist');
@@ -172,6 +172,7 @@ createServer(async (req, res) => {
   }
 }).listen(PORT, HOST, () => {
   console.log(`evenhub-orca bridge: http://${HOST}:${PORT}/ (pair with npm run pair)`);
+  if (voiceAvailable()) warmWhisper().then(() => console.log('Local speech engine ready')).catch(e => console.error(e.message));
 });
 
 function send(res, status, data) {

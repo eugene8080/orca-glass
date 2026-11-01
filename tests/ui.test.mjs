@@ -55,7 +55,7 @@ async function harness(count = 2, voice = false, mode = 'tap') {
   return { api, elements, pages, sends, timers, mic, upgrades, transcriptions, flush,
     press: () => { event({ sysEvent: { eventType: 9 } }); },
     release: () => { event({ sysEvent: { eventType: 10 } }); },
-    audio: () => { event({ audioEvent: { audioPcm: new Uint8Array([0, 0, 1, 0]) } }); },
+    audio: () => { event({ audioEvent: { audioPcm: new Uint8Array(32000) } }); },
     pick: async i => { event({ listEvent: { currentSelectItemIndex: i, eventType: 0 } }); await flush(); },
     tap: async () => { event({ textEvent: { eventType: 0 } }); await flush(); },
     back: async () => { event({ textEvent: { eventType: 3 } }); await flush(); },
@@ -92,6 +92,7 @@ test('cancelling upstream microphone flow stops capture without restarting or se
   const h = await harness(2, true);
   await h.pick(3);
   await h.tap();
+  await h.pick(0);
   assert.deepEqual(h.mic, [true]);
   await h.back();
   assert.deepEqual(h.mic, [true, false]);
@@ -116,7 +117,7 @@ test('slow polls do not overlap or overwrite a different session screen', async 
   assert.equal(h.pages.at(-1).textObject[1].content, 'Other session');
 });
 
-test('hold release immediately transcribes but still requires send confirmation', async () => {
+test('hold release finalizes and sends once without another click', async () => {
   const h = await harness(2, true, 'hold');
   await h.pick(3);
   h.press();
@@ -126,21 +127,25 @@ test('hold release immediately transcribes but still requires send confirmation'
   await h.flush();
   assert.deepEqual(h.mic, [true, false]);
   assert.equal(h.transcriptions.length, 1);
-  assert.equal(h.sends.length, 0);
-  await h.tap();
+  assert.equal(h.sends.length, 1);
+  h.release();
+  await h.flush();
   assert.equal(h.sends.length, 1);
 });
 
-test('hold transcript can be discarded without sending input', async () => {
+test('cancelling final transcription prevents late sending', async () => {
   const h = await harness(2, true, 'hold');
   await h.pick(3);
   h.press();
   await h.flush();
   h.audio();
+  let finish;
+  h.api.transcribe = () => new Promise(resolve => { finish = resolve; });
   h.release();
   await h.flush();
   await h.back();
-  assert.equal(h.transcriptions.length, 1);
+  finish({ text: 'Must not send' });
+  await h.flush();
   assert.equal(h.sends.length, 0);
 });
 
@@ -160,19 +165,53 @@ test('text pages preserve long Unicode output within row and byte limits', () =>
   assert.ok(pages.every(p => new TextEncoder().encode(p).length <= 999 && p.split('\n').length <= 8));
 });
 
-test('scroll moves one line, has no page counter, holds position and loads retained history', async () => {
+test('firmware gets overflowing text; scroll does not replace content and pauses polls', async () => {
   const h = await harness();
-  h.api.thread = async () => ({ text: Array.from({ length: 20 }, (_, i) => `Line ${i}`).join('\n') });
+  const output = Array.from({ length: 20 }, (_, i) => `Line ${i}`).join('\n');
+  h.api.thread = async () => ({ text: output });
   await h.pick(3);
-  assert.match(h.pages.at(-1).textObject[1].content, /Line 19/);
-  assert.doesNotMatch(h.pages.at(-1).textObject[0].content, /\d+\/\d+/);
-  await h.scroll('up');
-  assert.equal(h.upgrades.at(-1).content.split('\n')[0], 'Line 11');
-  const before = h.upgrades.length;
+  assert.equal(h.pages.at(-1).textObject[1].content, output);
+  assert.equal(h.pages.at(-1).textObject[1].isEventCapture, 1);
+  await h.scroll('up'); await h.scroll('down');
+  h.api.thread = async () => ({ text: 'Updated output' });
   await [...h.timers.values()][0]();
-  assert.equal(h.upgrades.length, before);
-  for (let i = 0; i < 12; i++) await h.scroll('up');
+  assert.equal(h.upgrades.length, 0);
+  await h.tap(); await h.pick(2);
   assert.equal(h.pages.at(-1).textObject[1].content, 'Older terminal output');
-  await h.scroll('down');
-  assert.match(h.pages.at(-1).textObject[1].content, /Line 19/);
+});
+
+test('Unicode sections preserve all text within native creation limit', () => {
+  const original = '語🙂abc'.repeat(1000);
+  const sections = textExports.textSections(original);
+  assert.equal(sections.join(''), original);
+  assert.ok(sections.every(s => s.length <= 990 && !/[\uD800-\uDBFF]$/.test(s)));
+});
+
+test('previews serialize requests; release waits and sends final text only once', async () => {
+  const h = await harness(2, true, 'hold');
+  await h.pick(3); h.press(); await h.flush(); h.audio();
+  let finish, requests = 0;
+  h.api.transcribe = () => { requests++; return new Promise(resolve => { finish = resolve; }); };
+  const preview = [...h.timers.values()][0];
+  preview(); preview();
+  assert.equal(requests, 1);
+  finish({ text: 'First words' }); await h.flush();
+  assert.equal(h.upgrades.at(-1).content, 'First words');
+  assert.equal(h.sends.length, 0);
+  h.audio(); preview(); h.release(); await h.flush();
+  assert.equal(h.sends.length, 0);
+  finish({ text: 'First words and final words' }); await h.flush();
+  assert.equal(requests, 2);
+  assert.deepEqual(h.sends, [{ handle: 'terminal-0', text: 'First words and final words' }]);
+});
+
+test('cancel during preview prevents late captions and input', async () => {
+  const h = await harness(2, true, 'hold');
+  await h.pick(3); h.press(); await h.flush(); h.audio();
+  let finish;
+  h.api.transcribe = () => new Promise(resolve => { finish = resolve; });
+  [...h.timers.values()][0](); await h.back();
+  finish({ text: 'Late caption' }); await h.flush();
+  assert.equal(h.upgrades.length, 0);
+  assert.equal(h.sends.length, 0);
 });

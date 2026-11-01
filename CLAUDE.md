@@ -12,6 +12,12 @@ upstream Claude code is not evidence of authorization to test it.
 
 ## Current work
 
+2026-11-01 current ruling (supersedes older runtime notes below): Eugene rejected
+the separate native Even AI spoken-navigation router. Keep the custom visual UI.
+Warm local Whisper with incremental previews and firmware overflow scrolling are
+implemented; hardware verification remains pending. Hold release sends final text
+once; tap mode retains review. See docs/voice-input.md.
+
 Read TODOS.md and docs/native-terminal.md before continuing setup. The active
 route is official Even Terminal over Tailscale, with Codex as default. Its
 provider default does not prohibit a client from selecting another provider.

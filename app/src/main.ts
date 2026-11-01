@@ -14,7 +14,7 @@ import {
 import { api, currentBase, setApiLang, setConnection, setDemo, type Provider, type Thread, type Workspace } from './api';
 import { parseCode, resolveBase } from './pairing';
 import { applyPage, detectLang, setLang, t as tr } from './i18n';
-import { clipBytes, lastLineOffset, textWindow } from './text';
+import { clipBytes, textSections } from './text';
 
 // 画面 576x288。上に見出し(テキスト)、下に本文(リスト or テキスト)の2段構成で統一する。
 const HEAD = { containerID: 1, containerName: 'head', xPosition: 0, yPosition: 0, width: 576, height: 36 };
@@ -22,13 +22,11 @@ const BODY = { containerID: 2, containerName: 'body', xPosition: 0, yPosition: 4
 const LIST_ITEM_BYTES = 63;
 const LIST_MAX = 20;
 const TEXT_BYTES = 999;
-// 本文欄に収まるのは約8行。最新行を見せるため末尾だけ送る
-const BODY_ROWS = 8;
 const POLL_MS = 1000;
 
 type Screen =
   | { kind: 'list'; title: string; items: string[]; onPick: (i: number) => void; onBack?: () => void }
-  | { kind: 'text'; title: string; text: string; tail?: boolean; offset?: number; onClick?: () => void; onBack?: () => void; onHold?: () => void; onOlder?: () => void; onNewer?: () => void };
+  | { kind: 'text'; title: string; text: string; tail?: boolean; offset?: number; reading?: boolean; onClick?: () => void; onBack?: () => void; onHold?: () => void; };
 
 let bridge: EvenAppBridge;
 let current: Screen | null = null;
@@ -51,11 +49,30 @@ function selectThread(t: Thread | null) {
   document.getElementById('reply-target')!.textContent = t ? `Reply to: ${t.title} (${t.handle.slice(-8)})` : '';
 }
 
-// スレッドは最新行(末尾)、それ以外は先頭から見せる
+// Send overflowing text intact; the G2 firmware owns movement within a section.
 function bodyText(s: { text: string; tail?: boolean; offset?: number }) {
-  const last = lastLineOffset(s.text, BODY_ROWS);
-  s.offset = Math.max(0, Math.min(s.offset ?? (s.tail ? last : 0), last));
-  return textWindow(s.text, s.offset, BODY_ROWS, TEXT_BYTES);
+  const sections = textSections(s.text);
+  s.offset = Math.max(0, Math.min(s.offset ?? (s.tail ? sections.length - 1 : 0), sections.length - 1));
+  return sections[s.offset];
+}
+
+function readerActions(t: Thread, screen: Extract<Screen, { kind: 'text' }>) {
+  const sections = textSections(screen.text);
+  const index = screen.offset ?? 0;
+  const reopen = async (offset: number) => {
+    screen.offset = offset;
+    screen.reading = true;
+    await show(screen);
+  };
+  const actions = [
+    { label: 'Reply', run: () => replies(t) },
+    ...(index > 0 ? [{ label: 'Earlier text', run: () => reopen(index - 1) }] : []),
+    ...(index + 1 < sections.length ? [{ label: 'Later text', run: () => reopen(index + 1) }] : []),
+    { label: 'Latest output / resume updates', run: () => thread(t) },
+    { label: 'Retained terminal history', run: () => history(t) },
+  ];
+  return show({ kind: 'list', title: t.title, items: actions.map(a => a.label),
+    onPick: i => { actions[i]?.run(); }, onBack: () => { void show(screen); } });
 }
 
 function screenTitle(s: Screen) {
@@ -145,19 +162,18 @@ function thread(t: Thread, note = '') {
   return guard(t.title, async () => {
     const title = () => `${t.title}${note ? `  ${note}` : ''}`;
     const { text } = await api.thread(t.handle);
-    await show({ kind: 'text', title: title(), text, tail: true, onClick: () => replies(t), onBack: home,
-      onOlder: () => { void history(t); },
+    await show({ kind: 'text', title: title(), text, tail: true, onClick: () => { if (current?.kind === 'text') void readerActions(t, current); }, onBack: home,
       onHold: () => { if (recordingMode === 'hold') void replies(t, true); } });
     const screen = current;
     let reading = false;
     poll = setInterval(async () => {
       if (reading || current !== screen) return;
-      if (current?.kind === 'text' && current.offset !== lastLineOffset(current.text, BODY_ROWS)) return;
+      if (current?.kind === 'text' && current.reading) return;
       reading = true;
       const r = await api.thread(t.handle).catch(() => null);
       reading = false;
       // A slow response from the previous session must never overwrite a new screen.
-      if (r && current === screen && current?.kind === 'text' && r.text !== current.text && current.offset === lastLineOffset(current.text, BODY_ROWS)) {
+      if (r && current === screen && current?.kind === 'text' && r.text !== current.text && !current.reading) {
         current.offset = undefined;
         updateText(title(), r.text);
       }
@@ -171,8 +187,9 @@ function history(t: Thread) {
     const r = await api.history(t.handle);
     if (current !== previous) return;
     await show({ kind: 'text', title: 'Retained terminal history', text: r.text || 'No older terminal output is retained.', tail: true,
-      onBack: () => thread(t), onNewer: () => { void thread(t); },
-      onClick: () => replies(t) });
+      onBack: () => thread(t),
+      onClick: () => { if (current?.kind === 'text') void readerActions(t, current); },
+      onHold: () => { if (recordingMode === 'hold') void replies(t, true); } });
   }, () => thread(t));
 }
 
@@ -207,7 +224,7 @@ function replies(t: Thread, hold = false) {
     const { voice } = await api.capabilities().catch(() => ({ voice: false }));
     if (voice && (recordingMode === 'tap' || hold)) return record(t, hold);
     if (voice) {
-      return show({ kind: 'text', title: t.title, text: 'Hold to talk. Wait for Recording, then speak. Release to transcribe.\nReview the text: click to send / double-click to cancel.',
+      return show({ kind: 'text', title: t.title, text: 'Hold to talk. Wait for Recording, then speak. Release to send.\nDouble-click while recording to cancel.',
         onHold: () => { void record(t, true); }, onBack: () => thread(t) });
     }
     await show({
@@ -220,97 +237,111 @@ function replies(t: Thread, hold = false) {
   }, () => thread(t));
 }
 
-// Upstream voice flow: G2 PCM → local whisper.cpp → review → ordinary Orca text.
-
+// Reuse upstream PCM and local Whisper. Snapshots are serialized and provisional;
+// only the final text can be sent, once, to the captured terminal handle.
 let recording: Uint8Array[] | null = null;
 let cancelCapture: (() => void) | null = null;
 const MAX_REC_SEC = 60;
 
 async function record(t: Thread, hold = false) {
-  if (hold && !holding) return;
-  if (recording !== null) return;
+  if ((hold && !holding) || recording !== null || cancelCapture) return;
   recording = [];
+  const chunks = recording;
   const t0 = Date.now();
-  let stopped = false;
+  let stopped = false, cancelled = false;
   let tick: ReturnType<typeof setInterval> | undefined;
-  cancelCapture = () => {
-    stopped = true;
+  let pending: Promise<void> | null = null;
+  let lastBytes = 0, caption = '';
+  const snapshot = () => {
+    const pcm = new Uint8Array(chunks.reduce((n, c) => n + c.length, 0));
+    let offset = 0;
+    for (const c of chunks) { pcm.set(c, offset); offset += c.length; }
+    return pcm;
+  };
+  const cleanup = () => {
     clearInterval(tick);
     recording = null;
-    cancelCapture = null;
     releaseCapture = null;
+  };
+  const cancel = () => {
+    cancelled = true;
+    stopped = true;
+    cleanup();
+    cancelCapture = null;
     void bridge.audioControl(false).catch(() => {});
   };
-  const stop = async (send: boolean) => {
-    if (stopped) return;
-    stopped = true;
-    clearInterval(tick);
-    const chunks = recording ?? [];
-    recording = null;
+  cancelCapture = cancel;
+  const sendText = async (text: string) => {
+    if (cancelled || sending) return;
+    sending = true;
     cancelCapture = null;
-    releaseCapture = null;
-    await bridge.audioControl(false);
-    if (!send) return thread(t);
-    const pcm = new Uint8Array(chunks.reduce((n, c) => n + c.length, 0));
-    let off = 0;
-    for (const c of chunks) {
-      pcm.set(c, off);
-      off += c.length;
+    await show({ kind: 'text', title: t.title, text: 'Sending…' });
+    try {
+      const r = await api.say(t.handle, text);
+      await thread(t, tr('sent', clipBytes(r.sent, 30)));
+    } catch (e) {
+      await show({ kind: 'text', title: t.title, text: (e as Error).message, onBack: () => thread(t), onClick: () => thread(t) });
+    } finally { sending = false; }
+  };
+  const stop = async (finish: boolean) => {
+    if (stopped) return;
+    if (!finish) { cancel(); await thread(t); return; }
+    stopped = true;
+    cleanup();
+    await bridge.audioControl(false).catch(() => {});
+    await show({ kind: 'text', title: tr('transcribing'), text: caption || 'Finishing transcription…',
+      onBack: () => { cancel(); void thread(t); } });
+    try {
+      await pending;
+      if (cancelled) return;
+      const pcm = snapshot();
+      const text = pcm.length === lastBytes ? caption : (await api.transcribe(pcm)).text.trim();
+      if (cancelled) return;
+      cancelCapture = null;
+      if (!text) {
+        await show({ kind: 'text', title: tr('voiceTitle'), text: tr('notHeard'), onClick: () => thread(t), onBack: () => thread(t) });
+      } else if (hold) {
+        await sendText(text);
+      } else {
+        await show({ kind: 'text', title: tr('confirmSend'), text,
+          onClick: () => { void sendText(text); }, onBack: () => { cancel(); void thread(t); } });
+      }
+    } catch (e) {
+      if (cancelled) return;
+      cancelCapture = null;
+      await show({ kind: 'text', title: tr('voiceTitle'), text: (e as Error).message, onBack: () => thread(t), onClick: () => thread(t) });
     }
-    let transcriptionStarted = false;
-    const transcribe = async () => {
-    if (transcriptionStarted) return;
-    transcriptionStarted = true;
-    await show({ kind: 'text', title: tr('transcribing'), text: tr('processing', (pcm.length / 32000).toFixed(1)) });
-    await guard(tr('voiceTitle'), async () => {
-      const { text } = await api.transcribe(pcm);
-      if (!text) return void (await show({ kind: 'text', title: tr('voiceTitle'), text: tr('notHeard'), onClick: () => thread(t), onBack: () => thread(t) }));
-      await show({
-        kind: 'text',
-        title: tr('confirmSend'),
-        text,
-        onClick: async () => {
-          if (sending) return;
-          sending = true;
-          await show({ kind: 'text', title: t.title, text: 'Sending…' });
-          try {
-            const r = await api.say(t.handle, text);
-            await thread(t, tr('sent', clipBytes(r.sent, 30)));
-          } catch (e) {
-            await show({ kind: 'text', title: t.title, text: (e as Error).message, onBack: () => thread(t), onClick: () => thread(t) });
-          } finally { sending = false; }
-        },
-        onBack: () => thread(t),
-      });
-    }, () => thread(t));
-    };
-    await transcribe();
   };
   if (hold) releaseCapture = () => { void stop(true); };
-  const hint = hold ? 'Release to finish\nDouble-click to cancel' : tr('recordingHint');
-  await show({
-    kind: 'text',
-    title: tr('recording', 0),
-    text: hint,
-    onClick: hold ? undefined : () => stop(true),
-    onBack: () => stop(false),
-  });
+  const hint = hold ? 'Speak. Release to send. Double-click to cancel.' : tr('recordingHint');
+  await show({ kind: 'text', title: tr('recording', 0), text: hint,
+    onClick: hold ? undefined : () => { void stop(true); }, onBack: () => { void stop(false); } });
   if (stopped) return;
-  tick = setInterval(() => {
-    const sec = Math.floor((Date.now() - t0) / 1000);
-    if (sec >= MAX_REC_SEC) return void stop(true);
-    updateText(tr('recording', sec), hint);
-  }, 1000);
   const ok = await bridge.audioControl(true, AudioInputSource.Glasses).catch(() => false);
   if (stopped) { await bridge.audioControl(false); return; }
   if (!ok) {
-    stopped = true;
-    clearInterval(tick);
-    recording = null;
-    cancelCapture = null;
-    releaseCapture = null;
+    cancel();
     await show({ kind: 'text', title: tr('voiceTitle'), text: tr('micFailed'), onClick: () => thread(t), onBack: () => thread(t) });
+    return;
   }
+  tick = setInterval(() => {
+    if (stopped) return;
+    const sec = Math.floor((Date.now() - t0) / 1000);
+    if (sec >= MAX_REC_SEC) { void stop(true); return; }
+    if (pending) return; // No overlapping inference or growing request queue.
+    const pcm = snapshot();
+    if (pcm.length < 16000 || pcm.length === lastBytes) return;
+    pending = (async () => {
+      try {
+        const result = await api.transcribe(pcm);
+        if (cancelled) return;
+        lastBytes = pcm.length;
+        caption = result.text.trim();
+        if (!stopped && caption) updateText('Listening · provisional', caption);
+      } catch { /* Final transcription reports errors; transient preview failure is not a send. */ }
+      finally { pending = null; }
+    })();
+  }, 1500);
 }
 
 function usage() {
@@ -419,16 +450,9 @@ function onEvent(e: EvenHubEvent) {
   // CLICK_EVENT(0) は既定値のため JSON から省かれて届くことがある
   const type = ev.eventType ?? OsEventTypeList.CLICK_EVENT;
   if (s.kind === 'text' && (type === OsEventTypeList.SCROLL_TOP_EVENT || type === OsEventTypeList.SCROLL_BOTTOM_EVENT)) {
-    const last = lastLineOffset(s.text, BODY_ROWS);
-    const offset = s.offset ?? 0;
-    if (type === OsEventTypeList.SCROLL_TOP_EVENT) {
-      if (offset === 0) { s.onOlder?.(); return; }
-      s.offset = offset - 1;
-    } else {
-      if (offset === last) { s.onNewer?.(); return; }
-      s.offset = offset + 1;
-    }
-    updateText(s.title, s.text);
+    // Firmware scrolls overflowing text. Replacing content here causes visible jumps.
+    // Pause polling so incoming output cannot reset the reader's scroll position.
+    s.reading = true;
     return;
   }
   if (type === OsEventTypeList.LONG_PRESS_EVENT) {

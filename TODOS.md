@@ -3,6 +3,7 @@ Updated: 2026-11-01
 
 | Task | Status | Evidence / remaining work |
 | --- | --- | --- |
+| Warm Whisper previews and native overflow scrolling | Implemented; hardware pending | 2026-11-01: warm CPU decodes about 0.5 seconds for public 3/6/11-second clips. Serialized previews every 1.5 seconds; hold release sends, tap reviews. Intact text uses firmware scrolling; click opens reading controls. Supersedes line-step rendering. Native voice navigation was rejected. |
 | Native Codex routing and incremental scrolling | Implemented; hardware check pending | 2026-11-01: native echo confirmed by Eugene. Same endpoint now routes after explicit voice session selection; mocked send/dedup/menu/incarnation tests pass. Custom reader moves one line per scroll, no page counters. Twenty tests/build pass. |
 | Hold release transcription | Implemented | 2026-11-01: user confirmed hold capture works; release now transcribes immediately. Final send/cancel remains. Fourteen tests/build pass; reload app. |
 | Text scrolling | Implemented; hardware pending | 2026-11-01: page counters, scroll up/down, preserve reading position, retained terminal history endpoint (up to 1,000 rows). Full archived Codex transcript is not implemented. Fourteen tests/build pass. |
