@@ -347,7 +347,7 @@ test('double-click discards a finished voice draft without sending', async () =>
 });
 
 
-test('quarter-screen voice overlay never rebuilds or rewrites the background on send or cancel', async () => {
+test('quarter-screen voice area never overlaps or rebuilds the reader on send or cancel', async () => {
   for (const send of [true, false]) {
     const h = await harness(2, true, 'hold');
     h.api.history = async () => ({ text: 'Saved history '.repeat(300), source: 'codex-transcript' });
@@ -355,6 +355,9 @@ test('quarter-screen voice overlay never rebuilds or rewrites the background on 
     const page = h.pages.at(-1), count = h.pages.length, writes = h.upgrades.length;
     const panel = page.textObject.find(c => c.containerName === 'voice');
     assert.equal(panel.width * panel.height, 576 * 288 / 4);
+    const reader = page.textObject.find(c => c.containerName === 'body');
+    assert.ok(reader.yPosition + reader.height <= panel.yPosition);
+    assert.ok(panel.yPosition + panel.height <= 288);
     assert.equal(panel.content, ' ');
     assert.equal(panel.textColor, 0);
     assert.ok(panel.zOrderIndex > page.textObject[1].zOrderIndex);

@@ -12,6 +12,12 @@ upstream Claude code is not evidence of authorization to test it.
 
 ## Current work
 
+2026-11-01 hardware confirmed foreground text is transparent and overlaps the
+chat. Replaced overlapping layout with a reserved bottom quarter: voice area
+x0/y216/576x72, reader x0/y40/576x168, 8px gap. Chat remains mounted through
+record/review/dismiss. The bottom quarter stays reserved when empty; this is not
+an opaque popup. 36 mocked tests/build pass; hardware layout retest pending.
+
 2026-11-01 foreground-panel regression: Eugene reported hold did nothing.
 Exact native cause is unconfirmed. Initialize the panel with a dimmed space
 instead of an empty string, show/hide with textColor 4/0, and fall back to the

@@ -19,7 +19,10 @@ import { clipBytes, textSections } from './text';
 // 画面 576x288。上に見出し(テキスト)、下に本文(リスト or テキスト)の2段構成で統一する。
 const HEAD = { containerID: 1, containerName: 'head', xPosition: 0, yPosition: 0, width: 576, height: 36 };
 const BODY = { containerID: 2, containerName: 'body', xPosition: 0, yPosition: 40, width: 576, height: 248 };
-const VOICE = { containerID: 3, containerName: 'voice', xPosition: 144, yPosition: 72, width: 288, height: 144 };
+// Text layers are transparent on G2. Reserve a separate quarter-screen input
+// area so showing/hiding it needs no reader rebuild or overlapping text.
+const VOICE = { containerID: 3, containerName: 'voice', xPosition: 0, yPosition: 216, width: 576, height: 72 };
+const READER_HEIGHT = 168;
 const LIST_ITEM_BYTES = 63;
 const LIST_MAX = 20;
 const TEXT_BYTES = 999;
@@ -126,7 +129,7 @@ async function show(s: Screen, reloadText = false) {
         }
       : {
           containerTotalNum: s.reader ? 3 : 2,
-          textObject: [head, new TextContainerProperty({ ...BODY, ...(s.reader ? { zOrderIndex: 1 } : {}), content: uploadText ? '' : content, isEventCapture: 1 }),
+          textObject: [head, new TextContainerProperty({ ...BODY, ...(s.reader ? { zOrderIndex: 1, height: READER_HEIGHT } : {}), content: uploadText ? '' : content, isEventCapture: 1 }),
             ...(s.reader ? [new TextContainerProperty({ ...VOICE, content: ' ', textColor: 0, isEventCapture: 0, zOrderIndex: 2 })] : [])],
         };
   try {
@@ -400,7 +403,7 @@ async function record(t: Thread, hold = false) {
     await voiceShow({ kind: 'text', title: tr('voiceTitle'), text: tr('micFailed'), onClick: () => closeVoice(), onBack: () => closeVoice() });
     return;
   }
-  diag(fallbackScreen ? 'Recording — standard screen fallback.' : 'Recording — foreground voice panel.');
+  diag(fallbackScreen ? 'Recording — standard screen fallback.' : 'Recording — bottom voice panel.');
   tick = setInterval(() => {
     if (stopped) return;
     const sec = Math.floor((Date.now() - t0) / 1000);

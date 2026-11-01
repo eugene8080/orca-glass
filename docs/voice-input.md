@@ -300,3 +300,18 @@ microphone capture, release-to-review, and explicit Send still work through the
 standard screen. This is evidence for handling a failure path, not proof that
 panel rejection caused Eugene's observed failure. A hung native promise or missing
 hardware event still needs the phone Status observation to distinguish.
+
+
+## 2026-11-01 transparent-panel correction
+
+2026-11-01 hardware confirmed foreground text is transparent and overlaps the
+chat. Replaced overlapping layout with a reserved bottom quarter: voice area
+x0/y216/576x72, reader x0/y40/576x168, 8px gap. Chat remains mounted through
+record/review/dismiss. The bottom quarter stays reserved when empty; this is not
+an opaque popup. 36 mocked tests/build pass; hardware layout retest pending.
+
+The no-overlap geometry is asserted in the existing send/cancel regression test,
+along with no page rebuild and no writes to the reader. No claim of an opaque
+native overlay or optical-depth control. Long drafts still have limited visible
+space in the small non-capturing voice area. Same URL/QR, static frontend only.
+No ticket submission, network change, restart, Claude test, or live inference.
