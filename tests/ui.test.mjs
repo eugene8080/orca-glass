@@ -91,8 +91,8 @@ test('phone message requires review and cannot be sent to a newly selected sessi
 test('cancelling upstream microphone flow stops capture without restarting or sending', async () => {
   const h = await harness(2, true);
   await h.pick(3);
-  await h.tap();
-  await h.pick(0);
+  h.press();
+  await h.flush();
   assert.deepEqual(h.mic, [true]);
   await h.back();
   assert.deepEqual(h.mic, [true, false]);
@@ -149,13 +149,13 @@ test('cancelling final transcription prevents late sending', async () => {
   assert.equal(h.sends.length, 0);
 });
 
-test('release before asynchronous menu checks finish never leaves the microphone running', async () => {
+test('release before the recording screen is ready never leaves the microphone running', async () => {
   const h = await harness(2, true, 'hold');
   await h.pick(3);
   h.press();
   h.release();
   await h.flush();
-  assert.deepEqual(h.mic, []);
+  assert.equal(h.mic.includes(true), false);
 });
 
 test('text pages preserve long Unicode output within row and byte limits', () => {
@@ -176,8 +176,10 @@ test('firmware gets overflowing text; scroll does not replace content and pauses
   h.api.thread = async () => ({ text: 'Updated output' });
   await [...h.timers.values()][0]();
   assert.equal(h.upgrades.length, 0);
-  await h.tap(); await h.pick(2);
-  assert.equal(h.pages.at(-1).textObject[1].content, 'Older terminal output');
+  await h.tap();
+  assert.deepEqual([...h.pages.at(-1).listObject[0].itemContainer.itemName], ['Resume latest output', 'Back to conversation']);
+  await h.pick(1);
+  assert.equal(h.upgrades.at(-1).content, output);
 });
 
 test('Unicode sections preserve all text within native creation limit', () => {
@@ -198,7 +200,7 @@ test('Earlier and Later text send the selected section after rebuilding the read
   const labels = h.pages.at(-1).listObject[0].itemContainer.itemName;
   await h.pick(labels.indexOf('Earlier text'));
   assert.equal(h.pages.at(-1).textObject[1].content, '');
-  assert.equal(h.upgrades.at(-1).content, sections.at(-2));
+  assert.equal(h.upgrades.at(-1).content, textExports.textPages(sections.at(-2), 6, 900).at(-1));
   await h.tap();
   await h.pick(h.pages.at(-1).listObject[0].itemContainer.itemName.indexOf('Later text'));
   assert.equal(h.upgrades.at(-1).content, sections.at(-1));
@@ -257,10 +259,54 @@ test('verified saved conversation opens directly and scroll boundaries load olde
   await h.pick(3);
   assert.equal(h.pages.at(-1).textObject[1].content, sections.at(-1));
   await h.scroll('up');
-  assert.equal(h.upgrades.at(-1).content, sections.at(-2));
+  assert.equal(h.upgrades.at(-1).content, textExports.textPages(sections.at(-2), 6, 900).at(-1));
   await h.scroll('up');
-  assert.equal(h.upgrades.at(-1).content, sections.at(-3));
+  assert.equal(h.upgrades.at(-1).content, textExports.textPages(sections.at(-2), 6, 900).at(-2));
   await h.scroll('down');
-  assert.equal(h.upgrades.at(-1).content, sections.at(-2));
+  assert.equal(h.upgrades.at(-1).content, textExports.textPages(sections.at(-2), 6, 900).at(-1));
   assert.equal(h.sends.length, 0);
+});
+
+test('hold starts directly from chat even with a saved tap preference, without menu checks', async () => {
+  const h = await harness(2, true, 'tap');
+  await h.pick(3);
+  const before = h.pages.length;
+  h.api.thread = async () => { throw new Error('No pre-record menu lookup should run'); };
+  h.api.capabilities = async () => { throw new Error('No pre-record capability lookup should run'); };
+  h.press(); await h.flush();
+  assert.deepEqual(h.mic, [true]);
+  assert.equal(h.pages.length, before + 1);
+  assert.equal(h.pages.at(-1).listObject, undefined);
+  assert.equal(h.pages.at(-1).textObject[0].content, 'recording');
+  await h.back();
+  assert.equal(h.sends.length, 0);
+});
+
+test('single click opens actual numbered choices instead of reading controls', async () => {
+  const h = await harness();
+  await h.pick(3);
+  h.api.thread = async () => ({ text: 'Choose', menu: { id: 'menu', question: 'Choose', options: [{ value: '1', label: 'Proceed' }, { value: '2', label: 'Cancel' }] } });
+  await h.tap();
+  assert.deepEqual([...h.pages.at(-1).listObject[0].itemContainer.itemName], ['1. Proceed', '2. Cancel']);
+  assert.equal(h.mic.length, 0);
+  assert.equal(h.sends.length, 0);
+});
+
+test('upward reading visits every bottom-first window instead of skipping the earlier chunk', async () => {
+  const h = await harness();
+  const text = Array.from({ length: 80 }, (_, i) => `Line ${i}: distinct text.\n`).join('');
+  const sections = textExports.textSections(text);
+  h.api.history = async () => ({ text, source: 'codex-transcript' });
+  await h.pick(3);
+  for (let section = sections.length - 2; section >= 0; section--) {
+    const windows = textExports.textPages(sections[section], 6, 900);
+    for (let slice = windows.length - 1; slice >= 0; slice--) {
+      await h.scroll('up');
+      assert.equal(h.upgrades.at(-1).content, windows[slice]);
+      assert.ok(windows[slice].split('\n').length <= 6);
+    }
+  }
+  const count = h.upgrades.length;
+  await h.scroll('up');
+  assert.equal(h.upgrades.length, count);
 });

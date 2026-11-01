@@ -1,6 +1,24 @@
 # Native Even Terminal on Windows
 Updated: 2026-10-29
 
+## Reconnected at Eugene's request, 2026-11-01
+
+The host was stopped and ports 3456/8765 were free. Used the existing
+`C:/Users/eugen/orca/workspaces/pc-settings/even-terminal-proxy-launcher/scripts/Start-EvenTerminalVps.py --start`.
+Its bounded neutral proxy-egress preflight passed against the selected route.
+No launcher, network, global environment, package or pairing config was changed.
+
+Host PID46304 listens on 127.0.0.1 and 100.115.235.106 port3456; its Codex
+app-server PID37820 listens on loopback8765. Read-only process inspection confirms
+HTTP_PROXY, HTTPS_PROXY and ALL_PROXY are http://127.0.0.1:18889 in both, with
+NO_PROXY=localhost,127.0.0.1,::1. Pairing config SHA256 remained unchanged.
+Authenticated Codex info and one-session listing returned HTTP200 through the
+Tailscale address. No inference prompt, Claude launch/test, or other agent restart.
+Android reconnect/display still needs the user's check; existing pairing remains.
+Private logs/launch metadata are under LOCALAPPDATA/PcSettings/AiRouting, as the
+launcher runbook describes. This supersedes the older unproxied-start instruction
+below: use that selected-proxy launcher for subsequent starts.
+
 ## Current route
 
 Codex on PSCAP11 ↔ official Even Terminal 0.10.5 ↔ Tailscale ↔ Even Realities

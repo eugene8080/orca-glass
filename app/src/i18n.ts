@@ -101,7 +101,7 @@ const dict = {
     setupTitle: 'Getting started (on your PC)',
     setupSteps: '<li>Install Orca on your PC</li><li>Ask Codex to "set up Orca Glass" (skill: <a href="https://github.com/eugene8080/orca-glass">github.com/eugene8080/orca-glass</a>)</li><li>Paste the pairing code it gives you below and save</li>',
     opsTitle: 'On the glasses',
-    opsList: '<li>Swipe up/down: select / Click: open / Double-click: back</li><li>The header counts connected terminals; waiting status is not inferred.</li><li>Scroll through conversation text; at a text boundary, keep scrolling to load older or newer text. Click for Reply and manual reading controls.</li><li>Tap mode: choose Reply, tap to finish, review, then tap to send.</li><li>Hold mode: hold until Recording appears, speak while provisional captions appear, release to send. Double-click before sending to cancel. Scrolling pauses updates; choose Latest output to resume.</li><li>Choose Recording mode below and Save and reconnect. Hold requires long-press/release support from your app and firmware.</li>',
+    opsList: '<li>Conversation: hold to talk directly; release to send. No Reply menu is required. Double-click while recording to cancel.</li><li>Click for reading controls or actual numbered choices. Double-click from the conversation to return to sessions.</li><li>Scroll up to load the bottom of earlier text first. Keep scrolling up to read the remaining earlier windows. This is a temporary windowed reader.</li><li>Scrolling pauses updates; choose Resume latest output to resume.</li>',
     codeLabel: 'Pairing code (run <code>npm run pair</code> on your PC and paste)',
     langLabel: 'Language',
     save: 'Save and reconnect',

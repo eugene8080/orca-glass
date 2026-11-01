@@ -12,6 +12,15 @@ upstream Claude code is not evidence of authorization to test it.
 
 ## Current work
 
+2026-11-01 approved UI: hold directly from chat starts voice regardless of old
+recording-mode preference; release sends, double-click cancels. Single click opens
+only Resume latest output / Earlier text / Later text / Back to conversation, or
+actual numbered choices. Upward navigation temporarily shows the bottom six-row
+window of the previous section first, then traverses its remaining windows. No
+native scroll-position API is claimed. Native Even Terminal was also restarted
+at Eugene's request through the existing pc-settings proxy launcher; see
+docs/native-terminal.md for verified runtime facts.
+
 2026-11-01 history update: bridge/conversation.mjs reads Orca's profile-state.db
 read-only and uses the exact recorded pane/incarnation/Codex session association to
 load saved user/assistant messages. No folder/newest-file guessing. This session

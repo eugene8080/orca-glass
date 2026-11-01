@@ -3,6 +3,23 @@ Updated: 2026-11-01
 
 ## Current implementation: warm Whisper and native scrolling
 
+### Approved interaction and temporary bottom-first workaround (2026-11-01)
+
+Eugene approved the menu before implementation. Holding directly on conversation
+text starts capture without a Reply menu, instruction screen, capability round-trip
+or dependence on the old recording-mode setting. Release finalizes/sends; double
+click cancels before send. Single click checks for actual numbered choices;
+otherwise controls are Resume latest output, Earlier text, Later text, Back to
+conversation. Phone text composition remains available. The old tap/hold selector
+was removed because it no longer describes this approved flow.
+
+On upward section transitions, render only its bottom window (six estimated wrapped
+rows). Further up visits the preceding windows before changing section again, so
+text is not discarded. Down traverses these windows in reverse. This is temporary
+windowed navigation, not a native scroll-to-bottom operation or seamless history.
+Thirty-two tests/build pass; G2 verification pending. Static-only update needs app
+reload, but no bridge restart or new custom pairing QR.
+
 ### Saved conversation reader (2026-11-01; supersedes buffer-only limitation)
 
 The bridge now reads Orca's local profile-state.db in read-only mode, selecting

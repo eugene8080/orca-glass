@@ -14,7 +14,7 @@ import {
 import { api, currentBase, setApiLang, setConnection, setDemo, type Provider, type Thread, type Workspace } from './api';
 import { parseCode, resolveBase } from './pairing';
 import { applyPage, detectLang, setLang, t as tr } from './i18n';
-import { clipBytes, textSections } from './text';
+import { clipBytes, textSections, textPages } from './text';
 
 // 画面 576x288。上に見出し(テキスト)、下に本文(リスト or テキスト)の2段構成で統一する。
 const HEAD = { containerID: 1, containerName: 'head', xPosition: 0, yPosition: 0, width: 576, height: 36 };
@@ -26,7 +26,7 @@ const POLL_MS = 1000;
 
 type Screen =
   | { kind: 'list'; title: string; items: string[]; onPick: (i: number) => void; onBack?: () => void }
-  | { kind: 'text'; title: string; text: string; tail?: boolean; offset?: number; reading?: boolean; reader?: Thread; onClick?: () => void; onBack?: () => void; onHold?: () => void; };
+  | { kind: 'text'; title: string; text: string; tail?: boolean; offset?: number; slice?: number; reading?: boolean; reader?: Thread; onClick?: () => void; onBack?: () => void; onHold?: () => void; };
 
 let bridge: EvenAppBridge;
 let current: Screen | null = null;
@@ -34,7 +34,6 @@ let started = false;
 let poll: ReturnType<typeof setInterval> | undefined;
 let selectedThread: Thread | null = null;
 let sending = false;
-let recordingMode: 'tap' | 'hold' = 'tap';
 let holding = false;
 let releaseCapture: (() => void) | null = null;
 let movingReader = false;
@@ -51,25 +50,43 @@ function selectThread(t: Thread | null) {
 }
 
 // Send overflowing text intact; the G2 firmware owns movement within a section.
-function bodyText(s: { text: string; tail?: boolean; offset?: number }) {
+function bodyText(s: { text: string; tail?: boolean; offset?: number; slice?: number }) {
   const sections = textSections(s.text);
   s.offset = Math.max(0, Math.min(s.offset ?? (s.tail ? sections.length - 1 : 0), sections.length - 1));
-  return sections[s.offset];
+  const section = sections[s.offset];
+  return s.slice === undefined ? section : textPages(section, 6, 900)[s.slice] ?? '';
+}
+
+function readerStep(screen: Extract<Screen, { kind: 'text' }>, direction: number) {
+  const sections = textSections(screen.text);
+  const offset = screen.offset ?? 0;
+  const slices = textPages(sections[offset], 6, 900);
+  if (screen.slice !== undefined) {
+    const slice = screen.slice + direction;
+    if (slice >= 0 && slice < slices.length) return { offset, slice };
+  }
+  const next = offset + direction;
+  if (next < 0 || next >= sections.length) return null;
+  // No native scroll-to-bottom API: show a short bottom window first, then
+  // traverse the remaining windows so no earlier part of the section is lost.
+  return { offset: next, slice: direction < 0 ? textPages(sections[next], 6, 900).length - 1 : undefined };
+}
+
+async function openReaderControls(t: Thread, screen: Extract<Screen, { kind: 'text' }>) {
+  await guard(t.title, async () => {
+    const snapshot = await api.thread(t.handle);
+    if (current !== screen) return;
+    if (snapshot.menu) { await replies(t); return; }
+    await readerActions(t, screen);
+  }, () => { void thread(t); });
 }
 
 function readerActions(t: Thread, screen: Extract<Screen, { kind: 'text' }>) {
-  const sections = textSections(screen.text);
-  const index = screen.offset ?? 0;
-  const reopen = async (offset: number) => {
-    // Do not mutate the saved reader until native has accepted the replacement.
-    await show({ ...screen, offset, reading: true }, true);
-  };
   const actions = [
-    { label: 'Reply', run: () => replies(t) },
-    ...(index > 0 ? [{ label: 'Earlier text', run: () => reopen(index - 1) }] : []),
-    ...(index + 1 < sections.length ? [{ label: 'Later text', run: () => reopen(index + 1) }] : []),
-    { label: 'Latest output / resume updates', run: () => thread(t) },
-    { label: 'Conversation history', run: () => history(t) },
+    { label: 'Resume latest output', run: () => thread(t) },
+    ...(readerStep(screen, -1) ? [{ label: 'Earlier text', run: () => moveReader(screen, -1) }] : []),
+    ...(readerStep(screen, 1) ? [{ label: 'Later text', run: () => moveReader(screen, 1) }] : []),
+    { label: 'Back to conversation', run: () => show(screen, true) },
   ];
   return show({ kind: 'list', title: t.title, items: actions.map(a => a.label),
     onPick: i => { void guard(t.title, async () => { await actions[i]?.run(); }, () => { void readerActions(t, screen); }); },
@@ -79,11 +96,11 @@ function readerActions(t: Thread, screen: Extract<Screen, { kind: 'text' }>) {
 async function moveReader(screen: Extract<Screen, { kind: 'text' }>, direction: number) {
   if (movingReader || !screen.reader) return;
   screen.reading = true;
-  const index = (screen.offset ?? 0) + direction;
-  if (index < 0 || index >= textSections(screen.text).length) return;
+  const step = readerStep(screen, direction);
+  if (!step) return;
   movingReader = true;
   try {
-    await guard(screen.title, () => show({ ...screen, offset: index }, true), () => { void thread(screen.reader!); });
+    await guard(screen.title, () => show({ ...screen, ...step }, true), () => { void thread(screen.reader!); });
   } finally { movingReader = false; }
 }
 
@@ -191,8 +208,8 @@ function thread(t: Thread, note = '') {
     const saved = !snapshot.menu ? await api.history(t.handle).catch(() => null) : null;
     const useSaved = saved?.source === 'codex-transcript';
     const text = useSaved ? saved.text : snapshot.text;
-    await show({ kind: 'text', title: title(), text, tail: true, reader: t, onClick: () => { if (current?.kind === 'text') void readerActions(t, current); }, onBack: home,
-      onHold: () => { if (recordingMode === 'hold') void replies(t, true); } });
+    await show({ kind: 'text', title: title(), text, tail: true, reader: t, onClick: () => { if (current?.kind === 'text') void openReaderControls(t, current); }, onBack: home,
+      onHold: () => { void record(t, true); } });
     const screen = current;
     let reading = false;
     poll = setInterval(async () => {
@@ -204,6 +221,7 @@ function thread(t: Thread, note = '') {
       // A slow response from the previous session must never overwrite a new screen.
       if (r && (!useSaved || ('source' in r && r.source === 'codex-transcript')) && current === screen && current?.kind === 'text' && r.text !== current.text && !current.reading) {
         current.offset = undefined;
+        current.slice = undefined;
         updateText(title(), r.text);
       }
     }, POLL_MS);
@@ -218,12 +236,12 @@ function history(t: Thread) {
     await show({ kind: 'text', title: r.source === 'codex-transcript' ? 'Conversation history' : 'Terminal buffer only',
       text: r.text || r.reason || 'No older terminal output is retained.', tail: true, reader: t,
       onBack: () => thread(t),
-      onClick: () => { if (current?.kind === 'text') void readerActions(t, current); },
-      onHold: () => { if (recordingMode === 'hold') void replies(t, true); } });
+      onClick: () => { if (current?.kind === 'text') void openReaderControls(t, current); },
+      onHold: () => { void record(t, true); } });
   }, () => thread(t));
 }
 
-function replies(t: Thread, hold = false) {
+function replies(t: Thread) {
   return guard(t.title, async () => {
     const { menu } = await api.thread(t.handle);
     if (menu) {
@@ -251,19 +269,7 @@ function replies(t: Thread, hold = false) {
       });
       return;
     }
-    const { voice } = await api.capabilities().catch(() => ({ voice: false }));
-    if (voice && (recordingMode === 'tap' || hold)) return record(t, hold);
-    if (voice) {
-      return show({ kind: 'text', title: t.title, text: 'Hold to talk. Wait for Recording, then speak. Release to send.\nDouble-click while recording to cancel.',
-        onHold: () => { void record(t, true); }, onBack: () => thread(t) });
-    }
-    await show({
-      kind: 'text',
-      title: tr('replyTitle', t.title),
-      text: 'Open Orca Glass on your phone to type or dictate a message. Review it, then send to this session. Glasses voice is available when local transcription is configured.',
-      onClick: () => thread(t),
-      onBack: () => thread(t),
-    });
+    await thread(t);
   }, () => thread(t));
 }
 
@@ -475,7 +481,9 @@ function onEvent(e: EvenHubEvent) {
   }
   const s = current;
   if (!s) return;
-  const ev = e.listEvent ?? e.textEvent ?? e.sysEvent;
+  // Press/release are system events even when another envelope accompanies them.
+  const ev = [OsEventTypeList.LONG_PRESS_EVENT, OsEventTypeList.LONG_PRESS_RELEASE_EVENT].includes(systemType as OsEventTypeList)
+    ? e.sysEvent : e.listEvent ?? e.textEvent ?? e.sysEvent;
   if (!ev) return;
   // CLICK_EVENT(0) は既定値のため JSON から省かれて届くことがある
   const type = ev.eventType ?? OsEventTypeList.CLICK_EVENT;
@@ -574,8 +582,6 @@ async function main() {
   const pref = (await bridge.getLocalStorage('lang')) || 'auto';
   $('lang').value = pref;
   useLang(pref);
-  recordingMode = await bridge.getLocalStorage('recording-mode') === 'hold' ? 'hold' : 'tap';
-  $('recording-mode').value = recordingMode;
   const draft = document.getElementById('reply-text') as HTMLTextAreaElement;
   const send = document.getElementById('send-reply') as HTMLButtonElement;
   const status = document.getElementById('reply-status')!;
@@ -609,8 +615,6 @@ async function main() {
     ev.preventDefault();
     cancelCapture?.();
     holding = false;
-    recordingMode = $('recording-mode').value === 'hold' ? 'hold' : 'tap';
-    await bridge.setLocalStorage('recording-mode', recordingMode);
     await bridge.setLocalStorage('lang', $('lang').value);
     useLang($('lang').value);
     const code = $('code').value.trim();
