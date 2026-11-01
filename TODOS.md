@@ -3,6 +3,7 @@ Updated: 2026-11-01
 
 | Task | Status | Evidence / remaining work |
 | --- | --- | --- |
+| Hold regression after foreground panel | Repair candidate live; G2 retest pending | 2026-11-01: dim-space panel initialization, explicit visibility, rejected-panel fallback to standard recording screen, hold-stage phone diagnostics. Exact native failure unknown. 36 mocked tests/build pass. |
 | Quarter-screen voice foreground panel | Implemented; G2 check pending | 2026-11-01: pre-created layered panel; recording/review/Send/Cancel never rebuild or rewrite chat. Polling stays paused until Resume latest output. 35 tests/build pass; native SDK validates layer ordering. Transparency and visual stacking need hardware confirmation. |
 | Voice Send/Cancel review; automatic scroll investigation | Voice implemented; auto-scroll unresolved | 2026-11-01: hold release transcribes then click sends / double-click cancels. 34 tests/build pass. Installed SDK and official reference provide no programmatic scrolling command. Working reader unchanged; no ticket submitted per user. |
 | Restore working reader upload size | PC validated; G2 retest pending | 2026-11-01: hardware rejected larger upload. Restored 900-byte intact blocks; retained native scrolling without gesture-triggered replacement. Same URL/QR. 33 tests and build pass. |

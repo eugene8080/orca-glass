@@ -282,3 +282,21 @@ writes throughout capture, release, Send and Cancel; cancellation of late previe
 and unchanged explicit send gating. TypeScript/Vite and doctor pass. Hardware
 visual behavior is unverified. Same QR, static frontend only; no runtime restart,
 Claude test, inference test or ticket submission.
+
+
+## 2026-11-01 hold regression repair candidate
+
+2026-11-01 foreground-panel regression: Eugene reported hold did nothing.
+Exact native cause is unconfirmed. Initialize the panel with a dimmed space
+instead of an empty string, show/hide with textColor 4/0, and fall back to the
+standard recording screen if a panel update rejects. Hold/release prioritization
+now checks all event envelopes; phone Status reports hold and recording stages.
+36 mocked tests/build pass. Hardware retest pending; fallback can reset reader
+position. No ticket submitted and no provider inference or Claude tests.
+
+The previous record path awaited the new panel before opening the microphone and
+aborted on rejection. The regression test now forces that rejection and verifies
+microphone capture, release-to-review, and explicit Send still work through the
+standard screen. This is evidence for handling a failure path, not proof that
+panel rejection caused Eugene's observed failure. A hung native promise or missing
+hardware event still needs the phone Status observation to distinguish.

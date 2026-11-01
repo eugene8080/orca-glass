@@ -253,7 +253,7 @@ test('cancel during preview prevents late captions and input', async () => {
   h.api.transcribe = () => new Promise(resolve => { finish = resolve; });
   [...h.timers.values()][0](); await h.back();
   finish({ text: 'Late caption' }); await h.flush();
-  assert.equal(h.upgrades.at(-1).content, '');
+  assert.equal(h.upgrades.at(-1).content, ' ');
   assert.ok(h.upgrades.every(u => !u.content.includes('Late caption')));
   assert.equal(h.sends.length, 0);
 });
@@ -355,15 +355,33 @@ test('quarter-screen voice overlay never rebuilds or rewrites the background on 
     const page = h.pages.at(-1), count = h.pages.length, writes = h.upgrades.length;
     const panel = page.textObject.find(c => c.containerName === 'voice');
     assert.equal(panel.width * panel.height, 576 * 288 / 4);
-    assert.equal(panel.content, '');
+    assert.equal(panel.content, ' ');
+    assert.equal(panel.textColor, 0);
     assert.ok(panel.zOrderIndex > page.textObject[1].zOrderIndex);
     h.press(); await h.flush(); h.audio(); h.release(); await h.flush();
     assert.equal(h.sends.length, 0);
     if (send) await h.tap(); else await h.back();
     assert.equal(h.pages.length, count);
     assert.ok(h.upgrades.slice(writes).every(u => u.containerName === 'voice'));
-    assert.equal(h.upgrades.at(-1).content, '');
+    assert.equal(h.upgrades.at(-1).content, ' ');
     assert.equal(h.sends.length, send ? 1 : 0);
     assert.equal(h.timers.size, 0);
   }
+});
+
+
+test('rejected foreground panel falls back to recording and still requires explicit send', async () => {
+  const h = await harness(2, true, 'hold');
+  await h.pick(3);
+  const upgrade = h.bridge.textContainerUpgrade;
+  h.bridge.textContainerUpgrade = value => value.containerName === 'voice' ? Promise.resolve(false) : upgrade(value);
+  h.press(); await h.flush();
+  assert.equal(h.pages.at(-1).textObject[0].content, 'recording');
+  assert.equal(h.mic.at(-1), true);
+  assert.match(h.elements.get('diag').textContent, /fallback/);
+  h.audio(); h.release(); await h.flush();
+  assert.equal(h.pages.at(-1).textObject[0].content, 'confirmSend');
+  assert.equal(h.sends.length, 0);
+  await h.tap();
+  assert.equal(h.sends.length, 1);
 });

@@ -12,6 +12,14 @@ upstream Claude code is not evidence of authorization to test it.
 
 ## Current work
 
+2026-11-01 foreground-panel regression: Eugene reported hold did nothing.
+Exact native cause is unconfirmed. Initialize the panel with a dimmed space
+instead of an empty string, show/hide with textColor 4/0, and fall back to the
+standard recording screen if a panel update rejects. Hold/release prioritization
+now checks all event envelopes; phone Status reports hold and recording stages.
+36 mocked tests/build pass. Hardware retest pending; fallback can reset reader
+position. No ticket submitted and no provider inference or Claude tests.
+
 2026-11-01 voice foreground panel: reader pages pre-create a blank 288x144
 text container at zOrderIndex 2 above the persistent chat. Hold/captions/review
 update only that container; Send/Cancel clears its text without rebuilding or

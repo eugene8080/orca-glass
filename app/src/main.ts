@@ -127,7 +127,7 @@ async function show(s: Screen, reloadText = false) {
       : {
           containerTotalNum: s.reader ? 3 : 2,
           textObject: [head, new TextContainerProperty({ ...BODY, ...(s.reader ? { zOrderIndex: 1 } : {}), content: uploadText ? '' : content, isEventCapture: 1 }),
-            ...(s.reader ? [new TextContainerProperty({ ...VOICE, content: '', isEventCapture: 0, zOrderIndex: 2 })] : [])],
+            ...(s.reader ? [new TextContainerProperty({ ...VOICE, content: ' ', textColor: 0, isEventCapture: 0, zOrderIndex: 2 })] : [])],
         };
   try {
     if (!started) {
@@ -275,6 +275,7 @@ const MAX_REC_SEC = 60;
 
 async function record(t: Thread, hold = false) {
   if ((hold && !holding) || recording !== null || cancelCapture) return;
+  diag('Hold received. Opening voice panel…');
   const background = current;
   if (background?.kind !== 'text' || !background.reader) return;
   // Keep the mounted reader and its firmware scroll position untouched throughout
@@ -282,10 +283,11 @@ async function record(t: Thread, hold = false) {
   background.reading = true;
   clearInterval(poll);
   let overlayActive = true;
+  let fallbackScreen = false;
   let overlayWrites: Promise<void> = Promise.resolve();
   const writeOverlay = (content: string) => {
     const write = overlayWrites.then(async () => {
-      const accepted = await bridge.textContainerUpgrade(new TextContainerUpgrade({ ...VOICE, content }));
+      const accepted = await bridge.textContainerUpgrade(new TextContainerUpgrade({ containerID: VOICE.containerID, containerName: VOICE.containerName, content: content || ' ', textColor: content ? 4 : 0 }));
       if (!accepted) throw new Error('Glasses rejected the voice panel update.');
     });
     overlayWrites = write.catch(() => {});
@@ -293,12 +295,21 @@ async function record(t: Thread, hold = false) {
   };
   const voiceShow = async (screen: Extract<Screen, { kind: 'text' }>) => {
     if (!overlayActive) return;
+    if (fallbackScreen) { await show(screen); return; }
     current = screen;
-    await writeOverlay(clipBytes(`${screen.title}\n${screen.text}`, 900));
+    try { await writeOverlay(clipBytes(`${screen.title}\n${screen.text}`, 900)); }
+    catch (e) {
+      // Native page validation alone does not prove the device accepts a third
+      // text layer. A rejected layer must not disable the working voice flow.
+      fallbackScreen = true;
+      diag(`${(e as Error).message} Using the standard voice screen.`);
+      await show(screen);
+    }
   };
   const closeVoice = async () => {
     if (!overlayActive) return;
     overlayActive = false;
+    if (fallbackScreen) { await show(background, true); return; }
     try { await writeOverlay(''); }
     catch (e) { diag((e as Error).message); }
     finally { current = background; }
@@ -389,6 +400,7 @@ async function record(t: Thread, hold = false) {
     await voiceShow({ kind: 'text', title: tr('voiceTitle'), text: tr('micFailed'), onClick: () => closeVoice(), onBack: () => closeVoice() });
     return;
   }
+  diag(fallbackScreen ? 'Recording — standard screen fallback.' : 'Recording — foreground voice panel.');
   tick = setInterval(() => {
     if (stopped) return;
     const sec = Math.floor((Date.now() - t0) / 1000);
@@ -512,8 +524,9 @@ function onEvent(e: EvenHubEvent) {
   const s = current;
   if (!s) return;
   // Press/release are system events even when another envelope accompanies them.
-  const ev = [OsEventTypeList.LONG_PRESS_EVENT, OsEventTypeList.LONG_PRESS_RELEASE_EVENT].includes(systemType as OsEventTypeList)
-    ? e.sysEvent : e.listEvent ?? e.textEvent ?? e.sysEvent;
+  const ev = [e.sysEvent, e.textEvent, e.listEvent].find(event =>
+    event && [OsEventTypeList.LONG_PRESS_EVENT, OsEventTypeList.LONG_PRESS_RELEASE_EVENT].includes(event.eventType as OsEventTypeList))
+    ?? e.listEvent ?? e.textEvent ?? e.sysEvent;
   if (!ev) return;
   // CLICK_EVENT(0) は既定値のため JSON から省かれて届くことがある
   const type = ev.eventType ?? OsEventTypeList.CLICK_EVENT;
@@ -526,6 +539,7 @@ function onEvent(e: EvenHubEvent) {
     return;
   }
   if (type === OsEventTypeList.LONG_PRESS_EVENT) {
+    diag(holding ? 'Hold received; waiting for button release.' : 'Hold event received.');
     if (!holding) {
       holding = true;
       if (s.kind === 'text') s.onHold?.();
