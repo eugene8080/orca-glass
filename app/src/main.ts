@@ -60,9 +60,8 @@ function readerActions(t: Thread, screen: Extract<Screen, { kind: 'text' }>) {
   const sections = textSections(screen.text);
   const index = screen.offset ?? 0;
   const reopen = async (offset: number) => {
-    screen.offset = offset;
-    screen.reading = true;
-    await show(screen);
+    // Do not mutate the saved reader until native has accepted the replacement.
+    await show({ ...screen, offset, reading: true }, true);
   };
   const actions = [
     { label: 'Reply', run: () => replies(t) },
@@ -72,16 +71,19 @@ function readerActions(t: Thread, screen: Extract<Screen, { kind: 'text' }>) {
     { label: 'Retained terminal history', run: () => history(t) },
   ];
   return show({ kind: 'list', title: t.title, items: actions.map(a => a.label),
-    onPick: i => { actions[i]?.run(); }, onBack: () => { void show(screen); } });
+    onPick: i => { void guard(t.title, async () => { await actions[i]?.run(); }, () => { void readerActions(t, screen); }); },
+    onBack: () => { void guard(t.title, () => show(screen, true), () => { void thread(t); }); } });
 }
 
 function screenTitle(s: Screen) {
   return s.title;
 }
 
-async function show(s: Screen) {
+async function show(s: Screen, reloadText = false) {
   clearInterval(poll);
+  const previous = current;
   current = s;
+  const content = s.kind === 'text' ? bodyText(s) : '';
   const head = new TextContainerProperty({ ...HEAD, content: clipBytes(screenTitle(s), TEXT_BYTES), isEventCapture: 0 });
   const page =
     s.kind === 'list'
@@ -101,13 +103,25 @@ async function show(s: Screen) {
         }
       : {
           containerTotalNum: 2,
-          textObject: [head, new TextContainerProperty({ ...BODY, content: bodyText(s), isEventCapture: 1 })],
+          textObject: [head, new TextContainerProperty({ ...BODY, content: reloadText ? '' : content, isEventCapture: 1 })],
         };
-  if (!started) {
-    await bridge.createStartUpPageContainer(new CreateStartUpPageContainer(page));
-    started = true;
-  } else {
-    await bridge.rebuildPageContainer(new RebuildPageContainer(page));
+  try {
+    if (!started) {
+      const result = await bridge.createStartUpPageContainer(new CreateStartUpPageContainer(page));
+      if (result !== 0) throw new Error(`Glasses could not open the reader (${result}). Reconnect and try again.`);
+      started = true;
+    } else {
+      const accepted = await bridge.rebuildPageContainer(new RebuildPageContainer(page));
+      if (!accepted) throw new Error('Glasses rejected the screen update. Reconnect and try again.');
+    }
+    if (reloadText && s.kind === 'text') {
+      const accepted = await bridge.textContainerUpgrade(new TextContainerUpgrade({ containerID: BODY.containerID, containerName: BODY.containerName, content }));
+      if (!accepted) throw new Error('Glasses could not load the selected text. Click to retry.');
+    }
+  } catch (e) {
+    if (current === s) current = previous;
+    diag((e as Error).message);
+    throw e;
   }
 }
 

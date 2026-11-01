@@ -3,6 +3,15 @@ Updated: 2026-11-01
 
 ## Current implementation: warm Whisper and native scrolling
 
+2026-11-01 hardware follow-up: Eugene confirms smooth scrolling. Earlier text
+appeared to do nothing. Desktop navigation logic did select a different section;
+no device rejection was captured, so the exact cause remains unproven. Repair:
+sections now respect a conservative 900-byte UTF-8 limit; earlier/later navigation
+rebuilds an empty reader and explicitly uploads its selected content. Native
+create/rebuild/upload acknowledgments are checked and failures are shown rather
+than silently ignored. Twenty-five tests and build pass; G2 retest pending.
+Same tunnel and QR remain valid; only static app files changed.
+
 This supersedes the older line-window and hold-review instructions below.
 The requested UI stays in Orca Glass; the native Even AI spoken-navigation router
 is not the desired workflow.

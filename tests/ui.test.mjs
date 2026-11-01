@@ -28,9 +28,9 @@ async function harness(count = 2, voice = false, mode = 'tap') {
   };
   const bridge = {
     getLocalStorage: async key => key === 'code' ? 'demo' : key === 'recording-mode' ? mode : 'en',
-    createStartUpPageContainer: async p => { pages.push(p); },
-    rebuildPageContainer: async p => { pages.push(p); },
-    textContainerUpgrade: async value => { upgrades.push(value); },
+    createStartUpPageContainer: async p => { pages.push(p); return 0; },
+    rebuildPageContainer: async p => { pages.push(p); return true; },
+    textContainerUpgrade: async value => { upgrades.push(value); return true; },
     onEvenHubEvent: fn => { event = fn; },
     audioControl: async on => { mic.push(on); return true; },
   };
@@ -52,7 +52,7 @@ async function harness(count = 2, voice = false, mode = 'tap') {
   });
   const flush = () => new Promise(resolve => setImmediate(resolve));
   await flush();
-  return { api, elements, pages, sends, timers, mic, upgrades, transcriptions, flush,
+  return { api, bridge, elements, pages, sends, timers, mic, upgrades, transcriptions, flush,
     press: () => { event({ sysEvent: { eventType: 9 } }); },
     release: () => { event({ sysEvent: { eventType: 10 } }); },
     audio: () => { event({ audioEvent: { audioPcm: new Uint8Array(32000) } }); },
@@ -184,7 +184,40 @@ test('Unicode sections preserve all text within native creation limit', () => {
   const original = '語🙂abc'.repeat(1000);
   const sections = textExports.textSections(original);
   assert.equal(sections.join(''), original);
-  assert.ok(sections.every(s => s.length <= 990 && !/[\uD800-\uDBFF]$/.test(s)));
+  assert.ok(sections.every(s => new TextEncoder().encode(s).length <= 900 && !/[\uD800-\uDBFF]$/.test(s)));
+});
+
+test('Earlier and Later text send the selected section after rebuilding the reader', async () => {
+  const h = await harness();
+  const output = 'Earlier — '.repeat(160) + 'Latest text';
+  const sections = textExports.textSections(output);
+  h.api.thread = async () => ({ text: output });
+  await h.pick(3);
+  assert.equal(h.pages.at(-1).textObject[1].content, sections.at(-1));
+  await h.tap();
+  const labels = h.pages.at(-1).listObject[0].itemContainer.itemName;
+  await h.pick(labels.indexOf('Earlier text'));
+  assert.equal(h.pages.at(-1).textObject[1].content, '');
+  assert.equal(h.upgrades.at(-1).content, sections.at(-2));
+  await h.tap();
+  await h.pick(h.pages.at(-1).listObject[0].itemContainer.itemName.indexOf('Later text'));
+  assert.equal(h.upgrades.at(-1).content, sections.at(-1));
+  assert.equal(h.sends.length, 0);
+});
+
+test('a rejected reader update is reported instead of silently changing section', async () => {
+  const h = await harness();
+  h.api.thread = async () => ({ text: 'Older text '.repeat(200) });
+  await h.pick(3); await h.tap();
+  const rebuild = h.bridge.rebuildPageContainer;
+  h.bridge.rebuildPageContainer = async p => {
+    h.bridge.rebuildPageContainer = rebuild;
+    return false;
+  };
+  await h.pick(1);
+  assert.match(h.elements.get('diag').textContent, /rejected/);
+  assert.equal(h.upgrades.length, 0);
+  assert.equal(h.sends.length, 0);
 });
 
 test('previews serialize requests; release waits and sends final text only once', async () => {

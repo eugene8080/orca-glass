@@ -82,14 +82,16 @@ export function tailRows(s: string, maxRows: number): string {
   return out.join('\n');
 }
 
-// Native text containers accept 1,000 characters at creation. Use conservative
-// UTF-16 lengths and preserve every character; firmware performs wrapping/scrolling.
-export function textSections(text: string, limit = 990): string[] {
+// Stay below both character and encoded-byte limits across host/firmware versions.
+// Preserve all text; firmware still performs smooth scrolling within each section.
+export function textSections(text: string, limit = 900): string[] {
   const sections: string[] = [];
-  let section = '';
+  let section = '', bytes = 0;
   for (const ch of text) {
-    if (section.length + ch.length > limit) { sections.push(section); section = ''; }
+    const size = enc.encode(ch).length;
+    if (bytes + size > limit) { sections.push(section); section = ''; bytes = 0; }
     section += ch;
+    bytes += size;
   }
   sections.push(section);
   return sections;
