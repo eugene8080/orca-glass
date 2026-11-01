@@ -105,7 +105,7 @@ async function show(s: Screen, reloadText = false) {
   const previous = current;
   current = s;
   const content = s.kind === 'text' ? bodyText(s) : '';
-  const uploadText = reloadText || new TextEncoder().encode(content).length > 999;
+  const uploadText = reloadText || (s.kind === 'text' && !!s.reader && s.text.length > 900) || new TextEncoder().encode(content).length > 999;
   const head = new TextContainerProperty({ ...HEAD, content: clipBytes(screenTitle(s), TEXT_BYTES), isEventCapture: 0 });
   const page =
     s.kind === 'list'

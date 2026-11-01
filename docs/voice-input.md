@@ -226,3 +226,15 @@ page rebuild or text upload, preserved Unicode, full-block Earlier/Later travers
 and unchanged direct hold/release behavior. TypeScript/Vite build passes. Hardware
 smoothness and acceptance of larger updates remain pending. Static build only;
 no host restart, pairing change, Claude testing, or inference submission.
+
+
+## 2026-11-01 hardware rejection correction
+
+Eugene reported "Glasses could not load the selected text. Click to retry."
+after the larger-block build. This means textContainerUpgrade returned false;
+it does not establish whether the cause is a byte limit, firmware, or host behavior.
+Restored the previously working 900-byte section budget. Kept full blocks rather
+than six-row windows, backwards filling, and no text replacement on scroll.
+Reader opening and explicit navigation use checked uploads. Added a simulated
+hardware-budget regression test. 33 tests/build pass; hardware retest pending.
+No runtime restart, pairing change, provider inference, or Claude test.

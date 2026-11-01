@@ -82,10 +82,11 @@ export function tailRows(s: string, maxRows: number): string {
   return out.join('\n');
 }
 
-// Updates accept up to 2,000 characters; also bound UTF-8 bytes conservatively.
+// G2 rejected the 2,000-byte upload on hardware. Retain the working 900-byte
+// budget until a larger native update is verified on this device.
 // Fill from the end so the latest block is full, not a tiny remainder. Preserve
 // every character and let firmware wrap/scroll the intact block.
-export function textSections(text: string, limit = 2000): string[] {
+export function textSections(text: string, limit = 900): string[] {
   if (!Number.isInteger(limit) || limit < 4) throw new Error('Invalid text section limit');
   const sections: string[] = [];
   let section = '', bytes = 0;

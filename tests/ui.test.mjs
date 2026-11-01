@@ -186,7 +186,7 @@ test('Unicode sections preserve all text within native update limit', () => {
   const original = '語🙂abc'.repeat(1000);
   const sections = textExports.textSections(original);
   assert.equal(sections.join(''), original);
-  assert.ok(sections.every(s => new TextEncoder().encode(s).length <= 2000 && !/[\uD800-\uDBFF]$/.test(s)));
+  assert.ok(sections.every(s => new TextEncoder().encode(s).length <= 900 && !/[\uD800-\uDBFF]$/.test(s)));
 });
 
 test('Earlier and Later text send the selected section after rebuilding the reader', async () => {
@@ -257,7 +257,7 @@ test('saved conversation stays intact through repeated scroll gestures and pause
   h.api.history = async () => ({ text, source: 'codex-transcript', messageCount: 20 });
   await h.pick(3);
   assert.equal(h.pages.at(-1).textObject[1].content, '');
-  assert.equal(h.upgrades.at(-1).content, text.slice(-2000));
+  assert.equal(h.upgrades.at(-1).content, text.slice(-900));
   const count = h.upgrades.length, pages = h.pages.length;
   for (let i = 0; i < 20; i++) { await h.scroll('up'); await h.scroll('down'); }
   h.api.history = async () => ({ text: text + 'new output', source: 'codex-transcript' });
@@ -307,4 +307,21 @@ test('explicit earlier controls traverse complete blocks without losing text', a
   await h.tap();
   assert.ok(!h.pages.at(-1).listObject[0].itemContainer.itemName.includes('Earlier text'));
   assert.equal(sections.join(''), text);
+});
+
+
+test('reader stays within the working hardware budget on opening and navigation', async () => {
+  const h = await harness();
+  const accepted = h.bridge.textContainerUpgrade;
+  h.bridge.textContainerUpgrade = async value => {
+    assert.ok(new TextEncoder().encode(value.content).length <= 900);
+    return accepted(value);
+  };
+  h.api.history = async () => ({ text: 'Unicode 🙂 conversation. '.repeat(400), source: 'codex-transcript' });
+  await h.pick(3);
+  assert.ok(h.upgrades.at(-1).content.length > 300);
+  await h.tap();
+  await h.pick(h.pages.at(-1).listObject[0].itemContainer.itemName.indexOf('Earlier text'));
+  assert.ok(h.upgrades.at(-1).content.length > 300);
+  assert.equal(h.elements.get('diag').textContent.includes('could not load'), false);
 });

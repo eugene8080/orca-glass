@@ -12,6 +12,12 @@ upstream Claude code is not evidence of authorization to test it.
 
 ## Current work
 
+2026-11-01 hardware correction: Eugene received "Glasses could not load the
+selected text" with the 2,000-byte reader. Restored the known-working 900-byte
+budget, keeping intact blocks, end-aligned latest text, and no replacement on
+scroll gestures. Larger update support on this device is unverified. This
+supersedes the size in the entry below. Same URL/QR; hardware retest pending.
+
 2026-11-01 latest reader revision supersedes bottom-first windows and automatic
 section switching below. Eugene rejected five-line chunks. Reader now sends intact
 blocks up to 2,000 UTF-8 bytes via empty-page + textContainerUpgrade when needed.
