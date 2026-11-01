@@ -26,7 +26,7 @@ const POLL_MS = 1000;
 
 type Screen =
   | { kind: 'list'; title: string; items: string[]; onPick: (i: number) => void; onBack?: () => void }
-  | { kind: 'text'; title: string; text: string; tail?: boolean; offset?: number; reading?: boolean; onClick?: () => void; onBack?: () => void; onHold?: () => void; };
+  | { kind: 'text'; title: string; text: string; tail?: boolean; offset?: number; reading?: boolean; reader?: Thread; onClick?: () => void; onBack?: () => void; onHold?: () => void; };
 
 let bridge: EvenAppBridge;
 let current: Screen | null = null;
@@ -37,6 +37,7 @@ let sending = false;
 let recordingMode: 'tap' | 'hold' = 'tap';
 let holding = false;
 let releaseCapture: (() => void) | null = null;
+let movingReader = false;
 
 function selectThread(t: Thread | null) {
   if (selectedThread?.handle !== t?.handle) {
@@ -68,11 +69,22 @@ function readerActions(t: Thread, screen: Extract<Screen, { kind: 'text' }>) {
     ...(index > 0 ? [{ label: 'Earlier text', run: () => reopen(index - 1) }] : []),
     ...(index + 1 < sections.length ? [{ label: 'Later text', run: () => reopen(index + 1) }] : []),
     { label: 'Latest output / resume updates', run: () => thread(t) },
-    { label: 'Retained terminal history', run: () => history(t) },
+    { label: 'Conversation history', run: () => history(t) },
   ];
   return show({ kind: 'list', title: t.title, items: actions.map(a => a.label),
     onPick: i => { void guard(t.title, async () => { await actions[i]?.run(); }, () => { void readerActions(t, screen); }); },
     onBack: () => { void guard(t.title, () => show(screen, true), () => { void thread(t); }); } });
+}
+
+async function moveReader(screen: Extract<Screen, { kind: 'text' }>, direction: number) {
+  if (movingReader || !screen.reader) return;
+  screen.reading = true;
+  const index = (screen.offset ?? 0) + direction;
+  if (index < 0 || index >= textSections(screen.text).length) return;
+  movingReader = true;
+  try {
+    await guard(screen.title, () => show({ ...screen, offset: index }, true), () => { void thread(screen.reader!); });
+  } finally { movingReader = false; }
 }
 
 function screenTitle(s: Screen) {
@@ -175,8 +187,11 @@ function thread(t: Thread, note = '') {
   selectThread(t);
   return guard(t.title, async () => {
     const title = () => `${t.title}${note ? `  ${note}` : ''}`;
-    const { text } = await api.thread(t.handle);
-    await show({ kind: 'text', title: title(), text, tail: true, onClick: () => { if (current?.kind === 'text') void readerActions(t, current); }, onBack: home,
+    const snapshot = await api.thread(t.handle);
+    const saved = !snapshot.menu ? await api.history(t.handle).catch(() => null) : null;
+    const useSaved = saved?.source === 'codex-transcript';
+    const text = useSaved ? saved.text : snapshot.text;
+    await show({ kind: 'text', title: title(), text, tail: true, reader: t, onClick: () => { if (current?.kind === 'text') void readerActions(t, current); }, onBack: home,
       onHold: () => { if (recordingMode === 'hold') void replies(t, true); } });
     const screen = current;
     let reading = false;
@@ -184,10 +199,10 @@ function thread(t: Thread, note = '') {
       if (reading || current !== screen) return;
       if (current?.kind === 'text' && current.reading) return;
       reading = true;
-      const r = await api.thread(t.handle).catch(() => null);
+      const r = await (useSaved ? api.history(t.handle) : api.thread(t.handle)).catch(() => null);
       reading = false;
       // A slow response from the previous session must never overwrite a new screen.
-      if (r && current === screen && current?.kind === 'text' && r.text !== current.text && !current.reading) {
+      if (r && (!useSaved || ('source' in r && r.source === 'codex-transcript')) && current === screen && current?.kind === 'text' && r.text !== current.text && !current.reading) {
         current.offset = undefined;
         updateText(title(), r.text);
       }
@@ -200,7 +215,8 @@ function history(t: Thread) {
   return guard(t.title, async () => {
     const r = await api.history(t.handle);
     if (current !== previous) return;
-    await show({ kind: 'text', title: 'Retained terminal history', text: r.text || 'No older terminal output is retained.', tail: true,
+    await show({ kind: 'text', title: r.source === 'codex-transcript' ? 'Conversation history' : 'Terminal buffer only',
+      text: r.text || r.reason || 'No older terminal output is retained.', tail: true, reader: t,
       onBack: () => thread(t),
       onClick: () => { if (current?.kind === 'text') void readerActions(t, current); },
       onHold: () => { if (recordingMode === 'hold') void replies(t, true); } });
@@ -467,6 +483,9 @@ function onEvent(e: EvenHubEvent) {
     // Firmware scrolls overflowing text. Replacing content here causes visible jumps.
     // Pause polling so incoming output cannot reset the reader's scroll position.
     s.reading = true;
+    // Firmware text boundary events extend the reader automatically. Keep the
+    // click menu as a fallback on firmware that reports gestures differently.
+    if (e.textEvent && s.reader) void moveReader(s, type === OsEventTypeList.SCROLL_TOP_EVENT ? -1 : 1);
     return;
   }
   if (type === OsEventTypeList.LONG_PRESS_EVENT) {

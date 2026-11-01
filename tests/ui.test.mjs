@@ -248,3 +248,19 @@ test('cancel during preview prevents late captions and input', async () => {
   assert.equal(h.upgrades.length, 0);
   assert.equal(h.sends.length, 0);
 });
+
+test('verified saved conversation opens directly and scroll boundaries load older and newer text', async () => {
+  const h = await harness();
+  const text = 'First conversation message '.repeat(90) + 'Newest answer';
+  h.api.history = async () => ({ text, source: 'codex-transcript', messageCount: 20 });
+  const sections = textExports.textSections(text);
+  await h.pick(3);
+  assert.equal(h.pages.at(-1).textObject[1].content, sections.at(-1));
+  await h.scroll('up');
+  assert.equal(h.upgrades.at(-1).content, sections.at(-2));
+  await h.scroll('up');
+  assert.equal(h.upgrades.at(-1).content, sections.at(-3));
+  await h.scroll('down');
+  assert.equal(h.upgrades.at(-1).content, sections.at(-2));
+  assert.equal(h.sends.length, 0);
+});

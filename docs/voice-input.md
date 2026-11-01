@@ -3,6 +3,42 @@ Updated: 2026-11-01
 
 ## Current implementation: warm Whisper and native scrolling
 
+### Saved conversation reader (2026-11-01; supersedes buffer-only limitation)
+
+The bridge now reads Orca's local profile-state.db in read-only mode, selecting
+only workspaceSession's exact live Codex pane association with matching terminal
+incarnation, workspace and transcript metadata. It never guesses by newest file
+or shared working directory. The mapped transcript must be under local Codex
+storage. No Claude transcript is opened.
+
+Saved user and assistant response messages are extracted, including messages from
+before compaction. Tool calls/results, developer/system messages, reasoning and
+compaction summaries are excluded. Complete appended JSONL records are processed
+incrementally; concurrent reads serialize. Reader storage is bounded to one million
+text characters (limited=true if older messages are dropped). A cold transcript
+read larger than 64 MiB falls back with an explanation.
+
+On this machine the current Orca Glass pane resolved to 163 messages / 62,273
+characters at verification time. The adjacent Orca Glass pane has no verified
+association and falls back to the terminal buffer. Node's built-in SQLite support
+is required for this adapter (verified on Node 24.15); unsupported runtimes fall
+back. Default profile is local-default; ORCA_GLASS_PROFILE_DIR can select another.
+This adapter reads Orca's internal persisted schema, so an Orca schema change may
+require an update. It does not modify the database or launch an agent.
+
+Opening a verified session now loads its saved conversation directly. Firmware
+text boundary events load earlier/later sections automatically; click navigation
+remains as a fallback. Smooth scrolling remains native inside each section, but
+section replacement cannot preserve a pixel scroll offset with the public SDK.
+Hardware verification is still required for boundary-vs-gesture behavior and
+transition quality. Twenty-nine tests and TypeScript/Vite build pass.
+
+Runtime verification: custom supervisor restarted as PID 37048. The authenticated
+HTTPS history endpoint returned source=codex-transcript, 165 messages and 63,063
+characters with limited=false after restart. The private QR was regenerated and
+signed discovery publication retried successfully (HTTP 200). No live agent prompt
+or Claude operation was performed.
+
 2026-11-01 hardware follow-up: Eugene confirms smooth scrolling. Earlier text
 appeared to do nothing. Desktop navigation logic did select a different section;
 no device rejection was captured, so the exact cause remains unproven. Repair:

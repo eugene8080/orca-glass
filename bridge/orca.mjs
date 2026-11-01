@@ -169,10 +169,22 @@ export async function readThread(handle) {
 }
 
 export async function readHistory(handle) {
-  await requireCodex(handle);
+  const live = await requireCodex(handle);
+  let reason = 'No verified saved conversation is associated with this terminal.';
+  try {
+    const { readConversation } = await import('./conversation.mjs');
+    const conversation = await readConversation(live);
+    if (conversation?.text) {
+      const checked = await requireCodex(handle);
+      if (checked.incarnationId !== live.incarnationId) throw new Error('Terminal changed while loading history');
+      return conversation;
+    }
+  } catch (e) { reason = `Saved conversation unavailable: ${e.message}`; }
+  const fallback = await requireCodex(handle);
+  if (fallback.incarnationId !== live.incarnationId) throw new Error('Terminal changed while loading history');
   const { terminal } = await orca(['terminal', 'read', '--terminal', handle, '--limit', '1000']);
   // This is bounded Orca scrollback, not an invented or inferred conversation.
-  return { text: (terminal.tail || []).join('\n'), limited: !!terminal.limited, source: terminal.source };
+  return { text: (terminal.tail || []).join('\n'), limited: true, source: 'terminal-buffer', reason };
 }
 
 export async function requireCodex(handle) {
@@ -181,6 +193,7 @@ export async function requireCodex(handle) {
   if (terminal?.agentIdentity !== 'codex' || !terminal.connected || terminal.orphaned) {
     throw new Error('Only connected Codex terminals are enabled. Claude is disabled.');
   }
+  return terminal;
 }
 
 export async function choose(handle, id, value) {

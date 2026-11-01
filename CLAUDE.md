@@ -12,6 +12,13 @@ upstream Claude code is not evidence of authorization to test it.
 
 ## Current work
 
+2026-11-01 history update: bridge/conversation.mjs reads Orca's profile-state.db
+read-only and uses the exact recorded pane/incarnation/Codex session association to
+load saved user/assistant messages. No folder/newest-file guessing. This session
+returned 163 saved messages versus a terminal screen. Missing associations fall
+back to the terminal buffer. Text boundary events now load adjacent sections;
+hardware smoothness at section transitions is pending. See docs/voice-input.md.
+
 2026-11-01 current ruling (supersedes older runtime notes below): Eugene rejected
 the separate native Even AI spoken-navigation router. Keep the custom visual UI.
 Warm local Whisper with incremental previews and firmware overflow scrolling are
