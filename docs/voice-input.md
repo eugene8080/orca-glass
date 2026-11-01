@@ -329,3 +329,35 @@ Regression check now supplies new saved conversation text after sending, runs th
 poll, verifies a body text update without page rebuild, and verifies a subsequent
 scroll pauses updates again. Send/Cancel still clear the voice area. No ticket,
 Claude interaction, live inference test, or service restart; same URL/QR.
+
+
+## 2026-11-01 native panel availability investigation
+
+Registry latest is SDK 0.0.16, matching installed version (min app 2.2.10).
+Inspected installed public bridge methods, container declarations and README.
+No arbitrary native modal, custom background fill, optical depth, or native voice
+panel command is exposed. zOrderIndex controls draw ordering, not verified depth.
+
+Official contextual-menu docs confirm a real OS foreground overlay that leaves
+the page mounted. Third-party access is limited to up to ten action labels,
+32 UTF-8 bytes each. Selecting an item closes it. Dynamic labels require page
+rebuild; it cannot host a transcription stream or a custom quarter-screen layout.
+The other native foreground interaction is the fixed exit-confirmation dialog.
+
+Sources:
+- https://hub.evenrealities.com/docs/build/contextual-menu
+- https://registry.npmjs.org/@evenrealities%2feven_hub_sdk/latest
+- https://github.com/even-realities/everything-evenhub/pull/43
+- https://github.com/ryanadiaz/even-notifications/blob/main/src/index.ts
+- https://github.com/ryanadiaz/even-notifications/blob/main/src/containers.ts
+
+Inspected community even-notifications implementation: builds image overlays,
+rebuilds to show, rebuilds original page to dismiss. It does not expose a hidden
+native panel or preserve a native scroll offset. Do not substitute it as a fix.
+
+Possible separate experiment: brightness-only updates (textColor 0/4) could hide
+and restore the existing chat while displaying a custom panel, without replacing
+its text. Scroll retention on such updates is unverified; it hides the whole chat,
+not merely the panel footprint, and is not Even AI's native overlay. Not implemented.
+Current working layout unchanged. No SDK ticket, firmware modification, provider
+inference, Claude test, or simulator-launch retry performed for this investigation.
