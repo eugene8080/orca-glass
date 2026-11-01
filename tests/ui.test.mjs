@@ -368,7 +368,18 @@ test('quarter-screen voice area never overlaps or rebuilds the reader on send or
     assert.ok(h.upgrades.slice(writes).every(u => u.containerName === 'voice'));
     assert.equal(h.upgrades.at(-1).content, ' ');
     assert.equal(h.sends.length, send ? 1 : 0);
-    assert.equal(h.timers.size, 0);
+    assert.equal(h.timers.size, send ? 1 : 0);
+    if (send) {
+      h.api.history = async () => ({ text: 'New response after voice send', source: 'codex-transcript' });
+      await [...h.timers.values()][0]();
+      assert.equal(h.upgrades.at(-1).containerName, 'body');
+      assert.equal(h.upgrades.at(-1).content, 'New response after voice send');
+      assert.equal(h.pages.length, count);
+      await h.scroll('up');
+      const pausedWrites = h.upgrades.length;
+      await [...h.timers.values()][0]();
+      assert.equal(h.upgrades.length, pausedWrites);
+    }
   }
 });
 

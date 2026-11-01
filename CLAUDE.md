@@ -12,6 +12,12 @@ upstream Claude code is not evidence of authorization to test it.
 
 ## Current work
 
+2026-11-01 live replies after Send: successful voice submission now restarts
+reader polling in place, using the original saved-history/terminal source. No
+page rebuild is needed to dismiss the voice area. Cancel leaves reading paused.
+Scrolling pauses updates again. This supersedes the earlier requirement to choose
+Resume latest output after every send. 36 tests/build pass; hardware retest pending.
+
 2026-11-01 hardware confirmed foreground text is transparent and overlaps the
 chat. Replaced overlapping layout with a reserved bottom quarter: voice area
 x0/y216/576x72, reader x0/y40/576x168, 8px gap. Chat remains mounted through

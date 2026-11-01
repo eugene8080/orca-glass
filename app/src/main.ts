@@ -30,7 +30,7 @@ const POLL_MS = 1000;
 
 type Screen =
   | { kind: 'list'; title: string; items: string[]; onPick: (i: number) => void; onBack?: () => void }
-  | { kind: 'text'; title: string; text: string; tail?: boolean; offset?: number; reading?: boolean; reader?: Thread; onClick?: () => void; onBack?: () => void; onHold?: () => void; };
+  | { kind: 'text'; title: string; text: string; tail?: boolean; offset?: number; reading?: boolean; savedHistory?: boolean; reader?: Thread; onClick?: () => void; onBack?: () => void; onHold?: () => void; };
 
 let bridge: EvenAppBridge;
 let current: Screen | null = null;
@@ -206,23 +206,31 @@ function thread(t: Thread, note = '') {
     const saved = !snapshot.menu ? await api.history(t.handle).catch(() => null) : null;
     const useSaved = saved?.source === 'codex-transcript';
     const text = useSaved ? saved.text : snapshot.text;
-    await show({ kind: 'text', title: title(), text, tail: true, reader: t, onClick: () => { if (current?.kind === 'text') void openReaderControls(t, current); }, onBack: home,
+    await show({ kind: 'text', title: title(), text, tail: true, savedHistory: useSaved, reader: t, onClick: () => { if (current?.kind === 'text') void openReaderControls(t, current); }, onBack: home,
       onHold: () => { void record(t, true); } });
-    const screen = current;
-    let reading = false;
-    poll = setInterval(async () => {
-      if (reading || current !== screen) return;
-      if (current?.kind === 'text' && current.reading) return;
-      reading = true;
-      const r = await (useSaved ? api.history(t.handle) : api.thread(t.handle)).catch(() => null);
-      reading = false;
-      // A slow response from the previous session must never overwrite a new screen.
-      if (r && (!useSaved || ('source' in r && r.source === 'codex-transcript')) && current === screen && current?.kind === 'text' && r.text !== current.text && !current.reading) {
-        current.offset = undefined;
-        updateText(title(), r.text);
-      }
-    }, POLL_MS);
+    startReaderUpdates(current);
   }, home);
+}
+
+
+// Restart live updates without rebuilding the mounted chat after a successful send.
+function startReaderUpdates(screen: Screen | null) {
+  clearInterval(poll);
+  if (screen?.kind !== 'text' || !screen.reader) return;
+  const t = screen.reader;
+  const useSaved = !!screen.savedHistory;
+  let reading = false;
+  poll = setInterval(async () => {
+    if (reading || current !== screen || screen.reading) return;
+    reading = true;
+    const r = await (useSaved ? api.history(t.handle) : api.thread(t.handle)).catch(() => null);
+    reading = false;
+    // A pending old-session read must never overwrite another screen or draft.
+    if (r && (!useSaved || ('source' in r && r.source === 'codex-transcript')) && current === screen && r.text !== screen.text && !screen.reading) {
+      screen.offset = undefined;
+      updateText(screen.title, r.text);
+    }
+  }, POLL_MS);
 }
 
 function history(t: Thread) {
@@ -282,7 +290,7 @@ async function record(t: Thread, hold = false) {
   const background = current;
   if (background?.kind !== 'text' || !background.reader) return;
   // Keep the mounted reader and its firmware scroll position untouched throughout
-  // capture, transcription, review, and dismissal. Resume is an explicit action.
+  // capture, transcription and review. Only a successful Send resumes updates.
   background.reading = true;
   clearInterval(poll);
   let overlayActive = true;
@@ -352,6 +360,12 @@ async function record(t: Thread, hold = false) {
       await voiceShow({ kind: 'text', title: t.title, text: 'Sending…' });
       await api.say(t.handle, text);
       await closeVoice();
+      if (current === background) {
+        background.reading = false;
+        background.tail = true;
+        background.offset = undefined;
+        startReaderUpdates(background);
+      }
     } catch (e) {
       await voiceShow({ kind: 'text', title: t.title, text: (e as Error).message, onBack: () => closeVoice(), onClick: () => closeVoice() }).catch(e => diag((e as Error).message));
     } finally { sending = false; }

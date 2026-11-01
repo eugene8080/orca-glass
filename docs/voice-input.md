@@ -315,3 +315,17 @@ along with no page rebuild and no writes to the reader. No claim of an opaque
 native overlay or optical-depth control. Long drafts still have limited visible
 space in the small non-capturing voice area. Same URL/QR, static frontend only.
 No ticket submission, network change, restart, Claude test, or live inference.
+
+
+## 2026-11-01 resume replies after successful Send
+
+2026-11-01 live replies after Send: successful voice submission now restarts
+reader polling in place, using the original saved-history/terminal source. No
+page rebuild is needed to dismiss the voice area. Cancel leaves reading paused.
+Scrolling pauses updates again. This supersedes the earlier requirement to choose
+Resume latest output after every send. 36 tests/build pass; hardware retest pending.
+
+Regression check now supplies new saved conversation text after sending, runs the
+poll, verifies a body text update without page rebuild, and verifies a subsequent
+scroll pauses updates again. Send/Cancel still clear the voice area. No ticket,
+Claude interaction, live inference test, or service restart; same URL/QR.

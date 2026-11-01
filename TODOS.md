@@ -3,6 +3,7 @@ Updated: 2026-11-01
 
 | Task | Status | Evidence / remaining work |
 | --- | --- | --- |
+| Resume live replies after voice send | Implemented; G2 retest pending | 2026-11-01: successful Send resumes polling without rebuilding chat; Cancel retains paused reading position. Existing source/identity guards retained. 36 tests/build pass, including new response visible after send. |
 | Separate voice area from chat | Implemented; G2 retest pending | 2026-11-01: transparent foreground text overlapped chat on hardware. Reserve bottom 576x72 for voice, reduce reader height to 168 with 8px gap. No rebuild on capture/review/dismiss; reserved area remains empty when inactive. 36 tests/build pass. |
 | Hold regression after foreground panel | Repair candidate live; G2 retest pending | 2026-11-01: dim-space panel initialization, explicit visibility, rejected-panel fallback to standard recording screen, hold-stage phone diagnostics. Exact native failure unknown. 36 mocked tests/build pass. |
 | Quarter-screen voice foreground panel | Implemented; G2 check pending | 2026-11-01: pre-created layered panel; recording/review/Send/Cancel never rebuild or rewrite chat. Polling stays paused until Resume latest output. 35 tests/build pass; native SDK validates layer ordering. Transparency and visual stacking need hardware confirmation. |
