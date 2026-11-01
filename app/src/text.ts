@@ -82,17 +82,21 @@ export function tailRows(s: string, maxRows: number): string {
   return out.join('\n');
 }
 
-// Stay below both character and encoded-byte limits across host/firmware versions.
-// Preserve all text; firmware still performs smooth scrolling within each section.
-export function textSections(text: string, limit = 900): string[] {
+// Updates accept up to 2,000 characters; also bound UTF-8 bytes conservatively.
+// Fill from the end so the latest block is full, not a tiny remainder. Preserve
+// every character and let firmware wrap/scroll the intact block.
+export function textSections(text: string, limit = 2000): string[] {
+  if (!Number.isInteger(limit) || limit < 4) throw new Error('Invalid text section limit');
   const sections: string[] = [];
   let section = '', bytes = 0;
-  for (const ch of text) {
+  const chars = [...text];
+  for (let i = chars.length - 1; i >= 0; i--) {
+    const ch = chars[i];
     const size = enc.encode(ch).length;
     if (bytes + size > limit) { sections.push(section); section = ''; bytes = 0; }
-    section += ch;
+    section = ch + section;
     bytes += size;
   }
   sections.push(section);
-  return sections;
+  return sections.reverse();
 }

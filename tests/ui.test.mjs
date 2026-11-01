@@ -46,7 +46,7 @@ async function harness(count = 2, voice = false, mode = 'tap') {
   const source = ts.transpileModule(readFileSync(new URL('../app/src/main.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
   vm.runInNewContext(source, {
     exports: {}, require: name => imports[name], document: { getElementById: element },
-    location: { search: '' }, window: { addEventListener() {} }, URLSearchParams, Uint8Array,
+    location: { search: '' }, window: { addEventListener() {} }, URLSearchParams, Uint8Array, TextEncoder,
     setInterval: fn => { timers.set(++timerId, fn); return timerId; },
     clearInterval: id => timers.delete(id),
   });
@@ -182,25 +182,25 @@ test('firmware gets overflowing text; scroll does not replace content and pauses
   assert.equal(h.upgrades.at(-1).content, output);
 });
 
-test('Unicode sections preserve all text within native creation limit', () => {
+test('Unicode sections preserve all text within native update limit', () => {
   const original = '語🙂abc'.repeat(1000);
   const sections = textExports.textSections(original);
   assert.equal(sections.join(''), original);
-  assert.ok(sections.every(s => new TextEncoder().encode(s).length <= 900 && !/[\uD800-\uDBFF]$/.test(s)));
+  assert.ok(sections.every(s => new TextEncoder().encode(s).length <= 2000 && !/[\uD800-\uDBFF]$/.test(s)));
 });
 
 test('Earlier and Later text send the selected section after rebuilding the reader', async () => {
   const h = await harness();
-  const output = 'Earlier — '.repeat(160) + 'Latest text';
+  const output = 'Earlier — '.repeat(400) + 'Latest text';
   const sections = textExports.textSections(output);
   h.api.thread = async () => ({ text: output });
   await h.pick(3);
-  assert.equal(h.pages.at(-1).textObject[1].content, sections.at(-1));
+  assert.equal(h.upgrades.at(-1).content, sections.at(-1));
   await h.tap();
   const labels = h.pages.at(-1).listObject[0].itemContainer.itemName;
   await h.pick(labels.indexOf('Earlier text'));
   assert.equal(h.pages.at(-1).textObject[1].content, '');
-  assert.equal(h.upgrades.at(-1).content, textExports.textPages(sections.at(-2), 6, 900).at(-1));
+  assert.equal(h.upgrades.at(-1).content, sections.at(-2));
   await h.tap();
   await h.pick(h.pages.at(-1).listObject[0].itemContainer.itemName.indexOf('Later text'));
   assert.equal(h.upgrades.at(-1).content, sections.at(-1));
@@ -209,7 +209,7 @@ test('Earlier and Later text send the selected section after rebuilding the read
 
 test('a rejected reader update is reported instead of silently changing section', async () => {
   const h = await harness();
-  h.api.thread = async () => ({ text: 'Older text '.repeat(200) });
+  h.api.thread = async () => ({ text: 'Older text '.repeat(400) });
   await h.pick(3); await h.tap();
   const rebuild = h.bridge.rebuildPageContainer;
   h.bridge.rebuildPageContainer = async p => {
@@ -218,7 +218,7 @@ test('a rejected reader update is reported instead of silently changing section'
   };
   await h.pick(1);
   assert.match(h.elements.get('diag').textContent, /rejected/);
-  assert.equal(h.upgrades.length, 0);
+  assert.equal(h.upgrades.length, 1);
   assert.equal(h.sends.length, 0);
 });
 
@@ -251,19 +251,19 @@ test('cancel during preview prevents late captions and input', async () => {
   assert.equal(h.sends.length, 0);
 });
 
-test('verified saved conversation opens directly and scroll boundaries load older and newer text', async () => {
+test('saved conversation stays intact through repeated scroll gestures and pauses polling', async () => {
   const h = await harness();
-  const text = 'First conversation message '.repeat(90) + 'Newest answer';
+  const text = 'First conversation message '.repeat(200) + 'Newest answer';
   h.api.history = async () => ({ text, source: 'codex-transcript', messageCount: 20 });
-  const sections = textExports.textSections(text);
   await h.pick(3);
-  assert.equal(h.pages.at(-1).textObject[1].content, sections.at(-1));
-  await h.scroll('up');
-  assert.equal(h.upgrades.at(-1).content, textExports.textPages(sections.at(-2), 6, 900).at(-1));
-  await h.scroll('up');
-  assert.equal(h.upgrades.at(-1).content, textExports.textPages(sections.at(-2), 6, 900).at(-2));
-  await h.scroll('down');
-  assert.equal(h.upgrades.at(-1).content, textExports.textPages(sections.at(-2), 6, 900).at(-1));
+  assert.equal(h.pages.at(-1).textObject[1].content, '');
+  assert.equal(h.upgrades.at(-1).content, text.slice(-2000));
+  const count = h.upgrades.length, pages = h.pages.length;
+  for (let i = 0; i < 20; i++) { await h.scroll('up'); await h.scroll('down'); }
+  h.api.history = async () => ({ text: text + 'new output', source: 'codex-transcript' });
+  for (const timer of h.timers.values()) await timer();
+  assert.equal(h.upgrades.length, count);
+  assert.equal(h.pages.length, pages);
   assert.equal(h.sends.length, 0);
 });
 
@@ -292,21 +292,19 @@ test('single click opens actual numbered choices instead of reading controls', a
   assert.equal(h.sends.length, 0);
 });
 
-test('upward reading visits every bottom-first window instead of skipping the earlier chunk', async () => {
+test('explicit earlier controls traverse complete blocks without losing text', async () => {
   const h = await harness();
-  const text = Array.from({ length: 80 }, (_, i) => `Line ${i}: distinct text.\n`).join('');
+  const text = Array.from({ length: 280 }, (_, i) => `Line ${i}: distinct text.\n`).join('');
   const sections = textExports.textSections(text);
   h.api.history = async () => ({ text, source: 'codex-transcript' });
   await h.pick(3);
+  assert.equal(h.upgrades.at(-1).content, sections.at(-1));
   for (let section = sections.length - 2; section >= 0; section--) {
-    const windows = textExports.textPages(sections[section], 6, 900);
-    for (let slice = windows.length - 1; slice >= 0; slice--) {
-      await h.scroll('up');
-      assert.equal(h.upgrades.at(-1).content, windows[slice]);
-      assert.ok(windows[slice].split('\n').length <= 6);
-    }
+    await h.tap();
+    await h.pick(h.pages.at(-1).listObject[0].itemContainer.itemName.indexOf('Earlier text'));
+    assert.equal(h.upgrades.at(-1).content, sections[section]);
   }
-  const count = h.upgrades.length;
-  await h.scroll('up');
-  assert.equal(h.upgrades.length, count);
+  await h.tap();
+  assert.ok(!h.pages.at(-1).listObject[0].itemContainer.itemName.includes('Earlier text'));
+  assert.equal(sections.join(''), text);
 });

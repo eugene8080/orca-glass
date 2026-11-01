@@ -12,6 +12,15 @@ upstream Claude code is not evidence of authorization to test it.
 
 ## Current work
 
+2026-11-01 latest reader revision supersedes bottom-first windows and automatic
+section switching below. Eugene rejected five-line chunks. Reader now sends intact
+blocks up to 2,000 UTF-8 bytes via empty-page + textContainerUpgrade when needed.
+Blocks fill from the end so latest is not a short remainder. Scroll events only
+pause polling; firmware owns movement. Earlier/Later controls switch full blocks.
+Native Even Terminal host returns up to ten whole messages but its native mobile
+renderer is not in the installed Windows package. Matching its full history span
+is not achieved. Hardware retest pending; existing QR/runtime unchanged.
+
 2026-11-01 approved UI: hold directly from chat starts voice regardless of old
 recording-mode preference; release sends, double-click cancels. Single click opens
 only Resume latest output / Earlier text / Later text / Back to conversation, or

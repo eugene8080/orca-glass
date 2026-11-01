@@ -201,3 +201,28 @@ installed locally. whisper.cpp's public JFK WAV was decoded to PCM and transcrib
 through bridge/whisper.mjs successfully. This is a local speech-engine test, not
 a Codex inference or live terminal submission. The custom server/tunnel was then
 started with local/HTTPS checks passing; Android/G2 pairing remains the next check.
+
+
+## 2026-11-01 larger intact blocks (latest ruling)
+
+Eugene reported the bottom-first workaround showed about five lines and interrupted
+reading. Removed six-row slices and automatic section changes on scroll events:
+the SDK event description covers gestures as well as boundaries, so replacing
+content on those events interferes with native scrolling. Up/down now only pauses
+live updates. Existing Earlier/Later controls explicitly load a whole block.
+
+Blocks are up to 2,000 UTF-8 bytes (also within 2,000 characters), filled backwards
+so the latest block is full. Larger blocks use empty page creation followed by a
+checked textContainerUpgrade, avoiding the smaller creation limit. No text is
+lost between blocks; there is still no documented scroll-position API.
+
+Reference: https://hub.evenrealities.com/docs/build/display. Installed official
+Even Terminal 0.10.5 dist/codex/storage.js returns up to ten complete user/agent
+messages without character truncation. Its native mobile renderer is not present
+in the Windows host package. This revision does not claim equivalent history span.
+
+Validation: 32 mocked/read-only tests pass, including repeated gestures causing no
+page rebuild or text upload, preserved Unicode, full-block Earlier/Later traversal,
+and unchanged direct hold/release behavior. TypeScript/Vite build passes. Hardware
+smoothness and acceptance of larger updates remain pending. Static build only;
+no host restart, pairing change, Claude testing, or inference submission.

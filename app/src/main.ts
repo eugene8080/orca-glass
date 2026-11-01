@@ -14,7 +14,7 @@ import {
 import { api, currentBase, setApiLang, setConnection, setDemo, type Provider, type Thread, type Workspace } from './api';
 import { parseCode, resolveBase } from './pairing';
 import { applyPage, detectLang, setLang, t as tr } from './i18n';
-import { clipBytes, textSections, textPages } from './text';
+import { clipBytes, textSections } from './text';
 
 // 画面 576x288。上に見出し(テキスト)、下に本文(リスト or テキスト)の2段構成で統一する。
 const HEAD = { containerID: 1, containerName: 'head', xPosition: 0, yPosition: 0, width: 576, height: 36 };
@@ -26,7 +26,7 @@ const POLL_MS = 1000;
 
 type Screen =
   | { kind: 'list'; title: string; items: string[]; onPick: (i: number) => void; onBack?: () => void }
-  | { kind: 'text'; title: string; text: string; tail?: boolean; offset?: number; slice?: number; reading?: boolean; reader?: Thread; onClick?: () => void; onBack?: () => void; onHold?: () => void; };
+  | { kind: 'text'; title: string; text: string; tail?: boolean; offset?: number; reading?: boolean; reader?: Thread; onClick?: () => void; onBack?: () => void; onHold?: () => void; };
 
 let bridge: EvenAppBridge;
 let current: Screen | null = null;
@@ -50,26 +50,18 @@ function selectThread(t: Thread | null) {
 }
 
 // Send overflowing text intact; the G2 firmware owns movement within a section.
-function bodyText(s: { text: string; tail?: boolean; offset?: number; slice?: number }) {
+function bodyText(s: { text: string; tail?: boolean; offset?: number }) {
   const sections = textSections(s.text);
   s.offset = Math.max(0, Math.min(s.offset ?? (s.tail ? sections.length - 1 : 0), sections.length - 1));
-  const section = sections[s.offset];
-  return s.slice === undefined ? section : textPages(section, 6, 900)[s.slice] ?? '';
+  return sections[s.offset];
 }
 
 function readerStep(screen: Extract<Screen, { kind: 'text' }>, direction: number) {
   const sections = textSections(screen.text);
   const offset = screen.offset ?? 0;
-  const slices = textPages(sections[offset], 6, 900);
-  if (screen.slice !== undefined) {
-    const slice = screen.slice + direction;
-    if (slice >= 0 && slice < slices.length) return { offset, slice };
-  }
   const next = offset + direction;
   if (next < 0 || next >= sections.length) return null;
-  // No native scroll-to-bottom API: show a short bottom window first, then
-  // traverse the remaining windows so no earlier part of the section is lost.
-  return { offset: next, slice: direction < 0 ? textPages(sections[next], 6, 900).length - 1 : undefined };
+  return { offset: next };
 }
 
 async function openReaderControls(t: Thread, screen: Extract<Screen, { kind: 'text' }>) {
@@ -113,6 +105,7 @@ async function show(s: Screen, reloadText = false) {
   const previous = current;
   current = s;
   const content = s.kind === 'text' ? bodyText(s) : '';
+  const uploadText = reloadText || new TextEncoder().encode(content).length > 999;
   const head = new TextContainerProperty({ ...HEAD, content: clipBytes(screenTitle(s), TEXT_BYTES), isEventCapture: 0 });
   const page =
     s.kind === 'list'
@@ -132,7 +125,7 @@ async function show(s: Screen, reloadText = false) {
         }
       : {
           containerTotalNum: 2,
-          textObject: [head, new TextContainerProperty({ ...BODY, content: reloadText ? '' : content, isEventCapture: 1 })],
+          textObject: [head, new TextContainerProperty({ ...BODY, content: uploadText ? '' : content, isEventCapture: 1 })],
         };
   try {
     if (!started) {
@@ -143,7 +136,7 @@ async function show(s: Screen, reloadText = false) {
       const accepted = await bridge.rebuildPageContainer(new RebuildPageContainer(page));
       if (!accepted) throw new Error('Glasses rejected the screen update. Reconnect and try again.');
     }
-    if (reloadText && s.kind === 'text') {
+    if (uploadText && s.kind === 'text') {
       const accepted = await bridge.textContainerUpgrade(new TextContainerUpgrade({ containerID: BODY.containerID, containerName: BODY.containerName, content }));
       if (!accepted) throw new Error('Glasses could not load the selected text. Click to retry.');
     }
@@ -221,7 +214,6 @@ function thread(t: Thread, note = '') {
       // A slow response from the previous session must never overwrite a new screen.
       if (r && (!useSaved || ('source' in r && r.source === 'codex-transcript')) && current === screen && current?.kind === 'text' && r.text !== current.text && !current.reading) {
         current.offset = undefined;
-        current.slice = undefined;
         updateText(title(), r.text);
       }
     }, POLL_MS);
@@ -491,9 +483,8 @@ function onEvent(e: EvenHubEvent) {
     // Firmware scrolls overflowing text. Replacing content here causes visible jumps.
     // Pause polling so incoming output cannot reset the reader's scroll position.
     s.reading = true;
-    // Firmware text boundary events extend the reader automatically. Keep the
-    // click menu as a fallback on firmware that reports gestures differently.
-    if (e.textEvent && s.reader) void moveReader(s, type === OsEventTypeList.SCROLL_TOP_EVENT ? -1 : 1);
+    // These events also report gestures, not reliably just boundaries. Never
+    // replace the block on a swipe; explicit Earlier/Later controls change it.
     return;
   }
   if (type === OsEventTypeList.LONG_PRESS_EVENT) {

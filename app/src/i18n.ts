@@ -101,7 +101,7 @@ const dict = {
     setupTitle: 'Getting started (on your PC)',
     setupSteps: '<li>Install Orca on your PC</li><li>Ask Codex to "set up Orca Glass" (skill: <a href="https://github.com/eugene8080/orca-glass">github.com/eugene8080/orca-glass</a>)</li><li>Paste the pairing code it gives you below and save</li>',
     opsTitle: 'On the glasses',
-    opsList: '<li>Conversation: hold to talk directly; release to send. No Reply menu is required. Double-click while recording to cancel.</li><li>Click for reading controls or actual numbered choices. Double-click from the conversation to return to sessions.</li><li>Scroll up to load the bottom of earlier text first. Keep scrolling up to read the remaining earlier windows. This is a temporary windowed reader.</li><li>Scrolling pauses updates; choose Resume latest output to resume.</li>',
+    opsList: '<li>Conversation: hold to talk directly; release to send. No Reply menu is required. Double-click while recording to cancel.</li><li>Click for reading controls or actual numbered choices. Double-click from the conversation to return to sessions.</li><li>Scroll naturally within the text block. Click and choose Earlier text or Later text to switch blocks.</li><li>Scrolling pauses updates; choose Resume latest output to resume.</li>',
     codeLabel: 'Pairing code (run <code>npm run pair</code> on your PC and paste)',
     langLabel: 'Language',
     save: 'Save and reconnect',
