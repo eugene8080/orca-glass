@@ -117,7 +117,7 @@ test('slow polls do not overlap or overwrite a different session screen', async 
   assert.equal(h.pages.at(-1).textObject[1].content, 'Other session');
 });
 
-test('hold release finalizes and sends once without another click', async () => {
+test('hold release reviews text and only explicit send submits once', async () => {
   const h = await harness(2, true, 'hold');
   await h.pick(3);
   h.press();
@@ -127,6 +127,10 @@ test('hold release finalizes and sends once without another click', async () => 
   await h.flush();
   assert.deepEqual(h.mic, [true, false]);
   assert.equal(h.transcriptions.length, 1);
+  assert.equal(h.sends.length, 0);
+  assert.equal(h.pages.at(-1).textObject[0].content, 'confirmSend');
+  assert.equal(h.pages.at(-1).textObject[1].content, 'A voice test.');
+  await h.tap();
   assert.equal(h.sends.length, 1);
   h.release();
   await h.flush();
@@ -222,7 +226,7 @@ test('a rejected reader update is reported instead of silently changing section'
   assert.equal(h.sends.length, 0);
 });
 
-test('previews serialize requests; release waits and sends final text only once', async () => {
+test('previews serialize requests; release waits for final text before review', async () => {
   const h = await harness(2, true, 'hold');
   await h.pick(3); h.press(); await h.flush(); h.audio();
   let finish, requests = 0;
@@ -237,6 +241,9 @@ test('previews serialize requests; release waits and sends final text only once'
   assert.equal(h.sends.length, 0);
   finish({ text: 'First words and final words' }); await h.flush();
   assert.equal(requests, 2);
+  assert.equal(h.sends.length, 0);
+  assert.equal(h.pages.at(-1).textObject[1].content, 'First words and final words');
+  await h.tap();
   assert.deepEqual(h.sends, [{ handle: 'terminal-0', text: 'First words and final words' }]);
 });
 
@@ -324,4 +331,17 @@ test('reader stays within the working hardware budget on opening and navigation'
   await h.pick(h.pages.at(-1).listObject[0].itemContainer.itemName.indexOf('Earlier text'));
   assert.ok(h.upgrades.at(-1).content.length > 300);
   assert.equal(h.elements.get('diag').textContent.includes('could not load'), false);
+});
+
+
+test('double-click discards a finished voice draft without sending', async () => {
+  const h = await harness(2, true, 'hold');
+  await h.pick(3); h.press(); await h.flush(); h.audio(); h.release(); await h.flush();
+  assert.equal(h.pages.at(-1).textObject[0].content, 'confirmSend');
+  await h.back();
+  assert.equal(h.sends.length, 0);
+  assert.equal(h.pages.at(-1).textObject[1].content, 'Content terminal-0');
+  h.press(); await h.flush();
+  assert.equal(h.mic.at(-1), true);
+  await h.back();
 });

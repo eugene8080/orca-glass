@@ -12,6 +12,13 @@ upstream Claude code is not evidence of authorization to test it.
 
 ## Current work
 
+2026-11-01 latest voice ruling: release finishes transcription and displays the
+text with Click=send / Double=cancel. No automatic submission. Draft remains
+cancellable on system exit and sends at most once. User explicitly said not to
+submit any SDK ticket. Native Terminal visibly auto-scrolls from top to bottom,
+but installed SDK 0.0.16/public reference exposes no command to reproduce that;
+auto-scroll remains unimplemented. Keep the working native reader intact.
+
 2026-11-01 hardware correction: Eugene received "Glasses could not load the
 selected text" with the 2,000-byte reader. Restored the known-working 900-byte
 budget, keeping intact blocks, end-aligned latest text, and no replacement on

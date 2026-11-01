@@ -238,3 +238,23 @@ than six-row windows, backwards filling, and no text replacement on scroll.
 Reader opening and explicit navigation use checked uploads. Added a simulated
 hardware-budget regression test. 33 tests/build pass; hardware retest pending.
 No runtime restart, pairing change, provider inference, or Claude test.
+
+
+## 2026-11-01 release-to-review and scroll investigation
+
+2026-11-01 latest voice ruling: release finishes transcription and displays the
+text with Click=send / Double=cancel. No automatic submission. Draft remains
+cancellable on system exit and sends at most once. User explicitly said not to
+submit any SDK ticket. Native Terminal visibly auto-scrolls from top to bottom,
+but installed SDK 0.0.16/public reference exposes no command to reproduce that;
+auto-scroll remains unimplemented. Keep the working native reader intact.
+
+Validated with 34 mocked tests including no send on release, explicit send,
+finished-draft cancellation, cancellation during transcription, and serialized
+preview completion before review. TypeScript/Vite build passes. Same URL/QR;
+hardware confirmation pending. No Claude or live inference tests.
+
+Reference checked: official even-realities/everything-evenhub glasses-ui and
+installed SDK declarations. SCROLL_TOP_EVENT/SCROLL_BOTTOM_EVENT are input events;
+container x/yPosition are layout coordinates, not a text scroll offset. No
+synthetic gesture or timer-based text replacement was added.

@@ -3,6 +3,7 @@ Updated: 2026-11-01
 
 | Task | Status | Evidence / remaining work |
 | --- | --- | --- |
+| Voice Send/Cancel review; automatic scroll investigation | Voice implemented; auto-scroll unresolved | 2026-11-01: hold release transcribes then click sends / double-click cancels. 34 tests/build pass. Installed SDK and official reference provide no programmatic scrolling command. Working reader unchanged; no ticket submitted per user. |
 | Restore working reader upload size | PC validated; G2 retest pending | 2026-11-01: hardware rejected larger upload. Restored 900-byte intact blocks; retained native scrolling without gesture-triggered replacement. Same URL/QR. 33 tests and build pass. |
 | Larger intact reader blocks | PC validated; G2 retest pending | 2026-11-01: supersedes rejected bottom-first windows. Up to 2,000 UTF-8 bytes per block; swipe never replaces text; explicit Earlier/Later switches intact blocks. Latest block filled from end. 32 tests/build pass. Native Terminal full-history parity remains open. |
 | Direct hold and bottom-first earlier text | Implemented; hardware retest pending | 2026-11-01: approved controls replace Reply/instruction menus. Hold directly from chat ignores old tap setting. Earlier sections show bottom window first; further up visits every remaining window. 32 tests/build pass. Static update; existing custom QR stays valid. |

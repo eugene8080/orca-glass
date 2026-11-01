@@ -276,7 +276,7 @@ async function record(t: Thread, hold = false) {
   recording = [];
   const chunks = recording;
   const t0 = Date.now();
-  let stopped = false, cancelled = false;
+  let stopped = false, cancelled = false, submitted = false;
   let tick: ReturnType<typeof setInterval> | undefined;
   let pending: Promise<void> | null = null;
   let lastBytes = 0, caption = '';
@@ -300,7 +300,8 @@ async function record(t: Thread, hold = false) {
   };
   cancelCapture = cancel;
   const sendText = async (text: string) => {
-    if (cancelled || sending) return;
+    if (cancelled || submitted || sending) return;
+    submitted = true;
     sending = true;
     cancelCapture = null;
     await show({ kind: 'text', title: t.title, text: 'Sending…' });
@@ -328,9 +329,8 @@ async function record(t: Thread, hold = false) {
       cancelCapture = null;
       if (!text) {
         await show({ kind: 'text', title: tr('voiceTitle'), text: tr('notHeard'), onClick: () => thread(t), onBack: () => thread(t) });
-      } else if (hold) {
-        await sendText(text);
       } else {
+        cancelCapture = cancel;
         await show({ kind: 'text', title: tr('confirmSend'), text,
           onClick: () => { void sendText(text); }, onBack: () => { cancel(); void thread(t); } });
       }
@@ -341,7 +341,7 @@ async function record(t: Thread, hold = false) {
     }
   };
   if (hold) releaseCapture = () => { void stop(true); };
-  const hint = hold ? 'Speak. Release to send. Double-click to cancel.' : tr('recordingHint');
+  const hint = hold ? 'Speak. Release to review. Double-click to cancel.' : tr('recordingHint');
   await show({ kind: 'text', title: tr('recording', 0), text: hint,
     onClick: hold ? undefined : () => { void stop(true); }, onBack: () => { void stop(false); } });
   if (stopped) return;
