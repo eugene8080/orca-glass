@@ -19,6 +19,7 @@ import { clipBytes, textSections } from './text';
 // 画面 576x288。上に見出し(テキスト)、下に本文(リスト or テキスト)の2段構成で統一する。
 const HEAD = { containerID: 1, containerName: 'head', xPosition: 0, yPosition: 0, width: 576, height: 36 };
 const BODY = { containerID: 2, containerName: 'body', xPosition: 0, yPosition: 40, width: 576, height: 248 };
+const VOICE = { containerID: 3, containerName: 'voice', xPosition: 144, yPosition: 72, width: 288, height: 144 };
 const LIST_ITEM_BYTES = 63;
 const LIST_MAX = 20;
 const TEXT_BYTES = 999;
@@ -106,7 +107,7 @@ async function show(s: Screen, reloadText = false) {
   current = s;
   const content = s.kind === 'text' ? bodyText(s) : '';
   const uploadText = reloadText || (s.kind === 'text' && !!s.reader && s.text.length > 900) || new TextEncoder().encode(content).length > 999;
-  const head = new TextContainerProperty({ ...HEAD, content: clipBytes(screenTitle(s), TEXT_BYTES), isEventCapture: 0 });
+  const head = new TextContainerProperty({ ...HEAD, ...(s.kind === 'text' && s.reader ? { zOrderIndex: 0 } : {}), content: clipBytes(screenTitle(s), TEXT_BYTES), isEventCapture: 0 });
   const page =
     s.kind === 'list'
       ? {
@@ -124,8 +125,9 @@ async function show(s: Screen, reloadText = false) {
           ],
         }
       : {
-          containerTotalNum: 2,
-          textObject: [head, new TextContainerProperty({ ...BODY, content: uploadText ? '' : content, isEventCapture: 1 })],
+          containerTotalNum: s.reader ? 3 : 2,
+          textObject: [head, new TextContainerProperty({ ...BODY, ...(s.reader ? { zOrderIndex: 1 } : {}), content: uploadText ? '' : content, isEventCapture: 1 }),
+            ...(s.reader ? [new TextContainerProperty({ ...VOICE, content: '', isEventCapture: 0, zOrderIndex: 2 })] : [])],
         };
   try {
     if (!started) {
@@ -273,6 +275,34 @@ const MAX_REC_SEC = 60;
 
 async function record(t: Thread, hold = false) {
   if ((hold && !holding) || recording !== null || cancelCapture) return;
+  const background = current;
+  if (background?.kind !== 'text' || !background.reader) return;
+  // Keep the mounted reader and its firmware scroll position untouched throughout
+  // capture, transcription, review, and dismissal. Resume is an explicit action.
+  background.reading = true;
+  clearInterval(poll);
+  let overlayActive = true;
+  let overlayWrites: Promise<void> = Promise.resolve();
+  const writeOverlay = (content: string) => {
+    const write = overlayWrites.then(async () => {
+      const accepted = await bridge.textContainerUpgrade(new TextContainerUpgrade({ ...VOICE, content }));
+      if (!accepted) throw new Error('Glasses rejected the voice panel update.');
+    });
+    overlayWrites = write.catch(() => {});
+    return write;
+  };
+  const voiceShow = async (screen: Extract<Screen, { kind: 'text' }>) => {
+    if (!overlayActive) return;
+    current = screen;
+    await writeOverlay(clipBytes(`${screen.title}\n${screen.text}`, 900));
+  };
+  const closeVoice = async () => {
+    if (!overlayActive) return;
+    overlayActive = false;
+    try { await writeOverlay(''); }
+    catch (e) { diag((e as Error).message); }
+    finally { current = background; }
+  };
   recording = [];
   const chunks = recording;
   const t0 = Date.now();
@@ -304,23 +334,23 @@ async function record(t: Thread, hold = false) {
     submitted = true;
     sending = true;
     cancelCapture = null;
-    await show({ kind: 'text', title: t.title, text: 'Sending…' });
     try {
-      const r = await api.say(t.handle, text);
-      await thread(t, tr('sent', clipBytes(r.sent, 30)));
+      await voiceShow({ kind: 'text', title: t.title, text: 'Sending…' });
+      await api.say(t.handle, text);
+      await closeVoice();
     } catch (e) {
-      await show({ kind: 'text', title: t.title, text: (e as Error).message, onBack: () => thread(t), onClick: () => thread(t) });
+      await voiceShow({ kind: 'text', title: t.title, text: (e as Error).message, onBack: () => closeVoice(), onClick: () => closeVoice() }).catch(e => diag((e as Error).message));
     } finally { sending = false; }
   };
   const stop = async (finish: boolean) => {
     if (stopped) return;
-    if (!finish) { cancel(); await thread(t); return; }
+    if (!finish) { cancel(); await closeVoice(); return; }
     stopped = true;
     cleanup();
     await bridge.audioControl(false).catch(() => {});
-    await show({ kind: 'text', title: tr('transcribing'), text: caption || 'Finishing transcription…',
-      onBack: () => { cancel(); void thread(t); } });
     try {
+      await voiceShow({ kind: 'text', title: tr('transcribing'), text: caption || 'Finishing transcription…',
+        onBack: () => { cancel(); void closeVoice(); } });
       await pending;
       if (cancelled) return;
       const pcm = snapshot();
@@ -328,28 +358,35 @@ async function record(t: Thread, hold = false) {
       if (cancelled) return;
       cancelCapture = null;
       if (!text) {
-        await show({ kind: 'text', title: tr('voiceTitle'), text: tr('notHeard'), onClick: () => thread(t), onBack: () => thread(t) });
+        await voiceShow({ kind: 'text', title: tr('voiceTitle'), text: tr('notHeard'), onClick: () => closeVoice(), onBack: () => closeVoice() });
       } else {
         cancelCapture = cancel;
-        await show({ kind: 'text', title: tr('confirmSend'), text,
-          onClick: () => { void sendText(text); }, onBack: () => { cancel(); void thread(t); } });
+        await voiceShow({ kind: 'text', title: tr('confirmSend'), text,
+          onClick: () => { void sendText(text); }, onBack: () => { cancel(); void closeVoice(); } });
       }
     } catch (e) {
       if (cancelled) return;
       cancelCapture = null;
-      await show({ kind: 'text', title: tr('voiceTitle'), text: (e as Error).message, onBack: () => thread(t), onClick: () => thread(t) });
+      await voiceShow({ kind: 'text', title: tr('voiceTitle'), text: (e as Error).message, onBack: () => closeVoice(), onClick: () => closeVoice() }).catch(e => diag((e as Error).message));
     }
   };
   if (hold) releaseCapture = () => { void stop(true); };
   const hint = hold ? 'Speak. Release to review. Double-click to cancel.' : tr('recordingHint');
-  await show({ kind: 'text', title: tr('recording', 0), text: hint,
-    onClick: hold ? undefined : () => { void stop(true); }, onBack: () => { void stop(false); } });
+  try {
+    await voiceShow({ kind: 'text', title: tr('recording', 0), text: hint,
+      onClick: hold ? undefined : () => { void stop(true); }, onBack: () => { void stop(false); } });
+  } catch (e) {
+    cancel();
+    current = background;
+    diag((e as Error).message);
+    return;
+  }
   if (stopped) return;
   const ok = await bridge.audioControl(true, AudioInputSource.Glasses).catch(() => false);
   if (stopped) { await bridge.audioControl(false); return; }
   if (!ok) {
     cancel();
-    await show({ kind: 'text', title: tr('voiceTitle'), text: tr('micFailed'), onClick: () => thread(t), onBack: () => thread(t) });
+    await voiceShow({ kind: 'text', title: tr('voiceTitle'), text: tr('micFailed'), onClick: () => closeVoice(), onBack: () => closeVoice() });
     return;
   }
   tick = setInterval(() => {
@@ -365,7 +402,8 @@ async function record(t: Thread, hold = false) {
         if (cancelled) return;
         lastBytes = pcm.length;
         caption = result.text.trim();
-        if (!stopped && caption) updateText('Listening · provisional', caption);
+        if (!stopped && caption) await voiceShow({ kind: 'text', title: 'Listening · provisional', text: caption,
+          onBack: () => { void stop(false); } });
       } catch { /* Final transcription reports errors; transient preview failure is not a send. */ }
       finally { pending = null; }
     })();

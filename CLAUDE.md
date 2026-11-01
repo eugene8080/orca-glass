@@ -12,6 +12,13 @@ upstream Claude code is not evidence of authorization to test it.
 
 ## Current work
 
+2026-11-01 voice foreground panel: reader pages pre-create a blank 288x144
+text container at zOrderIndex 2 above the persistent chat. Hold/captions/review
+update only that container; Send/Cancel clears its text without rebuilding or
+rewriting the reader. Polling remains paused until Resume latest output. Hardware
+must confirm empty-container transparency, overlapping text appearance, and
+scroll retention. No optical depth control is claimed. No ticket submitted.
+
 2026-11-01 latest voice ruling: release finishes transcription and displays the
 text with Click=send / Double=cancel. No automatic submission. Draft remains
 cancellable on system exit and sends at most once. User explicitly said not to

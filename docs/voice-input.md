@@ -258,3 +258,27 @@ Reference checked: official even-realities/everything-evenhub glasses-ui and
 installed SDK declarations. SCROLL_TOP_EVENT/SCROLL_BOTTOM_EVENT are input events;
 container x/yPosition are layout coordinates, not a text scroll offset. No
 synthetic gesture or timer-based text replacement was added.
+
+
+## 2026-11-01 persistent chat with voice foreground panel
+
+2026-11-01 voice foreground panel: reader pages pre-create a blank 288x144
+text container at zOrderIndex 2 above the persistent chat. Hold/captions/review
+update only that container; Send/Cancel clears its text without rebuilding or
+rewriting the reader. Polling remains paused until Resume latest output. Hardware
+must confirm empty-container transparency, overlapping text appearance, and
+scroll retention. No optical depth control is claimed. No ticket submitted.
+
+Panel occupies x144/y72, width288/height144: one quarter of the 576x288 display.
+No permanent border is used, so clearing content can leave an empty layer. The
+native reader retains input capture; gestures still belong to the background
+reader. This is a prototype of layered text, not the OS-owned Even AI popup.
+Long drafts may exceed the visible small panel; native review scrolling within
+this non-capturing panel is not implemented. Captured final text remains intact.
+
+Validation: real SDK page validator accepts all three z-order indices, one event
+capture container. 35 mocked tests pass, including no page rebuild and no head/body
+writes throughout capture, release, Send and Cancel; cancellation of late previews;
+and unchanged explicit send gating. TypeScript/Vite and doctor pass. Hardware
+visual behavior is unverified. Same QR, static frontend only; no runtime restart,
+Claude test, inference test or ticket submission.

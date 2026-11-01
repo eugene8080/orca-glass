@@ -3,6 +3,7 @@ Updated: 2026-11-01
 
 | Task | Status | Evidence / remaining work |
 | --- | --- | --- |
+| Quarter-screen voice foreground panel | Implemented; G2 check pending | 2026-11-01: pre-created layered panel; recording/review/Send/Cancel never rebuild or rewrite chat. Polling stays paused until Resume latest output. 35 tests/build pass; native SDK validates layer ordering. Transparency and visual stacking need hardware confirmation. |
 | Voice Send/Cancel review; automatic scroll investigation | Voice implemented; auto-scroll unresolved | 2026-11-01: hold release transcribes then click sends / double-click cancels. 34 tests/build pass. Installed SDK and official reference provide no programmatic scrolling command. Working reader unchanged; no ticket submitted per user. |
 | Restore working reader upload size | PC validated; G2 retest pending | 2026-11-01: hardware rejected larger upload. Restored 900-byte intact blocks; retained native scrolling without gesture-triggered replacement. Same URL/QR. 33 tests and build pass. |
 | Larger intact reader blocks | PC validated; G2 retest pending | 2026-11-01: supersedes rejected bottom-first windows. Up to 2,000 UTF-8 bytes per block; swipe never replaces text; explicit Earlier/Later switches intact blocks. Latest block filled from end. 32 tests/build pass. Native Terminal full-history parity remains open. |

@@ -128,8 +128,7 @@ test('hold release reviews text and only explicit send submits once', async () =
   assert.deepEqual(h.mic, [true, false]);
   assert.equal(h.transcriptions.length, 1);
   assert.equal(h.sends.length, 0);
-  assert.equal(h.pages.at(-1).textObject[0].content, 'confirmSend');
-  assert.equal(h.pages.at(-1).textObject[1].content, 'A voice test.');
+  assert.equal(h.upgrades.at(-1).content, 'confirmSend\nA voice test.');
   await h.tap();
   assert.equal(h.sends.length, 1);
   h.release();
@@ -235,14 +234,14 @@ test('previews serialize requests; release waits for final text before review', 
   preview(); preview();
   assert.equal(requests, 1);
   finish({ text: 'First words' }); await h.flush();
-  assert.equal(h.upgrades.at(-1).content, 'First words');
+  assert.equal(h.upgrades.at(-1).content, 'Listening · provisional\nFirst words');
   assert.equal(h.sends.length, 0);
   h.audio(); preview(); h.release(); await h.flush();
   assert.equal(h.sends.length, 0);
   finish({ text: 'First words and final words' }); await h.flush();
   assert.equal(requests, 2);
   assert.equal(h.sends.length, 0);
-  assert.equal(h.pages.at(-1).textObject[1].content, 'First words and final words');
+  assert.equal(h.upgrades.at(-1).content, 'confirmSend\nFirst words and final words');
   await h.tap();
   assert.deepEqual(h.sends, [{ handle: 'terminal-0', text: 'First words and final words' }]);
 });
@@ -254,7 +253,8 @@ test('cancel during preview prevents late captions and input', async () => {
   h.api.transcribe = () => new Promise(resolve => { finish = resolve; });
   [...h.timers.values()][0](); await h.back();
   finish({ text: 'Late caption' }); await h.flush();
-  assert.equal(h.upgrades.length, 0);
+  assert.equal(h.upgrades.at(-1).content, '');
+  assert.ok(h.upgrades.every(u => !u.content.includes('Late caption')));
   assert.equal(h.sends.length, 0);
 });
 
@@ -282,9 +282,9 @@ test('hold starts directly from chat even with a saved tap preference, without m
   h.api.capabilities = async () => { throw new Error('No pre-record capability lookup should run'); };
   h.press(); await h.flush();
   assert.deepEqual(h.mic, [true]);
-  assert.equal(h.pages.length, before + 1);
+  assert.equal(h.pages.length, before);
   assert.equal(h.pages.at(-1).listObject, undefined);
-  assert.equal(h.pages.at(-1).textObject[0].content, 'recording');
+  assert.match(h.upgrades.at(-1).content, /^recording/);
   await h.back();
   assert.equal(h.sends.length, 0);
 });
@@ -337,11 +337,33 @@ test('reader stays within the working hardware budget on opening and navigation'
 test('double-click discards a finished voice draft without sending', async () => {
   const h = await harness(2, true, 'hold');
   await h.pick(3); h.press(); await h.flush(); h.audio(); h.release(); await h.flush();
-  assert.equal(h.pages.at(-1).textObject[0].content, 'confirmSend');
+  assert.match(h.upgrades.at(-1).content, /^confirmSend/);
   await h.back();
   assert.equal(h.sends.length, 0);
   assert.equal(h.pages.at(-1).textObject[1].content, 'Content terminal-0');
   h.press(); await h.flush();
   assert.equal(h.mic.at(-1), true);
   await h.back();
+});
+
+
+test('quarter-screen voice overlay never rebuilds or rewrites the background on send or cancel', async () => {
+  for (const send of [true, false]) {
+    const h = await harness(2, true, 'hold');
+    h.api.history = async () => ({ text: 'Saved history '.repeat(300), source: 'codex-transcript' });
+    await h.pick(3); await h.scroll('up');
+    const page = h.pages.at(-1), count = h.pages.length, writes = h.upgrades.length;
+    const panel = page.textObject.find(c => c.containerName === 'voice');
+    assert.equal(panel.width * panel.height, 576 * 288 / 4);
+    assert.equal(panel.content, '');
+    assert.ok(panel.zOrderIndex > page.textObject[1].zOrderIndex);
+    h.press(); await h.flush(); h.audio(); h.release(); await h.flush();
+    assert.equal(h.sends.length, 0);
+    if (send) await h.tap(); else await h.back();
+    assert.equal(h.pages.length, count);
+    assert.ok(h.upgrades.slice(writes).every(u => u.containerName === 'voice'));
+    assert.equal(h.upgrades.at(-1).content, '');
+    assert.equal(h.sends.length, send ? 1 : 0);
+    assert.equal(h.timers.size, 0);
+  }
 });
