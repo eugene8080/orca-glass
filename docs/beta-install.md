@@ -86,6 +86,23 @@ not requested and must not be performed.
 
 ## Later code updates
 
+2026-11-02 Codex usage repair supersedes earlier usage403 notes: Orca account
+list still reports HTTP403 from the OpenAI usage endpoint, while a read-only
+request through the current PcSettings proxy succeeds. Bridge now prefers a
+successful Orca usage result; otherwise it reads the selected route from
+LOCALAPPDATA/PcSettings/AiRouting/route.json and launches a scoped Node
+--use-env-proxy subprocess. It verifies api.ipify.org against expectedExitIp
+before reading the first-party usage endpoint with the existing local Codex
+ChatGPT login (CODEX_HOME or user .codex). No login tokens are returned or logged.
+No global proxy changes, Orca restart, inference or Claude interaction.
+
+Responses are cached for60 seconds and concurrent fallback calls share one
+request. Map windows by duration: OpenAI returned only a weekly primary window,
+so no5h figure is invented. Installed beta HTTPS usage returned status=ok,
+weekly44%, reset2d17h after scheduled bridge restart. 44 tests/build/doctor pass;
+actual phone display remains unverified. Reopen Usage; no beta update required.
+The underlying Orca usage routing issue remains outside this bridge repair.
+
 2026-11-02 idle-name correction supersedes tab-only naming below: user confirmed
 the tab also resets to Codex ready while idle. Bridge now prefers worktree ps
 conversationName by exact workspace/pane, and retains a last meaningful name
