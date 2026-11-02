@@ -1,8 +1,9 @@
 # Orca Glass work
-Updated: 2026-11-01
+Updated: 2026-11-02
 
 | Task | Status | Evidence / remaining work |
 | --- | --- | --- |
+| Restore prototype QR connection | PC verified; phone rescan pending | 2026-11-02: custom supervisor was absent, port8787 had no listener, and old Quick Tunnel hostname no longer resolved. Restarted hidden supervisor and regenerated private QR. Local/public health, public app and authenticated capabilities returned HTTP200. Opened private pairing page. Quick Tunnel URL changes on restart; old QR must be replaced. No application code changed or phone/G2 verification performed. |
 | Resume live replies after voice send | Implemented; G2 retest pending | 2026-11-01: successful Send resumes polling without rebuilding chat; Cancel retains paused reading position. Existing source/identity guards retained. 36 tests/build pass, including new response visible after send. |
 | Separate voice area from chat | Implemented; G2 retest pending | 2026-11-01: transparent foreground text overlapped chat on hardware. Reserve bottom 576x72 for voice, reduce reader height to 168 with 8px gap. No rebuild on capture/review/dismiss; reserved area remains empty when inactive. 36 tests/build pass. |
 | Hold regression after foreground panel | Repair candidate live; G2 retest pending | 2026-11-01: dim-space panel initialization, explicit visibility, rejected-panel fallback to standard recording screen, hold-stage phone diagnostics. Exact native failure unknown. 36 mocked tests/build pass. |
