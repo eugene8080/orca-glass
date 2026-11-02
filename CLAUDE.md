@@ -12,6 +12,15 @@ upstream Claude code is not evidence of authorization to test it.
 
 ## Current work
 
+2026-11-02 latest user ruling: retain smooth native scrolling; reject app-owned
+line scrolling; remove separate review screen and restore bottom-panel review.
+Beta1.0.5 implements that rollback plus fixed status payload (no layout fields
+in textContainerUpgrade) and initial activity fetch. Simulator visually verified
+Working/Waiting/live reply; reader pixels identical through record/review/cancel/
+send, no rebuild/body writes in native log.50 tests/build/doctor pass; beta1.0.5
+uploaded/promoted. G2 retest pending. Draft swipes are not separately focused;
+do not claim they are. This supersedes candidate/review rulings below.
+
 2026-11-02 user rejected beta1.0.4 review rebuild/chat reset and reported
 Status unavailable on G2. Candidate1.0.5 restores bottom-panel review and removes
 the full-page fallback; initial activity is fetched before reader rendering.

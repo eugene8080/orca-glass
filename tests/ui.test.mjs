@@ -339,7 +339,7 @@ test('reader stays within the working hardware budget on opening and navigation'
 test('double-click discards a finished voice draft without sending', async () => {
   const h = await harness(2, true, 'hold');
   await h.pick(3); h.press(); await h.flush(); h.audio(); h.release(); await h.flush();
-  assert.match(h.upgrades.at(-1).content, /^Click send/);
+  assert.match(h.upgrades.at(-1).content, /^confirmSend/);
   await h.back();
   assert.equal(h.sends.length, 0);
   assert.equal(h.pages.at(-1).textObject[1].content, 'Content terminal-0');
@@ -480,24 +480,4 @@ test('a rejected live text update is retried instead of marking unseen text as d
   assert.equal(h.upgrades.at(-1).content, 'Fresh reply');
 });
 
-test('draft scrolling reviews every line and sends the full transcript once', async () => {
-  const h = await harness(2, true, 'hold');
-  const text = Array.from({ length: 30 }, (_, i) => `Transcript line ${i + 1}`).join('\n');
-  h.api.transcribe = async () => ({ text });
-  await h.pick(3);
-  h.press(); await h.flush(); h.audio(); h.release(); await h.flush();
-  const pages = h.pages.length;
-  assert.equal(h.upgrades.at(-1).containerName, 'voice');
-  assert.match(h.upgrades.at(-1).content, /Transcript line 1\n/);
-  const writes = h.upgrades.length;
-  for (let i = 0; i < 30; i++) await h.scroll('down');
-  assert.match(h.upgrades.at(-1).content, /Transcript line 30$/);
-  await h.scroll('up');
-  assert.match(h.upgrades.at(-1).content, /Transcript line 29$/);
-  assert.ok(h.upgrades.slice(writes).every(u => u.containerName === 'voice'));
-  assert.equal(h.pages.length, pages);
-  assert.equal(h.sends.length, 0);
-  await h.tap();
-  assert.equal(h.sends.length, 1);
-  assert.equal(h.sends[0].text, text);
-});
+

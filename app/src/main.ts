@@ -14,7 +14,7 @@ import {
 import { api, currentBase, setApiLang, setConnection, setDemo, type Provider, type Thread, type Workspace } from './api';
 import { parseCode, resolveBase } from './pairing';
 import { applyPage, detectLang, setLang, t as tr } from './i18n';
-import { clipBytes, textSections, textLines, textWindow } from './text';
+import { clipBytes, textSections } from './text';
 
 // 画面 576x288。上に見出し(テキスト)、下に本文(リスト or テキスト)の2段構成で統一する。
 const HEAD = { containerID: 1, containerName: 'head', xPosition: 0, yPosition: 0, width: 576, height: 36 };
@@ -30,7 +30,7 @@ const POLL_MS = 1000;
 
 type Screen =
   | { kind: 'list'; title: string; items: string[]; onPick: (i: number) => void; onBack?: () => void }
-  | { kind: 'text'; title: string; text: string; tail?: boolean; offset?: number; reading?: boolean; activityLabel?: string; savedHistory?: boolean; reader?: Thread; onScroll?: (direction: number) => void; onClick?: () => void; onBack?: () => void; onHold?: () => void; };
+  | { kind: 'text'; title: string; text: string; tail?: boolean; offset?: number; reading?: boolean; activityLabel?: string; savedHistory?: boolean; reader?: Thread; onClick?: () => void; onBack?: () => void; onHold?: () => void; };
 
 let bridge: EvenAppBridge;
 let current: Screen | null = null;
@@ -418,22 +418,8 @@ async function record(t: Thread, hold = false) {
         await voiceShow({ kind: 'text', title: tr('voiceTitle'), text: tr('notHeard'), onClick: () => closeVoice(), onBack: () => closeVoice() });
       } else {
         cancelCapture = cancel;
-        // Review stays in the existing bottom panel. Never replace the chat page.
-        // The simulator must verify native gesture behavior before release.
-        let reviewOffset = 0;
-        let reviewWrites: Promise<void> = Promise.resolve();
-        const review: Extract<Screen, { kind: 'text' }> = {
-          kind: 'text', title: 'Click send / double cancel', text: textWindow(text, 0, 2, 850),
-          onScroll: direction => {
-            reviewOffset = Math.max(0, Math.min(Math.max(0, textLines(text).length - 2), reviewOffset + direction));
-            const view = textWindow(text, reviewOffset, 2, 850);
-            reviewWrites = reviewWrites.then(async () => {
-              if (current === review) { review.text = view; await voiceShow(review); }
-            }).catch(e => diag((e as Error).message));
-          },
-          onClick: () => { void sendText(text); }, onBack: () => { cancel(); void closeVoice(); },
-        };
-        await voiceShow(review);
+        await voiceShow({ kind: 'text', title: tr('confirmSend'), text,
+          onClick: () => { void sendText(text); }, onBack: () => { cancel(); void closeVoice(); } });
       }
     } catch (e) {
       if (cancelled) return;
@@ -591,7 +577,6 @@ function onEvent(e: EvenHubEvent) {
   // CLICK_EVENT(0) は既定値のため JSON から省かれて届くことがある
   const type = ev.eventType ?? OsEventTypeList.CLICK_EVENT;
   if (s.kind === 'text' && (type === OsEventTypeList.SCROLL_TOP_EVENT || type === OsEventTypeList.SCROLL_BOTTOM_EVENT)) {
-    if (s.onScroll) { s.onScroll(type === OsEventTypeList.SCROLL_TOP_EVENT ? -1 : 1); return; }
     // Firmware scrolls overflowing text. Replacing content here causes visible jumps.
     // Pause polling so incoming output cannot reset the reader's scroll position.
     s.reading = true;

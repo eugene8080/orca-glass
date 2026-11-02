@@ -3,6 +3,21 @@ Updated: 2026-11-02
 
 ## Current facts
 
+2026-11-02 final1.0.5 checks supersede the review-focus candidate:
+User explicitly retained smooth native scrolling and requested bottom-panel
+review restoration. Removed the separate screen, draft line-scrolling code and
+full-page fallback. `scripts/check-simulator.mjs` reproduces the native check
+against a freshly started isolated simulator home list (default9899; override
+ORCA_GLASS_SIMULATOR_PORT). It saves screenshots/native logs under `.local/`.
+The check completed: no page rebuild or body-text rewrite during recording,
+review, cancel or send, and exactly one complete fake transcript send. Alpha-
+composited screenshot crops x0..560/y40..208 were pixel-identical before record,
+during review, after cancel and after send. Footer Working/Waiting visibly
+changed; subsequent live reply rendered. Files `.local/beta105-*-visible.png`.
+50 tests/build/doctor pass; beta1.0.5 uploaded/promoted only after these native
+checks. No real provider input or G2 verification. Draft swipes still belong to
+native chat, per accepted tradeoff; do not claim separately focused draft scroll.
+
 2026-11-02 desktop simulator results supersede the startup blocker below:
 
 - User launched the first instance over SSH; confirmed PID56120 was in session0,

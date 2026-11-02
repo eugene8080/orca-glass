@@ -1,4 +1,7 @@
 $ErrorActionPreference = 'Stop'
+if ([Diagnostics.Process]::GetCurrentProcess().SessionId -eq 0) {
+    throw 'Do not launch the GUI from SSH/session0. Use the desktop session, or Start-ScheduledTask -TaskName "Orca Glass Simulator" for the configured interactive task.'
+}
 $repoRoot = Split-Path $PSScriptRoot -Parent
 $localDirectory = Join-Path $repoRoot '.local'
 $null = New-Item -ItemType Directory -Path $localDirectory -Force

@@ -3,6 +3,21 @@ Updated: 2026-11-02
 
 ## Current state
 
+2026-11-02 latest beta is **1.0.5** (46,075 bytes), upload/promotion verified.
+User rejected line-by-line chat scrolling and asked to remove the separate review
+page. Native chat scrolling remains. Recording/review/Send/Cancel update only the
+bottom panel; a rejected panel no longer triggers a full-page fallback. Draft
+review does not separately capture native swipes. Status now fetches immediately
+and uses only valid native text-update fields; unsupported layout fields caused
+the simulator's frozen/unavailable status.50 tests/build/doctor pass.
+
+Desktop-session official simulator checks: visually confirmed Working→Waiting,
+live reply after source fallback, no chat rebuild/body rewrite during voice flow,
+exactly one full fake transcript send. Reader pixel crop (excluding scrollbar)
+was identical before recording, during review, after cancel and after send.
+Hardware appearance remains pending; update the phone beta to1.0.5. The1.0.4
+review-screen behavior described below is historical and superseded.
+
 2026-11-02 latest: beta channel is now **1.0.4** (46,426 bytes), verified after
 upload/promotion. Install/update through the phone's Beta tester entry. This build
 adds activity status in the reserved bottom voice area while reading. Working…
