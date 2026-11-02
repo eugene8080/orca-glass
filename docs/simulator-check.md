@@ -3,6 +3,15 @@ Updated: 2026-11-02
 
 ## Current facts
 
+2026-11-02 user reported simulator open. Automation on9898 returns pong; fixture
+on8791 returns HTTP200. Native glasses screenshot is entirely black; webview
+screenshot returns main window not found. Console has zero entries. A documented
+click input produced simulator warning inject_input: no active event container.
+Simulator PID56120 has no discoverable main window; process details/owner access
+are denied to this session. Installed WebView2 Runtime156.0.4314.58 is present.
+No app interaction, status rendering, scrolling or retention check has passed.
+Asked user what the visible simulator window shows; awaiting that observation.
+
 - User reported beta1.0.4 Status unavailable and review replacing/resetting chat.
 - Bridge HTTPS activity was checked: selected active session returned working,
   completed sessions waiting, all HTTP200. Device symptom is not explained by
