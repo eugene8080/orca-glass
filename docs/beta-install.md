@@ -5,9 +5,12 @@ Updated: 2026-11-02
 
 Version 1.0.2 is packaged in ignored `.local/orca-glass-1.0.2.ehpk`.
 38 automated tests, beta packing, ordinary build and doctor passed.
-Even Hub CLI 0.2.0 reports not authenticated (exit 2). No app registration,
-upload, beta promotion or tester invitation has been performed yet.
-Phone installation and G2 behavior are unverified.
+2026-11-02: signed in as eugene8080@gmail.com; registered
+`com.eugene8080.orcaglass`, uploaded version 1.0.2 (45,776 bytes), and
+promoted it to beta. Server listing confirms channels=[beta]. Invited the same
+account as tester; server status is Invited. User must accept the email invitation
+before installation through Me → Beta tester. Phone installation and G2 behavior
+are unverified. No public submission or publication performed.
 
 ## Stable bridge
 
