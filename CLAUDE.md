@@ -12,6 +12,16 @@ upstream Claude code is not evidence of authorization to test it.
 
 ## Current work
 
+2026-11-02 user rejected beta1.0.4 review rebuild/chat reset and reported
+Status unavailable on G2. Candidate1.0.5 restores bottom-panel review and removes
+the full-page fallback; initial activity is fetched before reader rendering.
+Do not upload/promote another beta before simulator interaction checks. Automated
+simulator launch was rejected (blocked by policy); user asked to run npm run
+sim:check. scripts/simulator-fixture.mjs uses real SDK/rendering with fake
+sessions/audio. Native chat movement during bottom-panel review remains
+unverified; SDK cannot switch isEventCapture via textContainerUpgrade. See
+docs/simulator-check.md. Prior1.0.4 no-rebuild exception below is revoked.
+
 2026-11-02 beta1.0.4 supersedes prior no-rebuild review constraint: after hold
 release, a dedicated review page owns scrolling through the full transcript,
 click sends once/double cancels. Returning rebuilds the selected chat block;

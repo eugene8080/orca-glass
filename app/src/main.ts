@@ -219,7 +219,11 @@ function thread(t: Thread, note = '') {
     const saved = !snapshot.menu ? await api.history(t.handle).catch(() => null) : null;
     const useSaved = saved?.source === 'codex-transcript';
     const text = useSaved ? saved.text : snapshot.text;
-    await show({ kind: 'text', title: title(), text, tail: true, savedHistory: useSaved, reader: t, onClick: () => { if (current?.kind === 'text') void openReaderControls(t, current); }, onBack: home,
+    const state = await api.activity(t.handle).catch(e => {
+      diag(`Activity request failed: ${(e as Error).message}`);
+      return { state: 'unknown' };
+    });
+    await show({ kind: 'text', title: title(), text, tail: true, activityLabel: activityLabel(state.state), savedHistory: useSaved, reader: t, onClick: () => { if (current?.kind === 'text') void openReaderControls(t, current); }, onBack: home,
       onHold: () => { void record(t, true); } });
     startReaderUpdates(current);
   }, home);
@@ -235,7 +239,10 @@ function startReaderUpdates(screen: Screen | null) {
   poll = setInterval(async () => {
     if (reading || current !== screen) return;
     reading = true;
-    const activity = await api.activity(t.handle).catch(() => ({ state: 'unknown' }));
+    const activity = await api.activity(t.handle).catch(e => {
+      diag(`Activity request failed: ${(e as Error).message}`);
+      return { state: 'unknown' };
+    });
     if (current !== screen) { reading = false; return; }
     const label = activityLabel(activity.state);
     if (screen.activityLabel !== label) {
@@ -322,7 +329,6 @@ async function record(t: Thread, hold = false) {
   background.reading = true;
   clearInterval(poll);
   let overlayActive = true;
-  let fallbackScreen = false;
   let overlayWrites: Promise<void> = Promise.resolve();
   const writeOverlay = (content: string) => {
     const write = overlayWrites.then(async () => {
@@ -334,21 +340,16 @@ async function record(t: Thread, hold = false) {
   };
   const voiceShow = async (screen: Extract<Screen, { kind: 'text' }>) => {
     if (!overlayActive) return;
-    if (fallbackScreen) { await show(screen); return; }
     current = screen;
     try { await writeOverlay(clipBytes(`${screen.title}\n${screen.text}`, 900)); }
     catch (e) {
-      // Native page validation alone does not prove the device accepts a third
-      // text layer. A rejected layer must not disable the working voice flow.
-      fallbackScreen = true;
-      diag(`${(e as Error).message} Using the standard voice screen.`);
-      await show(screen);
+      diag(`${(e as Error).message} Chat position preserved; voice panel could not update.`);
+      throw e;
     }
   };
   const closeVoice = async () => {
     if (!overlayActive) return;
     overlayActive = false;
-    if (fallbackScreen) { await show(background, true); startReaderUpdates(background); return; }
     try { await writeOverlay(background.activityLabel || 'Checking status…'); }
     catch (e) { diag((e as Error).message); }
     finally { current = background; startReaderUpdates(background); }
@@ -417,18 +418,17 @@ async function record(t: Thread, hold = false) {
         await voiceShow({ kind: 'text', title: tr('voiceTitle'), text: tr('notHeard'), onClick: () => closeVoice(), onBack: () => closeVoice() });
       } else {
         cancelCapture = cancel;
-        // The SDK cannot move native scroll capture with a text-only update.
-        // A dedicated draft page makes every swipe belong to the transcript.
-        fallbackScreen = true;
+        // Review stays in the existing bottom panel. Never replace the chat page.
+        // The simulator must verify native gesture behavior before release.
         let reviewOffset = 0;
         let reviewWrites: Promise<void> = Promise.resolve();
         const review: Extract<Screen, { kind: 'text' }> = {
-          kind: 'text', title: 'Review: click send / double cancel', text: textWindow(text, 0, 8, 900),
+          kind: 'text', title: 'Click send / double cancel', text: textWindow(text, 0, 2, 850),
           onScroll: direction => {
-            reviewOffset = Math.max(0, Math.min(Math.max(0, textLines(text).length - 8), reviewOffset + direction));
-            const view = textWindow(text, reviewOffset, 8, 900);
+            reviewOffset = Math.max(0, Math.min(Math.max(0, textLines(text).length - 2), reviewOffset + direction));
+            const view = textWindow(text, reviewOffset, 2, 850);
             reviewWrites = reviewWrites.then(async () => {
-              if (current === review) await updateText(review.title, view);
+              if (current === review) { review.text = view; await voiceShow(review); }
             }).catch(e => diag((e as Error).message));
           },
           onClick: () => { void sendText(text); }, onBack: () => { cancel(); void closeVoice(); },
@@ -460,7 +460,7 @@ async function record(t: Thread, hold = false) {
     await voiceShow({ kind: 'text', title: tr('voiceTitle'), text: tr('micFailed'), onClick: () => closeVoice(), onBack: () => closeVoice() });
     return;
   }
-  diag(fallbackScreen ? 'Recording — standard screen fallback.' : 'Recording — bottom voice panel.');
+  diag('Recording — bottom voice panel.');
   tick = setInterval(() => {
     if (stopped) return;
     const sec = Math.floor((Date.now() - t0) / 1000);

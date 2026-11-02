@@ -10,6 +10,7 @@
     "start": "node scripts/start.mjs",
     "pair": "node scripts/pair.mjs",
     "doctor": "node scripts/doctor.mjs",
+    "sim:check": "pwsh -NoProfile -File scripts/start-simulator.ps1",
     "beta:pack": "node scripts/build-beta.mjs",
     "beta:update": "node scripts/update-beta.mjs",
     "test": "node --test tests/*.test.mjs",
