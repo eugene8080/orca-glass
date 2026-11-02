@@ -3,6 +3,13 @@ Updated: 2026-11-02
 
 ## Current state
 
+2026-11-02 latest hardware confirmation: after close/reopen guidance, user
+reported the G2 footer now displays Waiting for input. Bottom review and chat
+position were already confirmed stable by the user. No additional beta or code
+change was made. Do not infer the exact cause of the preceding unavailable
+display from this recovery. A complete working→waiting transition on G2 has not
+yet been explicitly reported; both states were verified in the simulator.
+
 2026-11-02 hardware follow-up: user confirms restored bottom review and stable
 chat position in1.0.5, but footer still reports Status unavailable. This remains
 open despite simulator success. Added local activity trace (time, handle suffix,
