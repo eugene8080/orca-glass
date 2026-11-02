@@ -139,6 +139,7 @@ const routes = {
 };
 
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml' };
+const activityTrace = new Map();
 
 createServer(async (req, res) => {
   const url = new URL(req.url, 'http://x');
@@ -159,7 +160,20 @@ createServer(async (req, res) => {
       if (!authorized(req)) return send(res, 401, { error: 'unauthorized' });
       const route = routes[`${req.method} ${url.pathname}`];
       if (!route) return send(res, 404, { error: 'not found' });
-      return send(res, 200, await route(url.searchParams, req.method === 'POST' ? await body(req) : {}));
+      const result = await route(url.searchParams, req.method === 'POST' ? await body(req) : {});
+      if (url.pathname === '/api/activity') {
+        // Local diagnostics contain no bearer token, transcript, or full URL.
+        const handle = url.searchParams.get('handle')?.slice(-6);
+        const origin = req.headers.origin || 'no-origin';
+        const key = `${handle}:${origin}`;
+        const previous = activityTrace.get(key);
+        if (!previous || previous.state !== result.state || Date.now() - previous.time > 15000) {
+          console.log('[activity]', JSON.stringify({ time: new Date().toISOString(), handle, origin, state: result.state }));
+          activityTrace.set(key, { time: Date.now(), state: result.state });
+          if (activityTrace.size > 200) activityTrace.delete(activityTrace.keys().next().value);
+        }
+      }
+      return send(res, 200, result);
     }
     const file = join(DIST, normalize(url.pathname === '/' ? '/index.html' : url.pathname));
     if (!file.startsWith(DIST)) return send(res, 403, { error: 'forbidden' });

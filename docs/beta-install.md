@@ -3,6 +3,17 @@ Updated: 2026-11-02
 
 ## Current state
 
+2026-11-02 hardware follow-up: user confirms restored bottom review and stable
+chat position in1.0.5, but footer still reports Status unavailable. This remains
+open despite simulator success. Added local activity trace (time, handle suffix,
+origin and state only; no credentials/transcript). After bridge restart, the
+phone's origin http://127.0.0.1:44253 repeatedly requested the selected e4c9a8
+session and received working. Other desktop checks returned working/waiting200.
+Downloaded beta1.0.5 package SHA256 exactly matches the locally tested package.
+Asked user to confirm installed version; not yet answered. A read-only real-client
+simulator launch was rejected by execution review (blocked by policy); it did not
+run. No new beta uploaded, no further layout/scroll changes, no claimed fix.
+
 2026-11-02 latest beta is **1.0.5** (46,075 bytes), upload/promotion verified.
 User rejected line-by-line chat scrolling and asked to remove the separate review
 page. Native chat scrolling remains. Recording/review/Send/Cancel update only the
