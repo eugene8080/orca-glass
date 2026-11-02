@@ -16,5 +16,5 @@ try {
 } catch (error) {
   check('Orca', false, error.message);
 }
-console.log('This fork permits Codex sessions only. Claude testing is disabled.');
+console.log('Existing connected terminals are available across providers. New sessions remain Codex-only. Claude testing is disabled.');
 process.exitCode = failed ? 1 : 0;

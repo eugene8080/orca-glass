@@ -86,6 +86,15 @@ not requested and must not be performed.
 
 ## Later code updates
 
+2026-11-02 existing-session scope: bridge lists all connected, non-orphaned local
+terminals across providers, including child workers. Read/history/reply guards
+accept those terminals too. Verified three sessions and OpenCode screen/history
+via authenticated HTTPS after scheduled bridge restart. Refresh sessions in the
+installed app; no beta reinstall is required for this server-only change.
+No input sent and no Claude interaction tested. New-session creation and separate
+native AI routing remain Codex-only. Usage is separately unavailable because
+Orca's OpenAI usage request returns HTTP403; no proxy changes made for that issue.
+
 Increase `version` in `app/app.json` for each upload. From the repository root:
 
 ```powershell

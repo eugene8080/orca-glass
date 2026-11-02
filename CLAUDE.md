@@ -12,6 +12,13 @@ upstream Claude code is not evidence of authorization to test it.
 
 ## Current work
 
+2026-11-02: user requested removal of the Codex-only existing-session filter.
+List/read/history/reply now accept all connected non-orphaned local terminals,
+including OpenCode child workers. This authorizes user-directed existing-session
+access across providers; it does not authorize agent-run Claude tests or launches.
+New-session creation and the separate native AI router remain Codex-only.
+Saved Codex transcript identity checks remain; other providers use terminal text.
+
 2026-11-01 live replies after Send: successful voice submission now restarts
 reader polling in place, using the original saved-history/terminal source. No
 page rebuild is needed to dismiss the voice area. Cancel leaves reading paused.

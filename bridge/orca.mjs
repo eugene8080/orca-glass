@@ -29,7 +29,7 @@ function stateFromTitle(title) {
 export async function listThreads() {
   const { terminals } = await orca(['terminal', 'list']);
   return terminals
-    .filter((t) => t.connected && !t.orphaned && t.agentIdentity === 'codex')
+    .filter((t) => t.connected && !t.orphaned)
     .map((t) => ({
       handle: t.handle,
       title: (t.title || 'Untitled').replace(/^[✳◐◓◑◒⠁-⣿]\s*/u, ''),
@@ -153,7 +153,7 @@ async function agentOf(handle) {
 }
 
 export async function readThread(handle) {
-  await requireCodex(handle);
+  await requireLiveTerminal(handle);
   const { terminal } = await orca(['terminal', 'read', '--terminal', handle, '--screen']);
   const lines = terminal.tail || [];
   const menu = parseChoices(lines);
@@ -169,29 +169,29 @@ export async function readThread(handle) {
 }
 
 export async function readHistory(handle) {
-  const live = await requireCodex(handle);
+  const live = await requireLiveTerminal(handle);
   let reason = 'No verified saved conversation is associated with this terminal.';
   try {
     const { readConversation } = await import('./conversation.mjs');
     const conversation = await readConversation(live);
     if (conversation?.text) {
-      const checked = await requireCodex(handle);
+      const checked = await requireLiveTerminal(handle);
       if (checked.incarnationId !== live.incarnationId) throw new Error('Terminal changed while loading history');
       return conversation;
     }
   } catch (e) { reason = `Saved conversation unavailable: ${e.message}`; }
-  const fallback = await requireCodex(handle);
+  const fallback = await requireLiveTerminal(handle);
   if (fallback.incarnationId !== live.incarnationId) throw new Error('Terminal changed while loading history');
   const { terminal } = await orca(['terminal', 'read', '--terminal', handle, '--limit', '1000']);
   // This is bounded Orca scrollback, not an invented or inferred conversation.
   return { text: (terminal.tail || []).join('\n'), limited: true, source: 'terminal-buffer', reason };
 }
 
-export async function requireCodex(handle) {
+export async function requireLiveTerminal(handle) {
   if (typeof handle !== 'string' || !handle) throw new Error('Missing terminal handle');
   const { terminal } = await orca(['terminal', 'show', '--terminal', handle]);
-  if (terminal?.agentIdentity !== 'codex' || !terminal.connected || terminal.orphaned) {
-    throw new Error('Only connected Codex terminals are enabled. Claude is disabled.');
+  if (!terminal?.connected || terminal.orphaned) {
+    throw new Error('Terminal is disconnected or orphaned.');
   }
   return terminal;
 }
@@ -216,7 +216,7 @@ export async function hasNumberedMenu(handle) {
 }
 
 export async function sendToThread(handle, text, enter) {
-  await requireCodex(handle);
+  await requireLiveTerminal(handle);
   const args = ['terminal', 'send', '--terminal', handle, '--text', text];
   if (enter) args.push('--enter');
   return orca(args);
