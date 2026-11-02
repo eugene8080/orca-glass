@@ -86,6 +86,15 @@ not requested and must not be performed.
 
 ## Later code updates
 
+2026-11-02 idle-name correction supersedes tab-only naming below: user confirmed
+the tab also resets to Codex ready while idle. Bridge now prefers worktree ps
+conversationName by exact workspace/pane, and retains a last meaningful name
+per running incarnation when idle metadata is missing. Cache is bounded and
+in-memory; it does not survive bridge restarts. Renames replace cached names;
+new incarnations cannot inherit them. 42 tests pass, including both titles
+resetting, missing metadata, rename and incarnation isolation. HTTPS names checked
+after restart. Actual post-turn idle transition and phone display remain unverified.
+
 2026-11-02 session names: bridge uses Orca visual-layout tab titles (or explicit
 pane titles), keyed by exact workspace/tab identity, instead of transient program
 status such as Codex ready. Auto-generated worker-task tab IDs retain the more

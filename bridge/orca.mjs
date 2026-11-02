@@ -28,8 +28,11 @@ function stateFromTitle(title) {
 }
 
 export async function listThreads() {
-  const { terminals, visualLayouts } = await orca(['terminal', 'list', '--include-visual-layouts']);
-  const names = sessionTitles(visualLayouts);
+  const [{ terminals, visualLayouts }, { worktrees }] = await Promise.all([
+    orca(['terminal', 'list', '--include-visual-layouts']),
+    orca(['worktree', 'ps']),
+  ]);
+  const names = sessionTitles(visualLayouts, worktrees);
   return terminals
     .filter((t) => t.connected && !t.orphaned)
     .map((t) => ({
