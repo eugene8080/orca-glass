@@ -412,6 +412,7 @@ test('bottom status changes while reading is paused without rewriting the conver
   h.api.activity = async () => ({ state: 'working' });
   await [...h.timers.values()][0]();
   assert.equal(h.upgrades.at(-1).content, 'Working…');
+  assert.deepEqual(Object.keys(h.upgrades.at(-1)).sort(), ['containerID', 'containerName', 'content', 'textColor'].sort());
   h.api.activity = async () => ({ state: 'waiting' });
   await [...h.timers.values()][0]();
   assert.equal(h.upgrades.at(-1).content, 'Waiting for input');

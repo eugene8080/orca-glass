@@ -3,6 +3,33 @@ Updated: 2026-11-02
 
 ## Current facts
 
+2026-11-02 desktop simulator results supersede the startup blocker below:
+
+- User launched the first instance over SSH; confirmed PID56120 was in session0,
+  desktop eugen in session1. Left inaccessible SSH instance alone.
+- Registered manual-only task Orca Glass Simulator with Interactive/Limited
+  principal eugen, no startup trigger, port9899. Launched successfully in session1.
+  Native WebView and SDK initialized. If restarting, wait for task Ready before
+  starting again; one immediate restart exited0xC0000409, next clean start worked.
+- Native screenshots are green RGBA with text in alpha. Composite onto black to
+  view/compare; raw RGB alone appears solid green. Screenshots under `.local/`.
+- Reproduced status-update failure: polling sent layout fields x/y/width/height
+  in TextContainerUpgrade; renderer remained Working after state changed to waiting.
+  Removed unsupported layout fields. After a clean simulator restart, screenshots
+  visibly show Working → Waiting for input. Initial activity fetch also renders.
+- Live reply verified visually after source changed from codex-transcript to
+  terminal-buffer. Screenshot `.local/sim-live-fallback-visible.png` shows the new
+  reply and Working status. No real provider request/input used.
+- Bottom review renders without rebuilding the chat. Review swipes still scroll
+  the native chat behind it, and normal native interior scrolling emitted no app
+  scroll event; therefore software draft scroll cannot intercept those gestures.
+  Native chat pixel comparison changed after review swipe/cancel. Review capture
+  ownership cannot change via supported text-only upgrade fields. Not fixed.
+- Asked user to choose app-controlled line scrolling (both chat/draft, preserved
+  positions) or keep native chat scrolling and review long drafts on phone.
+  No new beta uploaded; installed channel remains1.0.4. Status/live-output fixes
+  are verified in simulator only, not G2. Do not describe whole interaction as passed.
+
 2026-11-02 user reported simulator open. Automation on9898 returns pong; fixture
 on8791 returns HTTP200. Native glasses screenshot is entirely black; webview
 screenshot returns main window not found. Console has zero entries. A documented

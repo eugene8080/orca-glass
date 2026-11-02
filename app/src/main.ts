@@ -247,7 +247,7 @@ function startReaderUpdates(screen: Screen | null) {
     const label = activityLabel(activity.state);
     if (screen.activityLabel !== label) {
       try {
-        const accepted = await bridge.textContainerUpgrade(new TextContainerUpgrade({ ...VOICE, content: label, textColor: 4 }));
+        const accepted = await bridge.textContainerUpgrade(new TextContainerUpgrade({ containerID: VOICE.containerID, containerName: VOICE.containerName, content: label, textColor: 4 }));
         if (accepted && current === screen) screen.activityLabel = label;
       } catch (e) { diag((e as Error).message); }
     }
