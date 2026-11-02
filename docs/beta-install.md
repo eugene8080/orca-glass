@@ -3,6 +3,13 @@ Updated: 2026-11-02
 
 ## Current state
 
+2026-11-02 later hardware report: user saw Working after initially reporting it
+stayed on Waiting; both states are now user-observed on G2. User also reported
+needing Resume latest output to refresh text. That symptom remains distinct and
+unresolved: current code intentionally pauses body updates on scrolling or voice
+cancel, while activity continues; sending/resuming re-enables following. No
+evidence yet that text stalled without such a pause. No app change made.
+
 2026-11-02 latest hardware confirmation: after close/reopen guidance, user
 reported the G2 footer now displays Waiting for input. Bottom review and chat
 position were already confirmed stable by the user. No additional beta or code
