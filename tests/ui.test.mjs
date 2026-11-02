@@ -479,5 +479,3 @@ test('a rejected live text update is retried instead of marking unseen text as d
   assert.equal(attempts, 2);
   assert.equal(h.upgrades.at(-1).content, 'Fresh reply');
 });
-
-
