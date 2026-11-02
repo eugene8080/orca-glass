@@ -2,6 +2,9 @@
 import { hmacSha256Hex } from './hmac';
 
 const NTFY = 'https://ntfy.sh';
+// Beta builds must use an origin explicitly allowed by their manifest.
+// Prototype builds leave this empty and keep signed tunnel discovery.
+declare const __BRIDGE_ORIGIN__: string;
 
 export type Pairing = { topic: string; token: string };
 
@@ -12,6 +15,7 @@ export function parseCode(code: string): Pairing | null {
 
 // 連絡板の直近の書き込みから、トークンで署名が合う最新の URL を返す(偽の書き込みは無視)
 export async function resolveBase(p: Pairing): Promise<string | null> {
+  if (__BRIDGE_ORIGIN__) return __BRIDGE_ORIGIN__;
   const res = await fetch(`${NTFY}/${p.topic}/json?poll=1&since=12h`);
   if (!res.ok) return null;
   let best: { u: string; t: number } | null = null;

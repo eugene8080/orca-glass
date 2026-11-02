@@ -2,7 +2,7 @@
   "package_id": "com.eugene8080.orcaglass",
   "edition": "202601",
   "name": "Orca Glass Windows",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "min_app_version": "2.2.10",
   "min_sdk_version": "0.0.16",
   "entrypoint": "index.html",
@@ -11,7 +11,8 @@
       "name": "network",
       "desc": "Finds and connects to the Orca bridge running on your own PC to list and reply to agent sessions.",
       "whitelist": [
-        "https://ntfy.sh"
+        "https://ntfy.sh",
+        "https://pscap11.tailf91bf7.ts.net:8443"
       ]
     },
     {
