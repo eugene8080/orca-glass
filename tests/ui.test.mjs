@@ -19,6 +19,7 @@ async function harness(count = 2, voice = false, mode = 'tap') {
   const pages = [], sends = [], timers = new Map(), mic = [], upgrades = [], transcriptions = [];
   let timerId = 0, event;
   const api = {
+    activity: async () => ({ state: 'unknown' }),
     threads: async () => threads,
     thread: async h => ({ text: `Content ${h}` }),
     history: async () => ({ text: 'Older terminal output' }),
@@ -128,7 +129,8 @@ test('hold release reviews text and only explicit send submits once', async () =
   assert.deepEqual(h.mic, [true, false]);
   assert.equal(h.transcriptions.length, 1);
   assert.equal(h.sends.length, 0);
-  assert.equal(h.upgrades.at(-1).content, 'confirmSend\nA voice test.');
+  assert.equal(h.pages.at(-1).textObject[1].content, 'A voice test.');
+  assert.equal(h.pages.at(-1).textObject[1].isEventCapture, 1);
   await h.tap();
   assert.equal(h.sends.length, 1);
   h.release();
@@ -241,7 +243,7 @@ test('previews serialize requests; release waits for final text before review', 
   finish({ text: 'First words and final words' }); await h.flush();
   assert.equal(requests, 2);
   assert.equal(h.sends.length, 0);
-  assert.equal(h.upgrades.at(-1).content, 'confirmSend\nFirst words and final words');
+  assert.equal(h.pages.at(-1).textObject[1].content, 'First words and final words');
   await h.tap();
   assert.deepEqual(h.sends, [{ handle: 'terminal-0', text: 'First words and final words' }]);
 });
@@ -253,7 +255,7 @@ test('cancel during preview prevents late captions and input', async () => {
   h.api.transcribe = () => new Promise(resolve => { finish = resolve; });
   [...h.timers.values()][0](); await h.back();
   finish({ text: 'Late caption' }); await h.flush();
-  assert.equal(h.upgrades.at(-1).content, ' ');
+  assert.equal(h.upgrades.at(-1).content, 'Status unavailable');
   assert.ok(h.upgrades.every(u => !u.content.includes('Late caption')));
   assert.equal(h.sends.length, 0);
 });
@@ -337,17 +339,17 @@ test('reader stays within the working hardware budget on opening and navigation'
 test('double-click discards a finished voice draft without sending', async () => {
   const h = await harness(2, true, 'hold');
   await h.pick(3); h.press(); await h.flush(); h.audio(); h.release(); await h.flush();
-  assert.match(h.upgrades.at(-1).content, /^confirmSend/);
+  assert.match(h.pages.at(-1).textObject[0].content, /^Review:/);
   await h.back();
   assert.equal(h.sends.length, 0);
-  assert.equal(h.pages.at(-1).textObject[1].content, 'Content terminal-0');
+  assert.equal(h.upgrades.at(-1).content, 'Content terminal-0');
   h.press(); await h.flush();
   assert.equal(h.mic.at(-1), true);
   await h.back();
 });
 
 
-test('quarter-screen voice area never overlaps or rebuilds the reader on send or cancel', async () => {
+test('capture stays separate and dedicated review returns to the same reader on send or cancel', async () => {
   for (const send of [true, false]) {
     const h = await harness(2, true, 'hold');
     h.api.history = async () => ({ text: 'Saved history '.repeat(300), source: 'codex-transcript' });
@@ -358,23 +360,27 @@ test('quarter-screen voice area never overlaps or rebuilds the reader on send or
     const reader = page.textObject.find(c => c.containerName === 'body');
     assert.ok(reader.yPosition + reader.height <= panel.yPosition);
     assert.ok(panel.yPosition + panel.height <= 288);
-    assert.equal(panel.content, ' ');
-    assert.equal(panel.textColor, 0);
+    assert.equal(panel.content, 'Status unavailable');
+    assert.equal(panel.textColor, 4);
     assert.ok(panel.zOrderIndex > page.textObject[1].zOrderIndex);
-    h.press(); await h.flush(); h.audio(); h.release(); await h.flush();
-    assert.equal(h.sends.length, 0);
-    if (send) await h.tap(); else await h.back();
+    h.press(); await h.flush();
     assert.equal(h.pages.length, count);
     assert.ok(h.upgrades.slice(writes).every(u => u.containerName === 'voice'));
-    assert.equal(h.upgrades.at(-1).content, ' ');
+    h.audio(); h.release(); await h.flush();
+    assert.equal(h.pages.at(-1).textObject[1].isEventCapture, 1);
+    assert.equal(h.pages.at(-1).textObject.length, 2);
+    assert.equal(h.sends.length, 0);
+    if (send) await h.tap(); else await h.back();
+    const restoredPages = h.pages.length;
+    assert.equal(h.pages.at(-1).textObject.find(c => c.containerName === 'voice').content, 'Status unavailable');
     assert.equal(h.sends.length, send ? 1 : 0);
-    assert.equal(h.timers.size, send ? 1 : 0);
+    assert.equal(h.timers.size, 1);
     if (send) {
       h.api.history = async () => ({ text: 'New response after voice send', source: 'codex-transcript' });
       await [...h.timers.values()][0]();
       assert.equal(h.upgrades.at(-1).containerName, 'body');
       assert.equal(h.upgrades.at(-1).content, 'New response after voice send');
-      assert.equal(h.pages.length, count);
+      assert.equal(h.pages.length, restoredPages);
       await h.scroll('up');
       const pausedWrites = h.upgrades.length;
       await [...h.timers.values()][0]();
@@ -394,8 +400,98 @@ test('rejected foreground panel falls back to recording and still requires expli
   assert.equal(h.mic.at(-1), true);
   assert.match(h.elements.get('diag').textContent, /fallback/);
   h.audio(); h.release(); await h.flush();
-  assert.equal(h.pages.at(-1).textObject[0].content, 'confirmSend');
+  assert.match(h.pages.at(-1).textObject[0].content, /^Review:/);
   assert.equal(h.sends.length, 0);
   await h.tap();
   assert.equal(h.sends.length, 1);
+});
+
+test('bottom status changes while reading is paused without rewriting the conversation', async () => {
+  const h = await harness();
+  await h.pick(3);
+  const pages = h.pages.length;
+  await h.scroll('up');
+  h.api.activity = async () => ({ state: 'working' });
+  await [...h.timers.values()][0]();
+  assert.equal(h.upgrades.at(-1).content, 'Working…');
+  h.api.activity = async () => ({ state: 'waiting' });
+  await [...h.timers.values()][0]();
+  assert.equal(h.upgrades.at(-1).content, 'Waiting for input');
+  assert.ok(h.upgrades.every(u => u.containerName === 'voice'));
+  assert.equal(h.pages.length, pages);
+});
+
+test('late activity cannot overwrite voice capture; cancel restores status and keeps text paused', async () => {
+  const h = await harness(2, true, 'hold');
+  await h.pick(3);
+  h.api.activity = async () => ({ state: 'working' });
+  await [...h.timers.values()][0]();
+  let finish;
+  h.api.activity = () => new Promise(resolve => { finish = resolve; });
+  const pending = [...h.timers.values()][0]();
+  h.press(); await h.flush();
+  const writes = h.upgrades.length;
+  finish({ state: 'waiting' });
+  await pending;
+  assert.equal(h.upgrades.length, writes);
+  await h.back();
+  assert.equal(h.upgrades.at(-1).content, 'Working…');
+  h.api.activity = async () => ({ state: 'waiting' });
+  const afterCancel = h.upgrades.length;
+  await [...h.timers.values()][0]();
+  assert.equal(h.upgrades.at(-1).content, 'Waiting for input');
+  assert.ok(h.upgrades.slice(afterCancel).every(u => u.containerName === 'voice'));
+});
+
+test('saved history losing its association falls back to live output and keeps updating', async () => {
+  const h = await harness();
+  h.api.history = async () => ({ text: 'Saved conversation', source: 'codex-transcript' });
+  await h.pick(3);
+  h.api.history = async () => ({ text: 'Raw buffer', source: 'terminal-buffer' });
+  h.api.thread = async () => ({ text: 'New live reply' });
+  await [...h.timers.values()][0]();
+  assert.equal(h.upgrades.at(-1).content, 'New live reply');
+  h.api.history = async () => { throw new Error('Must stay on the live source'); };
+  h.api.thread = async () => ({ text: 'Next live reply' });
+  await [...h.timers.values()][0]();
+  assert.equal(h.upgrades.at(-1).content, 'Next live reply');
+});
+
+test('a rejected live text update is retried instead of marking unseen text as displayed', async () => {
+  const h = await harness();
+  await h.pick(3);
+  h.api.thread = async () => ({ text: 'Fresh reply' });
+  const original = h.bridge.textContainerUpgrade;
+  let attempts = 0;
+  h.bridge.textContainerUpgrade = async value => {
+    if (value.containerName === 'body' && ++attempts === 1) return false;
+    return original(value);
+  };
+  await [...h.timers.values()][0]();
+  assert.match(h.elements.get('diag').textContent, /Retrying/);
+  await [...h.timers.values()][0]();
+  assert.equal(attempts, 2);
+  assert.equal(h.upgrades.at(-1).content, 'Fresh reply');
+});
+
+test('draft scrolling reviews every line and sends the full transcript once', async () => {
+  const h = await harness(2, true, 'hold');
+  const text = Array.from({ length: 30 }, (_, i) => `Transcript line ${i + 1}`).join('\n');
+  h.api.transcribe = async () => ({ text });
+  await h.pick(3);
+  h.press(); await h.flush(); h.audio(); h.release(); await h.flush();
+  const page = h.pages.at(-1);
+  assert.match(page.textObject[0].content, /^Review:/);
+  assert.equal(page.textObject[1].isEventCapture, 1);
+  assert.match(page.textObject[1].content, /Transcript line 1\n/);
+  const writes = h.upgrades.length;
+  for (let i = 0; i < 30; i++) await h.scroll('down');
+  assert.match(h.upgrades.at(-1).content, /Transcript line 30$/);
+  await h.scroll('up');
+  assert.match(h.upgrades.at(-1).content, /Transcript line 29$/);
+  assert.ok(h.upgrades.slice(writes).every(u => u.containerName === 'body'));
+  assert.equal(h.sends.length, 0);
+  await h.tap();
+  assert.equal(h.sends.length, 1);
+  assert.equal(h.sends[0].text, text);
 });

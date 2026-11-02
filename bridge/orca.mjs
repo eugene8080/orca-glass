@@ -4,6 +4,7 @@ import { promisify } from 'node:util';
 import { orcaExecutable } from './platform.mjs';
 import { parseChoices, validateChoice } from './choices.mjs';
 import { sessionTitles, sessionTitle } from './session-titles.mjs';
+import { activityState } from './activity.mjs';
 
 const run = promisify(execFile);
 const ORCA = orcaExecutable();
@@ -199,6 +200,14 @@ export async function requireLiveTerminal(handle) {
     throw new Error('Terminal is disconnected or orphaned.');
   }
   return terminal;
+}
+
+export async function activity(handle) {
+  const terminal = await requireLiveTerminal(handle);
+  const { worktrees } = await orca(['worktree', 'ps']);
+  const workspace = worktrees.find(w => w.worktreeId === terminal.worktreeId);
+  const agent = workspace?.agents?.find(a => a.paneKey === `${terminal.tabId}:${terminal.leafId}`);
+  return { state: activityState(agent) };
 }
 
 export async function choose(handle, id, value) {

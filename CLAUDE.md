@@ -1,5 +1,5 @@
 # Orca Glass fork
-Updated: 2026-11-01
+Updated: 2026-11-02
 
 Read the machine-level instructions first. This fork targets Windows desktop
 Orca, the Even Realities Android app, and G2 glasses.
@@ -11,6 +11,20 @@ authorizes it. Keep server-side provider restrictions in place. Historical
 upstream Claude code is not evidence of authorization to test it.
 
 ## Current work
+
+2026-11-02 beta1.0.4 supersedes prior no-rebuild review constraint: after hold
+release, a dedicated review page owns scrolling through the full transcript,
+click sends once/double cancels. Returning rebuilds the selected chat block;
+native pixel scroll position cannot be restored. Saved-history source loss now
+falls back to live screen, and rejected live uploads retry without marking text
+displayed. 50 tests/build/doctor pass; beta1.0.4 channel verified. G2 retest pending.
+
+2026-11-02 beta1.0.3/1.0.4: reader's reserved bottom voice area shows Working…,
+Waiting for input, Needs attention or Status unavailable using exact-pane Orca
+activity, not the mutable terminal title. Status polls while reader text is
+paused; capture/review owns the panel, then status resumes without chat rebuild.
+Cancel retains paused text. 47 tests/build/doctor pass; live endpoint verified
+working and waiting; beta channel1.0.3 verified. Phone/G2 retest pending.
 
 2026-11-02: user requested removal of the Codex-only existing-session filter.
 List/read/history/reply now accept all connected non-orphaned local terminals,

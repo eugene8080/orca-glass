@@ -60,6 +60,7 @@ export type Thread = { handle: string; title: string; agent: string; state: 'idl
 export type ChoiceMenu = { id: string; question: string; options: { value: string; label: string }[] };
 export type Provider = { id: string; models: string[]; ok: boolean; note: string };
 export type Workspace = { id: string; name: string };
+export type Activity = 'working' | 'waiting' | 'attention' | 'unknown';
 type Limit = { usedPercent: number; resetDescription: string } | null;
 export type Usage = Record<string, { status: string; error?: string | null; session?: Limit; weekly?: Limit }>;
 
@@ -67,6 +68,7 @@ export const api = {
   capabilities: () => call<{ voice: boolean }>('GET', '/api/capabilities'),
   health: () => call<{ ok: boolean }>('GET', '/healthz'),
   threads: () => call<Thread[]>('GET', '/api/threads'),
+  activity: (handle: string) => call<{ state: Activity }>('GET', `/api/activity?handle=${encodeURIComponent(handle)}`),
   history: (handle: string) => call<{ text: string; source?: string; limited?: boolean; messageCount?: number; reason?: string }>('GET', `/api/history?handle=${encodeURIComponent(handle)}`),
   thread: (handle: string) => call<{ text: string; menu?: ChoiceMenu | null }>('GET', `/api/thread?handle=${encodeURIComponent(handle)}`),
   choice: (handle: string, menuId: string, value: string) => call<{ sent: string }>('POST', '/api/choice', { handle, menuId, value }),

@@ -3,6 +3,36 @@ Updated: 2026-11-02
 
 ## Current state
 
+2026-11-02 latest: beta channel is now **1.0.4** (46,426 bytes), verified after
+upload/promotion. Install/update through the phone's Beta tester entry. This build
+adds activity status in the reserved bottom voice area while reading. Working…
+and Waiting for input come from Orca's exact-pane agent state, not terminal titles.
+Unrecognized state/request failure displays Status unavailable; blocked/error
+state displays Needs attention. Polling continues when conversation text is paused,
+without replacing that text. Recording/review temporarily owns the panel;
+Send/Cancel restores status and Cancel keeps text paused. 50 tests/build/doctor
+pass, including paused-reader updates and late-status/voice protection. Live
+HTTPS activity verified working for this session and waiting for completed
+sessions. Hardware appearance and phone update remain pending; no public release.
+
+This version also repairs saved-history source loss: a reader formerly locked
+to codex-transcript now switches to the live screen when the bridge returns
+terminal-buffer or cannot load saved history. Live native text updates must be
+acknowledged before the UI records them as displayed; rejected uploads retry.
+The current session's history endpoint was observed returning terminal-buffer,
+confirming the previously ignored transition. These fixes do not remove the
+intentional pause while reading older conversation text; click and choose Resume
+latest output to follow again after scrolling.
+
+Voice review now uses a dedicated full-screen transcript page. Up/down moves
+through every line of the draft; click sends the full text once, double cancels.
+The background chat cannot capture review scrolling. Capture/previews still use
+the reserved bottom panel. Returning from review rebuilds the selected chat block;
+the SDK does not expose the exact native scroll offset for restoration. This
+supersedes older no-rebuild-at-review notes. Hardware review scrolling and live
+reply behavior remain pending. Tests cover long drafts, no send while scrolling,
+one full-text send, lost-history fallback and rejected-upload retry.
+
 Version 1.0.2 is packaged in ignored `.local/orca-glass-1.0.2.ehpk`.
 38 automated tests, beta packing, ordinary build and doctor passed.
 2026-11-02: signed in as eugene8080@gmail.com; registered

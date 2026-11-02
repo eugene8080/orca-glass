@@ -94,6 +94,7 @@ async function body(req) {
 
 const routes = {
   'GET /api/threads': () => o.listThreads(),
+  'GET /api/activity': (q) => o.activity(q.get('handle')),
   'GET /api/capabilities': () => ({ voice: voiceAvailable() }),
   'GET /api/thread': (q) => o.readThread(q.get('handle')),
   'GET /api/history': (q) => o.readHistory(q.get('handle')),

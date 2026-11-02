@@ -55,6 +55,8 @@ export function demoCall(lang: Lang, method: string, path: string, body: unknown
     case 'GET /api/thread':
     case 'GET /api/history':
       return { text: c.texts[searchParams.get('handle') as keyof typeof c.texts] ?? '' };
+    case 'GET /api/activity':
+      return { state: searchParams.get('handle') === 'demo-2' ? 'working' : 'waiting' };
     case 'GET /api/replies':
       return c.replies;
     case 'POST /api/reply':

@@ -14,7 +14,7 @@ import {
 import { api, currentBase, setApiLang, setConnection, setDemo, type Provider, type Thread, type Workspace } from './api';
 import { parseCode, resolveBase } from './pairing';
 import { applyPage, detectLang, setLang, t as tr } from './i18n';
-import { clipBytes, textSections } from './text';
+import { clipBytes, textSections, textLines, textWindow } from './text';
 
 // 画面 576x288。上に見出し(テキスト)、下に本文(リスト or テキスト)の2段構成で統一する。
 const HEAD = { containerID: 1, containerName: 'head', xPosition: 0, yPosition: 0, width: 576, height: 36 };
@@ -30,7 +30,7 @@ const POLL_MS = 1000;
 
 type Screen =
   | { kind: 'list'; title: string; items: string[]; onPick: (i: number) => void; onBack?: () => void }
-  | { kind: 'text'; title: string; text: string; tail?: boolean; offset?: number; reading?: boolean; savedHistory?: boolean; reader?: Thread; onClick?: () => void; onBack?: () => void; onHold?: () => void; };
+  | { kind: 'text'; title: string; text: string; tail?: boolean; offset?: number; reading?: boolean; activityLabel?: string; savedHistory?: boolean; reader?: Thread; onScroll?: (direction: number) => void; onClick?: () => void; onBack?: () => void; onHold?: () => void; };
 
 let bridge: EvenAppBridge;
 let current: Screen | null = null;
@@ -104,8 +104,14 @@ function screenTitle(s: Screen) {
   return s.title;
 }
 
+function activityLabel(state: string) {
+  return state === 'working' ? 'Working…' : state === 'waiting' ? 'Waiting for input'
+    : state === 'attention' ? 'Needs attention' : 'Status unavailable';
+}
+
 async function show(s: Screen, reloadText = false) {
   clearInterval(poll);
+  if (s.kind === 'text' && s.reader) s.activityLabel ??= 'Status unavailable';
   const previous = current;
   current = s;
   const content = s.kind === 'text' ? bodyText(s) : '';
@@ -130,7 +136,7 @@ async function show(s: Screen, reloadText = false) {
       : {
           containerTotalNum: s.reader ? 3 : 2,
           textObject: [head, new TextContainerProperty({ ...BODY, ...(s.reader ? { zOrderIndex: 1, height: READER_HEIGHT } : {}), content: uploadText ? '' : content, isEventCapture: 1 }),
-            ...(s.reader ? [new TextContainerProperty({ ...VOICE, content: ' ', textColor: 0, isEventCapture: 0, zOrderIndex: 2 })] : [])],
+            ...(s.reader ? [new TextContainerProperty({ ...VOICE, content: s.activityLabel || 'Checking status…', textColor: 4, isEventCapture: 0, zOrderIndex: 2 })] : [])],
         };
   try {
     if (!started) {
@@ -145,6 +151,7 @@ async function show(s: Screen, reloadText = false) {
       const accepted = await bridge.textContainerUpgrade(new TextContainerUpgrade({ containerID: BODY.containerID, containerName: BODY.containerName, content }));
       if (!accepted) throw new Error('Glasses could not load the selected text. Click to retry.');
     }
+    if (s.kind === 'text' && s.reader) startReaderUpdates(s);
   } catch (e) {
     if (current === s) current = previous;
     diag((e as Error).message);
@@ -152,14 +159,20 @@ async function show(s: Screen, reloadText = false) {
   }
 }
 
-function updateText(title: string, text: string) {
+async function updateText(title: string, text: string) {
   if (current?.kind !== 'text') return;
-  current.title = title;
-  current.text = text;
+  const screen = current;
+  const next = { ...screen, title, text };
   const { containerID: hid, containerName: hname } = HEAD;
   const { containerID: bid, containerName: bname } = BODY;
-  bridge.textContainerUpgrade(new TextContainerUpgrade({ containerID: hid, containerName: hname, content: clipBytes(screenTitle(current), TEXT_BYTES) }));
-  bridge.textContainerUpgrade(new TextContainerUpgrade({ containerID: bid, containerName: bname, content: bodyText(current) }));
+  if (title !== screen.title) {
+    const accepted = await bridge.textContainerUpgrade(new TextContainerUpgrade({ containerID: hid, containerName: hname, content: clipBytes(title, TEXT_BYTES) }));
+    if (!accepted) throw new Error('Glasses rejected the title update.');
+  }
+  if (current !== screen) return;
+  const accepted = await bridge.textContainerUpgrade(new TextContainerUpgrade({ containerID: bid, containerName: bname, content: bodyText(next) }));
+  if (!accepted) throw new Error('Glasses rejected the live text update. Retrying.');
+  if (current === screen) { screen.title = title; screen.text = text; }
 }
 
 async function guard(title: string, f: () => Promise<void>, back: () => void) {
@@ -218,18 +231,33 @@ function startReaderUpdates(screen: Screen | null) {
   clearInterval(poll);
   if (screen?.kind !== 'text' || !screen.reader) return;
   const t = screen.reader;
-  const useSaved = !!screen.savedHistory;
   let reading = false;
   poll = setInterval(async () => {
-    if (reading || current !== screen || screen.reading) return;
+    if (reading || current !== screen) return;
     reading = true;
-    const r = await (useSaved ? api.history(t.handle) : api.thread(t.handle)).catch(() => null);
-    reading = false;
-    // A pending old-session read must never overwrite another screen or draft.
-    if (r && (!useSaved || ('source' in r && r.source === 'codex-transcript')) && current === screen && r.text !== screen.text && !screen.reading) {
-      screen.offset = undefined;
-      updateText(screen.title, r.text);
+    const activity = await api.activity(t.handle).catch(() => ({ state: 'unknown' }));
+    if (current !== screen) { reading = false; return; }
+    const label = activityLabel(activity.state);
+    if (screen.activityLabel !== label) {
+      try {
+        const accepted = await bridge.textContainerUpgrade(new TextContainerUpgrade({ ...VOICE, content: label, textColor: 4 }));
+        if (accepted && current === screen) screen.activityLabel = label;
+      } catch (e) { diag((e as Error).message); }
     }
+    if (current !== screen || screen.reading) { reading = false; return; }
+    let r = await (screen.savedHistory ? api.history(t.handle) : api.thread(t.handle)).catch(() => null);
+    if (screen.savedHistory && (!r || !('source' in r) || r.source !== 'codex-transcript')) {
+      r = await api.thread(t.handle).catch(() => null);
+      // Stay on live output after losing the verified saved-history association.
+      if (r && current === screen) screen.savedHistory = false;
+    }
+    // A pending old-session read must never overwrite another screen or draft.
+    if (r && current === screen && r.text !== screen.text && !screen.reading) {
+      screen.offset = undefined;
+      try { await updateText(screen.title, r.text); }
+      catch (e) { diag((e as Error).message); }
+    }
+    reading = false;
   }, POLL_MS);
 }
 
@@ -320,10 +348,10 @@ async function record(t: Thread, hold = false) {
   const closeVoice = async () => {
     if (!overlayActive) return;
     overlayActive = false;
-    if (fallbackScreen) { await show(background, true); return; }
-    try { await writeOverlay(''); }
+    if (fallbackScreen) { await show(background, true); startReaderUpdates(background); return; }
+    try { await writeOverlay(background.activityLabel || 'Checking status…'); }
     catch (e) { diag((e as Error).message); }
-    finally { current = background; }
+    finally { current = background; startReaderUpdates(background); }
   };
   recording = [];
   const chunks = recording;
@@ -389,8 +417,23 @@ async function record(t: Thread, hold = false) {
         await voiceShow({ kind: 'text', title: tr('voiceTitle'), text: tr('notHeard'), onClick: () => closeVoice(), onBack: () => closeVoice() });
       } else {
         cancelCapture = cancel;
-        await voiceShow({ kind: 'text', title: tr('confirmSend'), text,
-          onClick: () => { void sendText(text); }, onBack: () => { cancel(); void closeVoice(); } });
+        // The SDK cannot move native scroll capture with a text-only update.
+        // A dedicated draft page makes every swipe belong to the transcript.
+        fallbackScreen = true;
+        let reviewOffset = 0;
+        let reviewWrites: Promise<void> = Promise.resolve();
+        const review: Extract<Screen, { kind: 'text' }> = {
+          kind: 'text', title: 'Review: click send / double cancel', text: textWindow(text, 0, 8, 900),
+          onScroll: direction => {
+            reviewOffset = Math.max(0, Math.min(Math.max(0, textLines(text).length - 8), reviewOffset + direction));
+            const view = textWindow(text, reviewOffset, 8, 900);
+            reviewWrites = reviewWrites.then(async () => {
+              if (current === review) await updateText(review.title, view);
+            }).catch(e => diag((e as Error).message));
+          },
+          onClick: () => { void sendText(text); }, onBack: () => { cancel(); void closeVoice(); },
+        };
+        await voiceShow(review);
       }
     } catch (e) {
       if (cancelled) return;
@@ -548,6 +591,7 @@ function onEvent(e: EvenHubEvent) {
   // CLICK_EVENT(0) は既定値のため JSON から省かれて届くことがある
   const type = ev.eventType ?? OsEventTypeList.CLICK_EVENT;
   if (s.kind === 'text' && (type === OsEventTypeList.SCROLL_TOP_EVENT || type === OsEventTypeList.SCROLL_BOTTOM_EVENT)) {
+    if (s.onScroll) { s.onScroll(type === OsEventTypeList.SCROLL_TOP_EVENT ? -1 : 1); return; }
     // Firmware scrolls overflowing text. Replacing content here causes visible jumps.
     // Pause polling so incoming output cannot reset the reader's scroll position.
     s.reading = true;
