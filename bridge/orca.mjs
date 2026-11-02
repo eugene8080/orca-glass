@@ -3,6 +3,7 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { orcaExecutable } from './platform.mjs';
 import { parseChoices, validateChoice } from './choices.mjs';
+import { sessionTitles, sessionTitle } from './session-titles.mjs';
 
 const run = promisify(execFile);
 const ORCA = orcaExecutable();
@@ -27,12 +28,13 @@ function stateFromTitle(title) {
 }
 
 export async function listThreads() {
-  const { terminals } = await orca(['terminal', 'list']);
+  const { terminals, visualLayouts } = await orca(['terminal', 'list', '--include-visual-layouts']);
+  const names = sessionTitles(visualLayouts);
   return terminals
     .filter((t) => t.connected && !t.orphaned)
     .map((t) => ({
       handle: t.handle,
-      title: (t.title || 'Untitled').replace(/^[✳◐◓◑◒⠁-⣿]\s*/u, ''),
+      title: sessionTitle(t, names),
       agent: t.agentIdentity,
       state: stateFromTitle(t.title),
       lastOutputAt: t.lastOutputAt,
