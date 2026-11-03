@@ -7,6 +7,15 @@ Completed/superseded release notes: [history](docs/todo-history.md).
 
 ## Open work
 
+- [ ] **Monitor native popup request:** [GitHub #44](https://github.com/even-realities/everything-evenhub/issues/44)
+  and [Discord thread](https://discord.com/channels/1301124787740868620/1484753075590664332/threads/1567124600658202754).
+  Await maintainer response/API guidance. Primary use case: hold-to-talk with more
+  visible transcription rows; closing Send/Cancel must not move/reset session text.
+- [ ] **Monitor scroll-to-bottom / auto-follow request:** [GitHub #45](https://github.com/even-realities/everything-evenhub/issues/45)
+  and [Discord thread](https://discord.com/channels/1301124787740868620/1484753075590664332/threads/1567124754475909202).
+  Await maintainer response/API guidance for following newest LLM output while
+  preserving the user's position when reading older text.
+
 - [ ] **G2 check of beta1.0.21:** verify the three contextual actions (Refresh
   sessions, New Session, Usage), retained OS Display off/Brightness/Close, moving
   dot, and no displaced slash when a working session is selected. Titles/count/

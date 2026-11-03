@@ -49,6 +49,12 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-03 user requests TODO follow-ups to monitor both filed SDK requests.
+Added two unchecked entries to TODOS.md with GitHub44/45 and corresponding Discord
+thread links, expected capabilities and awaiting-maintainer-response status.
+This is task tracking only; no scheduled watcher/automation was requested or created.
+Documentation only; no application/beta change.
+
 2026-11-03 user authorizes external SDK request filing. Dedicated Eugene Chrome:
 GitHub everything-evenhub issues44 (native popup) and45 (scroll-to-bottom) created;
 separate even-hub-help Discord forum posts created and linked. User clarifies popup
