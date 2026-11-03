@@ -3,6 +3,12 @@ Updated: 2026-11-03
 
 ## Current state
 
+2026-11-03 follow-up: user screenshot reports **Failed to load: Bad state: Host
+shutdown did not complete** in the Even app; user also reports rejected screen
+update. Installed version not reconfirmed. Requested Android Force stop of Even
+Realities, reopen and identify which error remains. No new beta uploaded for this
+report.1.0.14 compatibility remains hardware-unverified; do not mark resolved.
+
 2026-11-03 beta **1.0.14** uploaded/promoted and channel verified (46,064 bytes).
 Compatibility repair for G2 startup invalid1: eight menu containers, contiguous
 IDs/layers, merged marker/title text, and rejected-start recovery using rebuild.

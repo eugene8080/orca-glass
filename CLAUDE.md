@@ -12,6 +12,15 @@ upstream Claude code is not evidence of authorization to test it.
 
 ## Current work
 
+2026-11-03 follow-up after1.0.14 instructions: phone screenshot says Failed to
+load: Bad state: Host shutdown did not complete; user also reports Glasses
+rejected the screen update. Installed version not reconfirmed. The screenshot
+message is outside Orca Glass's own strings and indicates Even host load/lifecycle
+failure, not evidence that page compatibility is fixed. Asked Android Force stop
+Even Realities, reopen and report host error vs normal open vs G2 page rejection.
+No new app/beta change. Related public host-exit/image issue18 is not proof this
+exact shutdown failure has the same cause. Await recovery result before changes.
+
 2026-11-03 G2 rejects1.0.13 startup with result1. Candidate1.0.14 reduces menu
 from9 to8 containers, merges markers into title column, normalizes IDs1..8 and
 layers0..7. Prior menu had zOrder9 with9 containers; this is a compatibility
