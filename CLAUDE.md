@@ -34,6 +34,13 @@ workspace/worktree. This applies to every agent working here.
 
 ## Current work
 
+2026-11-03 user confirms no blank row between Orca-glass version title and
+Filter by Agent on G2. Header gap check closed in TODOS.md. Count/filter right
+alignment and shell exclusion also confirmed. Session-list spinner remains
+unresolved: G2 accepts aligned native text/static fallback but rejects image
+profile. No further layout confirmation pending; exact image rejection cause
+still needs investigation. Documentation only; no new beta.
+
 2026-11-03 user confirms selected filter ([All sessions]/agent) is right-aligned
 on the Filter by Agent row on G2. Both count/filter alignment checks closed in
 TODOS.md. Header-to-first-row gap remains unconfirmed; spinner unresolved.
