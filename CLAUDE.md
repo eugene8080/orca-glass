@@ -42,6 +42,10 @@ it available. Automatic commit/push does not authorize beta promotion.
 
 ## Current work
 
+2026-11-03 user explicitly confirms "Phone Failed to fetch follow-up" resolved.
+TODOS.md row closed as Resolved; user confirmed. Exact earlier transient cause
+remains unproven. Documentation only; no runtime/code/beta change.
+
 2026-11-03 user explicitly marks "Menu compatibility diagnosis and smaller
 markers" done. Corresponding TODOS.md history row closed. This confirmation is
 scoped to that task; unrelated G2 checks and scrollbar request remain unchanged.
