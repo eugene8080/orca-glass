@@ -11,6 +11,9 @@ Updated: 2026-11-03
 - Suggested creator: eugene8080 (portal developer information is still blank).
 - Language: English.
 - Attribution: based on 2ero20ne's MIT-licensed Orca Glass. The upstream developer name, privacy URL and Mac-only instructions do not describe this fork.
+- Chosen public developer: Quiet Signal; support: quietsignal.apps@gmail.com.
+  Entered in contact wizard but not saved: portal requires contact telephone.
+  Phone visibility/address requirement unknown; no phone/address entered.
 
 Name, tagline and description saved through the authenticated Even Hub CLI on 2026-11-03. Five primary screenshots and the portal's Office environment cover were saved through the browser; the sixth contextual-menu image remains supplemental/local. User requests preview before Publish: do not submit for review or publish without approval. Beta remains 1.0.21; no build uploaded or submitted for public review.
 
@@ -57,7 +60,7 @@ The Python step requires Pillow. Verify each image visually. The fixture replace
 
 - **General-user connection:** `scripts/build-beta.mjs` pins the build to the single PC origin allowed by `app/app.json`. Arbitrary users cannot pair their PCs with this installed build. Resolve public connection/setup before advertising a self-service install.
 - **Privacy:** complete a fork-specific policy covering microphone audio, network routes, local transcription and confirmed replies to desktop agents. Do not reuse the upstream policy as this developer's policy.
-- **Developer information:** complete the portal's currently blank personal/developer information before submission. User wants to avoid spam: use a chosen public developer handle and dedicated support address; do not save personal phone/address. Contact wizard requires developer name and explicitly makes email public; phone/address requiredness remains unverified. No contact data saved. The user selected the earlier [GIMP icon](icon/orca-glass-icon.png); it passes the 24×24/2×2-block requirements and is saved and visually verified in the portal. Icon preparation is complete.
+- **Developer information:** Quiet Signal and quietsignal.apps@gmail.com selected by user and entered, but not saved. Next is blocked by required contact telephone. Email explicitly public; phone visibility and address requiredness unknown. User wants to avoid spam; no personal phone/address entered. Await dedicated support number or Even clarification. The user selected the earlier [GIMP icon](icon/orca-glass-icon.png); it passes the 24×24/2×2-block requirements and is saved and visually verified in the portal. Icon preparation is complete.
 - **Description checklist:** completed by setting the missing category to AI. Existing description text retained.
 - **Name consistency:** manifest/portal say `Orca Glass`; on-glasses header says `Orca-glass`. Align in a later build before submission.
 - **Hardware:** retain open 1.0.21 checks in [TODOS.md](../TODOS.md). Final-only assistant filtering is not implemented; do not promise it.

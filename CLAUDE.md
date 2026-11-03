@@ -49,6 +49,12 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-03 user chooses Quiet Signal and creates quietsignal.apps@gmail.com
+for public support. Entered both in portal contact wizard, leaving phone/address
+blank. Next returns Contact telephone is required; form NOT saved. Phone public
+visibility and address requiredness remain unknown. No placeholder/personal
+phone entered. Await chosen support number or clarification from Even; no publish.
+
 2026-11-03 listing checklist: description was incomplete because Category was
 unset. Saved AI category through portal; App description now complete. Privacy
 wizard starts with contact information; Developer name required, email explicitly
