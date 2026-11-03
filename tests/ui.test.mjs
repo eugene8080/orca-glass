@@ -557,10 +557,10 @@ test('compact session menu uses native text and one update per cursor move', asy
   assert.equal(columns.find(c => c.containerName === 'head').height, 28);
   assert.equal(columns.find(c => c.containerName === 'body').yPosition, 28);
   assert.equal(columns.find(c => c.containerName === 'menu-right').xPosition, 396);
-  assert.equal(columns.find(c => c.containerName === 'body').content.split('\n')[0], '   Filter by Agent');
+  assert.equal(columns.find(c => c.containerName === 'body').content.split('\n')[0], ' Filter by Agent');
   assert.equal(columns.find(c => c.containerName === 'body').xPosition, 28);
   const actionRows = columns.find(c => c.containerName === 'body').content.split('\n').slice(0, 4);
-  assert.ok(actionRows.every(row => /^ {3}\S/.test(row)));
+  assert.ok(actionRows.every(row => /^ {1}\S/.test(row)));
   assert.ok(!actionRows[3].includes('◊'));
   assert.match(columns.find(c => c.containerName === 'menu-right').content.split('\n')[0], /All sessions/);
   assert.equal(columns.find(c => c.containerName === 'menu-right').content.split('\n')[1].trim(), '');
@@ -650,9 +650,7 @@ test('menu activity polling starts a spinner after a session becomes busy', asyn
   assert.notEqual(before, after);
   assert.equal(h.images.length, 0);
   const bodyWrites = h.upgrades.filter(u => u.containerName === 'body');
-  assert.equal(bodyWrites.length, 1);
-  assert.ok(bodyWrites[0].content.split('\n')[4].startsWith('Session'));
-  assert.ok(bodyWrites[0].content.split('\n')[5].startsWith(' Session'));
+  assert.equal(bodyWrites.length, 0);
   assert.match(after.split('\n')[4], /^[ >] [ ·]{3}$/);
 });
 
@@ -675,21 +673,12 @@ test('session menu never requests marker images', async () => {
 });
 
 
-test('click waits for an activity-spacing write even while animation and swipes arrive', async () => {
-  const h = await harness();
-  for (let i = 0; i < 4; i++) await h.scroll('down');
-  const pageCount = h.pages.length;
-  let finish;
-  const original = h.bridge.textContainerUpgrade;
-  h.bridge.textContainerUpgrade = value => value.containerName === 'body'
-    ? new Promise(resolve => { finish = () => { original(value); resolve(true); }; })
-    : original(value);
-  h.api.threads = async () => [{ handle: 'terminal-0', title: 'Session 0', agent: 'codex', state: 'busy' }];
-  const poll = [...h.timers.values()].at(-1)();
-  await h.flush();
-  await [...h.timers.values()][0]();
-  await h.scroll('down'); await h.scroll('up'); await h.tap();
-  assert.equal(h.pages.length, pageCount);
-  finish(); await poll; await h.flush();
-  assert.equal(h.pages.at(-1).textObject[1].content, 'Content terminal-0');
+test('action, idle and working titles share one fixed leading space', () => {
+  const rows = [
+    { title: 'Filter by Agent', marker: '*' },
+    { title: 'Usage', marker: '◊' },
+    { title: 'Idle', marker: '/', handle: 'idle', busy: false },
+    { title: 'Working', marker: '', handle: 'busy', busy: true },
+  ];
+  assert.equal(listExports.menuNativeText(rows), ' Filter by Agent\n Usage\n Idle\n Working');
 });

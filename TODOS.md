@@ -8,6 +8,12 @@ This list supersedes older pending statuses in the dated history below.
 - **Plain-shell exclusion:** confirmed2026-11-03; user reports cmd.exe is gone
   from the G2 sessions list after Refresh. Header gap removal hardware-confirmed2026-11-03: user reports no blank row.
 
+- **Unified title alignment1.0.20:** implemented, simulator review pending. Working
+  names gain one space; action rows lose two so all match idle names.74 tests/build
+  pass, native simulator labels stationary. Preview left open; beta upload held
+  until user approves. Refresh sessions retained.
+- **Bold vertical bar:** investigation pending location confirmation. Likely native
+  reader scrollbar; SDK exposes no hide control. No reader/scrolling change made.
 - **Session-list animation: native dot implemented; G2 check pending.** Beta1.0.19
   uses one middle-height native dot moving across three positions, with no list
   images. Marker/cursor updates leave title/right columns unchanged. All session

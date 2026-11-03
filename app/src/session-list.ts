@@ -19,7 +19,7 @@ export const MENU_CURSOR = { containerID: 4, containerName: 'menu-cursor', xPosi
 // during animation, and there is no trailing text padding before the title column.
 export const MENU_DOTS = ['·  ', ' · ', '  ·'];
 export function menuNativeText(rows: SessionColumns[]): string {
-  return rows.map(row => (row.handle ? (row.busy ? '' : ' ') : '   ') + menuTitle(row.title)).join('\n');
+  return rows.map(row => ' ' + menuTitle(row.title)).join('\n');
 }
 export function menuCursorText(rows: SessionColumns[], selected: number, frame = 0): string {
   return rows.map((row, i) => `${i === selected ? '>' : ' '} ${row.busy ? MENU_DOTS[frame % MENU_DOTS.length] : row.marker || ' '}`).join('\n');

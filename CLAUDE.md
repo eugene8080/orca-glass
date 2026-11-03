@@ -32,7 +32,29 @@ workspace/worktree. This applies to every agent working here.
   remains a scheduled task; this rule does not remove automatic bridge startup.
 - A specific later user request for another launch surface overrides this rule.
 
+## Visual review policy
+
+Eugene's explicit instruction2026-11-03: leave the simulator open for his review
+before shipping visual changes to G2. Do not restore/close the preview immediately
+after automated checks. Hold beta upload/promotion until he approves the preview.
+Necessary reloads/restarts to prepare the preview should be explained; then keep
+it available. Automatic commit/push does not authorize beta promotion.
+
 ## Current work
+
+2026-11-03 unreleased1.0.20 aligns all session-list titles to the idle-session
+start: adds one space to working titles, removes two from action-title padding.
+Marker gutter stays separate; no activity-driven body rewrites remain.74 tests
+and build pass; native simulator title/right-label crop identical across dot
+frames. Version1.0.20 visible in demo; Vite restarted to refresh manifest define.
+Preview left OPEN for user approval in Orca terminal
+term_f3709459-44be-4b71-b9a5-9ac192a45f0d, dev server
+term_771aa5b7-f4dd-48de-82d2-a1644eca22ae. Beta stays1.0.19; no1.0.20 upload.
+Refresh sessions retained per user: activity polls3s, dot500ms, full roster on
+Refresh/home. User asks remove bold vertical bar when opening active session;
+likely native right-edge reader scrollbar, but location confirmation pending.
+Installed SDK0.0.16 TextContainerProperty has no scrollbar visibility control.
+Do not break native scrolling or claim the bar removed. Reader unchanged.
 
 2026-11-03 beta1.0.19 replaces session-list raster markers with native text
 in six containers. Working marker is one middle-height dot in three positions

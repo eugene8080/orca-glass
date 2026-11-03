@@ -41,7 +41,7 @@ const TEXT_BYTES = 999;
 const POLL_MS = 1000;
 
 type Screen =
-  | { kind: 'list'; title: string; items: string[]; sessionList?: boolean; compat?: boolean; columns?: SessionColumns[]; connectedCount?: number; selected?: number; paintedSelection?: number; menuFrame?: number; paintedCursor?: string; cursorWriting?: boolean; titleWriting?: boolean; onPick: (i: number) => void; onBack?: () => void }
+  | { kind: 'list'; title: string; items: string[]; sessionList?: boolean; compat?: boolean; columns?: SessionColumns[]; connectedCount?: number; selected?: number; paintedSelection?: number; menuFrame?: number; paintedCursor?: string; cursorWriting?: boolean; onPick: (i: number) => void; onBack?: () => void }
   | { kind: 'text'; title: string; text: string; tail?: boolean; offset?: number; reading?: boolean; activityLabel?: string; activityState?: string; reportedSeconds?: number | null; statusFrame?: number; statusStartedAt?: number; savedHistory?: boolean; reader?: Thread; onClick?: () => void; onBack?: () => void; onHold?: () => void; };
 
 let bridge: EvenAppBridge;
@@ -269,13 +269,12 @@ function compatibilityText(screen: SessionMenuScreen, selected = screen.selected
 }
 function startMenuSpinner(screen: SessionMenuScreen) {
   let polling = false;
-  let paintedTitles = menuNativeText(screen.columns!);
   screen.menuFrame = 0;
   screen.paintedCursor = menuCursorText(screen.columns!, screen.selected || 0);
   menuAnimation = setInterval(() => {
     if (current !== screen) return;
     screen.menuFrame = ((screen.menuFrame || 0) + 1) % 3;
-    if (!screen.cursorWriting && !screen.titleWriting) sessionCursorWrites = updateSessionCursor(screen);
+    if (!screen.cursorWriting) sessionCursorWrites = updateSessionCursor(screen);
   }, 500);
   menuPoll = setInterval(async () => {
     if (polling || current !== screen) return;
@@ -288,25 +287,7 @@ function startMenuSpinner(screen: SessionMenuScreen) {
         const state = latest.find(t => t.handle === row.handle)?.state || 'unknown';
         row.busy = state === 'busy'; row.marker = state === 'idle' ? '/' : state === 'busy' ? '' : '?';
       }
-      const titles = menuNativeText(screen.columns!);
-      if (titles !== paintedTitles) {
-        // Spacing changes only when activity changes, never on animation frames.
-        // Navigation waits for this write before reusing the reader body ID.
-        const pending = sessionCursorWrites;
-        screen.titleWriting = true;
-        sessionCursorWrites = pending.then(async () => {
-          try {
-            if (current !== screen) return;
-            const accepted = await bridge.textContainerUpgrade(new TextContainerUpgrade({
-              containerID: MENU_LEFT.containerID, containerName: MENU_LEFT.containerName, content: titles,
-            }));
-            if (!accepted) throw new Error('Session title text update rejected.');
-            paintedTitles = titles;
-          } finally { screen.titleWriting = false; }
-          await updateSessionCursor(screen);
-        }).catch(e => { diag((e as Error).message); });
-        await sessionCursorWrites;
-      } else if (!screen.cursorWriting && !screen.titleWriting) sessionCursorWrites = updateSessionCursor(screen);
+      if (!screen.cursorWriting) sessionCursorWrites = updateSessionCursor(screen);
     } catch (e) { diag((e as Error).message); }
     finally { polling = false; }
   }, 3000);
@@ -783,7 +764,7 @@ function onEvent(e: EvenHubEvent) {
   const type = ev.eventType ?? OsEventTypeList.CLICK_EVENT;
   if (s.kind === 'list' && s.sessionList && (type === OsEventTypeList.SCROLL_TOP_EVENT || type === OsEventTypeList.SCROLL_BOTTOM_EVENT)) {
     s.selected = Math.max(0, Math.min(s.items.length - 1, (s.selected || 0) + (type === OsEventTypeList.SCROLL_TOP_EVENT ? -1 : 1)));
-    if (!s.cursorWriting && !s.titleWriting) sessionCursorWrites = updateSessionCursor(s);
+    if (!s.cursorWriting) sessionCursorWrites = updateSessionCursor(s);
     return;
   }
   if (s.kind === 'text' && (type === OsEventTypeList.SCROLL_TOP_EVENT || type === OsEventTypeList.SCROLL_BOTTOM_EVENT)) {
