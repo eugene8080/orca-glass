@@ -7,6 +7,14 @@ test('compact role markers hang-indent continuation lines without blank rows bet
     '/ Question\n  continued\n> Answer\n  continued');
 });
 
+
+test('long conversation paragraphs use native width without character-count line breaks', () => {
+  const paragraph = 'A continuous response should use the full native reader width instead of stopping after a fixed number of narrow or wide characters.';
+  assert.equal(formatMessages([{ role: 'assistant', text: paragraph }]), '> ' + paragraph);
+  const code = 'const message = "keep explicit code and paragraph breaks";\nreturn message;';
+  assert.equal(formatMessages([{ role: 'assistant', text: code }]), '> const message = "keep explicit code and paragraph breaks";\n  return message;');
+});
+
 test('Codex composer/model/path/shortcut chrome does not become a user turn', () => {
   assert.equal(terminalConversation(['› Real question', '• Real answer', '› Ask Codex to do anything',
     '  GPT-6.1-Sol low · D:\\dev\\orca-glass · orca-glass beta', '  ← for agents · ? for shortcuts'], 'codex'), '/ Real question\n> Real answer');

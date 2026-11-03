@@ -49,6 +49,19 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-03 reader-width preview: removed bridge's fixed50-character wrapping;
+native proportional-font renderer now wraps original paragraphs to container width.
+Explicit paragraph/code/source-terminal line breaks and / > role prefixes retained.
+Reader body widened from544px at x16 to560px at x8, paddingLength0; six-row height,
+frame/divider and three-row voice area unchanged.76 tests/build pass; official
+native simulator long synthetic conversation reaches right edge without clipping.
+No production bridge restart or beta upload: preview approval pending. Live bridge
+retains cached old formatter until an approved restart. Next release1.0.22.
+Simulator LEFT OPEN on long sample reader, automation9899; fixture8791 in Orca
+terminal term_0867f568-c985-4b46-81a8-8aa32900bb98, simulator in
+term_70868121-7d70-44ee-9021-ae43e2bc4468. Fixture sample saved in ignored
+.local/reader-width-fixture.json. Store preview8792 retained separately.
+
 2026-11-03 user enters phone/address themselves and asks to complete privacy
 wizard. Portal now shows Quiet Signal and Personal Information complete. Selected
 microphone/local network only; data collection AI checked, location unchecked;

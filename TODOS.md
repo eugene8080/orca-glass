@@ -7,6 +7,12 @@ Completed/superseded release notes: [history](docs/todo-history.md).
 
 ## Open work
 
+- [ ] **Full-width session reader:** implemented in desktop preview; approval pending.
+  Removed fixed50-character wrapping; native renderer wraps to560px body at x8
+  with padding0. Explicit paragraph/code breaks retained, reader/voice heights
+  unchanged.76 tests/build pass; native simulator long text reaches right edge.
+  Preview left open on fixture8791. No beta upload/production bridge restart;
+  next approved release1.0.22 must include frontend and bridge formatter changes.
 - [ ] **Public release preparation:** user requests profile and screenshots on
   2026-11-03. CLI name/tagline/description saved; six native simulator captures
   and reproducible sample-data preview prepared. See [store/listing.md](store/listing.md).

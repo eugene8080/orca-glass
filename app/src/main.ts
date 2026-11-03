@@ -177,7 +177,7 @@ async function show(s: Screen, reloadText = false) {
         }
       : {
           containerTotalNum: s.reader ? 9 : 2,
-          textObject: [head, new TextContainerProperty({ ...BODY, ...(s.reader ? { xPosition: 16, yPosition: 32, width: 544, zOrderIndex: 2, height: READER_HEIGHT } : {}), content: uploadText ? '' : content, isEventCapture: 1 }),
+          textObject: [head, new TextContainerProperty({ ...BODY, ...(s.reader ? { xPosition: 8, yPosition: 32, width: 560, paddingLength: 0, zOrderIndex: 2, height: READER_HEIGHT } : {}), content: uploadText ? '' : content, isEventCapture: 1 }),
             ...(s.reader ? [
               new TextContainerProperty({ ...HINT, content: nativeRight(footerHint(s.reportedSeconds), HINT.width), textColor: 4, isEventCapture: 0, zOrderIndex: 8 }),
               new TextContainerProperty({ ...VOICE, content: s.activityLabel![0] === '/' ? s.activityLabel : '    ' + s.activityLabel!.slice(2), textColor: 4, isEventCapture: 0, zOrderIndex: 7 }),

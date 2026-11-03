@@ -1,27 +1,10 @@
 // Preserve role boundaries and hanging indentation without spacer rows between turns.
-function wrapLines(text) {
-  const lines = [];
-  for (let line of text.trim().split('\n')) {
-    while ([...line].reduce((n, ch) => n + (/[ᄀ-￿]/.test(ch) ? 2 : 1), 0) > 50) {
-      const chars = [...line];
-      let columns = 0, end = 0;
-      while (end < chars.length && columns + (/[ᄀ-￿]/.test(chars[end]) ? 2 : 1) <= 50) {
-        columns += /[ᄀ-￿]/.test(chars[end]) ? 2 : 1;
-        end++;
-      }
-      const space = chars.slice(0, end).lastIndexOf(' ');
-      const cut = space > end / 2 ? space + 1 : end;
-      lines.push(chars.slice(0, cut).join('').trimEnd());
-      line = chars.slice(cut).join('');
-    }
-    lines.push(line);
-  }
-  return lines;
-}
-
+// Preserve explicit paragraph/code line breaks. Native text uses a proportional
+// font, so a fixed character count wastes width and cannot predict visual wraps.
+// Let the native container wrap each original line to its actual pixel width.
 export function formatMessages(messages) {
   return messages.filter(m => ['user', 'assistant'].includes(m.role) && m.text.trim())
-    .map(m => wrapLines(m.text).map((line, i) => `${i ? '  ' : m.role === 'user' ? '/ ' : '> '}${line}`).join('\n'))
+    .map(m => m.text.trim().split('\n').map((line, i) => `${i ? '  ' : m.role === 'user' ? '/ ' : '> '}${line}`).join('\n'))
     .join('\n');
 }
 

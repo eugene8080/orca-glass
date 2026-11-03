@@ -584,6 +584,9 @@ test('reader reserves six native chat rows and three input rows without overlap'
   const body = page.textObject.find(c => c.containerName === 'body');
   const voice = page.textObject.find(c => c.containerName === 'voice');
   assert.equal(body.height, 162);
+  assert.equal(body.xPosition, 8);
+  assert.equal(body.width, 560);
+  assert.equal(body.paddingLength, 0);
   assert.equal(voice.height, 81);
   assert.ok(body.yPosition + body.height < voice.yPosition);
   assert.ok(voice.yPosition + voice.height < 288);
