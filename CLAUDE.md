@@ -49,6 +49,12 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-03 user approves earlier store/icon/orca-glass-icon-preview.png,
+explicitly correcting the v2 selection. Matching native24x24 orca-glass-icon.png
+saved through Even Hub CLI update (success); refreshed portal visibly shows
+the selected icon and App icon checklist complete. No build/promotion/review/
+publication. Gallery updated to selected earlier design; v2 retained as study.
+
 2026-11-03 user replaces icon starting point with store/icon/orca-glass-no-glasses.xcf.
 Source26x24 retained unchanged. GIMP produces cleaned26x24 source with hidden
 reference and no-glasses24x24 v2 adaptation; dimensions/colour/alpha/2x2-block

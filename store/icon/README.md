@@ -1,7 +1,18 @@
-# Orca Glass icon candidate
+# Orca Glass icon
 Updated: 2026-11-03
 
-## Current candidate: user's no-glasses XCF
+## Selected and saved
+
+User explicitly selected **orca-glass-icon-preview.png**, the earlier design,
+not v2. Its matching native **orca-glass-icon.png** was saved to Even Hub using
+the CLI icon update; success returned and the refreshed portal visibly shows
+the selected icon with App icon checked complete. Editable source:
+`orca-glass-icon.xcf`. No review submission, publication or beta change.
+
+The studies below are retained as design history; their pending statuses are
+superseded by this selection.
+
+## Alternative study: user's no-glasses XCF
 
 The user supplied `orca-glass-no-glasses.xcf` as the new starting point. This
 26 × 24 source is retained unchanged. GIMP produced:
@@ -32,7 +43,7 @@ generation or external pixel editor was used. The original JPEG was not changed.
 - `orca-master.png`: cleaned artwork, with the grid/background removed and
   transparent negative space. Thin grid seams in the white art were closed.
 - `orca-glass-icon.xcf`: editable 24 × 24 candidate, with a 2-pixel GIMP grid.
-- `orca-glass-icon.png`: proposed Even Hub icon, not uploaded or approved.
+- `orca-glass-icon.png`: selected Even Hub icon, approved and saved to the portal.
 - `orca-glass-icon-preview.png`: 16× nearest-neighbour enlargement on dark grey
   for review. Use the native 24 × 24 PNG for any eventual portal upload.
 
