@@ -49,6 +49,15 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-03 user approves full-width simulator preview and requests beta upload.
+Beta1.0.22 uploaded/promoted; channel verified (47,461 bytes).76 tests/build/doctor
+passed for width change; ordinary prototype dist restored after packaging. Existing
+scheduled bridge supervisor identity verified and restarted to load formatter.
+Local/tailnet HTTPS health ok; five live agent sessions; selected terminal-buffer
+history now includes134-character source lines (no fixed50-character wrapping).
+No transcript content printed for verification. Simulator remains OPEN on isolated
+long-text preview; G2 width check pending. No public store submission/publication.
+
 2026-11-03 reader-width preview: removed bridge's fixed50-character wrapping;
 native proportional-font renderer now wraps original paragraphs to container width.
 Explicit paragraph/code/source-terminal line breaks and / > role prefixes retained.

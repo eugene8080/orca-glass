@@ -1,18 +1,19 @@
 # Orca Glass TODOs
 Updated: 2026-11-03
 
-Current beta: **1.0.21**.75 tests and build passed before release. Simulator stays
+Current beta: **1.0.22**.76 tests/build/doctor passed for the reader-width change. Simulator stays
 open for user review; visual changes require preview approval before beta upload.
 Completed/superseded release notes: [history](docs/todo-history.md).
 
 ## Open work
 
-- [ ] **Full-width session reader:** implemented in desktop preview; approval pending.
+- [ ] **Full-width session reader:** beta1.0.22 live; G2 check pending.
   Removed fixed50-character wrapping; native renderer wraps to560px body at x8
   with padding0. Explicit paragraph/code breaks retained, reader/voice heights
   unchanged.76 tests/build pass; native simulator long text reaches right edge.
-  Preview left open on fixture8791. No beta upload/production bridge restart;
-  next approved release1.0.22 must include frontend and bridge formatter changes.
+  User approved preview and requested upload2026-11-03. Beta1.0.22 channel
+  verified; production bridge restarted and local/HTTPS health checked. Preview
+  left open on fixture8791; awaiting physical G2 width confirmation.
 - [ ] **Public release preparation:** user requests profile and screenshots on
   2026-11-03. CLI name/tagline/description saved; six native simulator captures
   and reproducible sample-data preview prepared. See [store/listing.md](store/listing.md).
