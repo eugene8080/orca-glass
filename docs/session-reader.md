@@ -1,6 +1,11 @@
 # Session reader
 Updated: 2026-11-03
 
+2026-11-03 user confirms native footer text fixed, terminal UI chrome removal
+fixed, and voice completion behavior fixed (send/cancel/chat retention checklist).
+These follow earlier three-row input confirmation. No new reader work required
+by this report; list spinner remains separate and unresolved.
+
 2026-11-03 hardware confirmation: User confirms all three input rows can be filled with text on G2. This verifies the full three-row transcription area; no instruction heading consumes a row.
 
 Version1.0.16 removes the review instruction heading and provisional Listening

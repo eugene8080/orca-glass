@@ -13,11 +13,11 @@ export function sessionRow(title: string, handle: string, agent: string, state: 
 
 export type SessionColumns = { marker: string; title: string; right: string; busy?: boolean; handle?: string };
 export const sessionHeading = () => `Orca-glass ${__APP_VERSION__}`;
-export const MENU_LEFT = { containerID: 2, containerName: 'body', xPosition: 16, yPosition: 40, width: 376, height: 248 };
-export const MENU_CURSOR = { containerID: 4, containerName: 'menu-cursor', xPosition: 0, yPosition: 40, width: 24, height: 248 };
+export const MENU_LEFT = { containerID: 2, containerName: 'body', xPosition: 16, yPosition: 28, width: 376, height: 260 };
+export const MENU_CURSOR = { containerID: 4, containerName: 'menu-cursor', xPosition: 0, yPosition: 28, width: 24, height: 260 };
 export const MENU_STRIPS = [
-  { containerID: 7, containerName: 'menu-spin-top', xPosition: 16, yPosition: 40, width: 20, height: 144 },
-  { containerID: 8, containerName: 'menu-spin-bottom', xPosition: 16, yPosition: 184, width: 20, height: 104 },
+  { containerID: 7, containerName: 'menu-spin-top', xPosition: 16, yPosition: 28, width: 20, height: 144 },
+  { containerID: 8, containerName: 'menu-spin-bottom', xPosition: 16, yPosition: 172, width: 20, height: 116 },
 ];
 // Native text has no alignment flag. Pad a dedicated right column using measured
 // proportional text widths; no labels are rasterized or transferred as images.

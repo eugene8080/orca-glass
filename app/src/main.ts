@@ -154,12 +154,12 @@ async function show(s: Screen, reloadText = false) {
           ...(s.sessionList ? { imageObject: MENU_STRIPS.map((tile, i) => new ImageContainerProperty({ ...tile, zOrderIndex: 7 - i })) } : {}),
           ...menu,
           textObject: s.sessionList ? [
-            new TextContainerProperty({ ...HEAD, width: 300, content: sessionHeading(), isEventCapture: 0, paddingLength: 0, zOrderIndex: 1 }),
-            new TextContainerProperty({ containerID: 3, containerName: 'menu-count', xPosition: 300, yPosition: 0, width: 276, height: 36, content: nativeRight(`${s.connectedCount} connected terminals`, 276), isEventCapture: 0, paddingLength: 0, zOrderIndex: 2 }),
+            new TextContainerProperty({ ...HEAD, width: 300, height: 28, content: sessionHeading(), isEventCapture: 0, paddingLength: 0, zOrderIndex: 1 }),
+            new TextContainerProperty({ containerID: 3, containerName: 'menu-count', xPosition: 300, yPosition: 0, width: 276, height: 28, content: nativeRight(`${s.connectedCount} connected terminals`, 276), isEventCapture: 0, paddingLength: 0, zOrderIndex: 2 }),
             new TextContainerProperty({ containerID: 5, containerName: 'menu-input', xPosition: 0, yPosition: 0, width: 576, height: 288, content: ' ', isEventCapture: 1, paddingLength: 0, zOrderIndex: 0 }),
             new TextContainerProperty({ ...MENU_CURSOR, content: cursorText(s.items.length, s.selected || 0), isEventCapture: 0, paddingLength: 0, zOrderIndex: 3 }),
             new TextContainerProperty({ ...MENU_LEFT, content: s.columns!.map(r => `     ${menuTitle(r.title)}`).join('\n'), isEventCapture: 0, paddingLength: 0, zOrderIndex: 4 }),
-            new TextContainerProperty({ containerID: 6, containerName: 'menu-right', xPosition: 396, yPosition: 40, width: 180, height: 248, content: s.columns!.map(r => nativeRight(r.right, 180)).join('\n'), isEventCapture: 0, paddingLength: 0, zOrderIndex: 5 }),
+            new TextContainerProperty({ containerID: 6, containerName: 'menu-right', xPosition: 396, yPosition: 28, width: 180, height: 260, content: s.columns!.map(r => nativeRight(r.right, 180)).join('\n'), isEventCapture: 0, paddingLength: 0, zOrderIndex: 5 }),
           ] : [head],
           ...(s.sessionList ? {} : { listObject: [
             new ListContainerProperty({
@@ -260,8 +260,8 @@ async function guard(title: string, f: () => Promise<void>, back: () => void) {
 type SessionMenuScreen = Extract<Screen, { kind: 'list' }>;
 function compatibilityMenu(screen: SessionMenuScreen, menu: object) {
   return { containerTotalNum: 3, ...menu, textObject: [
-    new TextContainerProperty({ ...HEAD, content: screen.title, isEventCapture: 0 }),
-    new TextContainerProperty({ ...BODY, content: compatibilityText(screen), isEventCapture: 0 }),
+    new TextContainerProperty({ ...HEAD, height: 28, content: screen.title, isEventCapture: 0 }),
+    new TextContainerProperty({ ...BODY, yPosition: 28, height: 260, content: compatibilityText(screen), isEventCapture: 0 }),
     new TextContainerProperty({ containerID: 3, containerName: 'menu-input', xPosition: 0, yPosition: 0,
       width: 576, height: 288, content: ' ', isEventCapture: 1 }),
   ] };
@@ -284,7 +284,7 @@ function startMenuSpinner(screen: SessionMenuScreen) {
         screen.columns!.forEach((row, i) => {
           const icon = statusPixels(row.busy ? glyph : row.marker);
           for (let y = 0; y < 27; y++) {
-            const target = 40 + i * 27 + y - tile.yPosition;
+            const target = MENU_LEFT.yPosition + i * 27 + y - tile.yPosition;
             if (target < 0 || target >= tile.height) continue;
             for (let x = 0; x < 20; x++) pixels[target * 20 + x] = icon[y * 20 + x];
           }

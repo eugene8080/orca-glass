@@ -9,15 +9,12 @@ This list supersedes older pending statuses in the dated history below.
   label and whether working-row marker is blank, slash, asterisk or static Braille.
   Local bridge correctly reports this Codex session busy; no fix inferred yet.
 - **Filter placement/alignment:** first main-list row, selected provider beside
-  it; Refresh below; contextual menu has only system controls. Check count and
-  provider tags align/read clearly.
-- **Native footer text:** timer and Tap & hold to input match chat/status font,
-  remain readable on one row and timer still updates.
-- **Terminal UI chrome:** composer placeholder, model/path/session footer and
-  shortcut hints no longer appear in conversation. Public progress commentary
-  remains by design of current filter; final-only filtering is separate work.
-- **Voice completion:** Click sends once; double-click cancels; either retains
-  chat position, and successful Send resumes incoming reply updates.
+  it; Refresh below; contextual menu has only system controls. Placement/removal
+  confirmed2026-11-03. Only count/provider alignment remains unconfirmed.
+- **Native footer text:** confirmed fixed2026-11-03.
+- **Terminal UI chrome:** confirmed fixed2026-11-03. Public progress commentary
+  still remains; final-only filtering is separate work.
+- **Voice completion:** confirmed fixed2026-11-03.
 
 Already confirmed: Android/G2 startup recovery, menu speed, stationary menu text
 on swipes, full three-row transcription, terminal spacing fix, earlier filtering/
@@ -28,6 +25,7 @@ tests of cancelled six-row overlay, Click paging or old review-page designs.
 
 | Task | Status | Evidence / remaining work |
 | --- | --- | --- |
+| Plain shell exclusion and title gap | Bridge live; frontend source prepared | 2026-11-03: user sees cmd.exe and unnecessary header gap. Exclude panes without detected agent identity/type, preserving all provider names. Actual4 agents remain; shell excluded. Menu starts y28, simulator verified.72 tests/build.1.0.17 not uploaded pending spinner mode diagnosis. |
 | Startup recovery1.0.15 | Hardware confirmed | 2026-11-03: user confirms version1.0.15 appears and both Android/G2 open. Compatibility mode remains unconfirmed;1.0.16 adds persistent layout indicator. |
 | Filter list row, full transcription area and native footer text | Simulator verified; G2 pending | 2026-11-03: Filter first row with selected provider, Refresh second; OS-only contextual menu. Draft/provisional captions use all three rows; native timer/hint replace raster text. Live menu activity polling and marker layering corrected.71 tests/build; three-row review, no body reset and native timer verified in simulator. |
 | Recover from persistent G2 page rejection | Resolved; hardware confirmed | 2026-11-03: user explicitly confirms recovery after native bootstrap/fallback changes. No further recovery work required by current evidence. |

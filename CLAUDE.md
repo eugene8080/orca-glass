@@ -12,6 +12,19 @@ upstream Claude code is not evidence of authorization to test it.
 
 ## Current work
 
+2026-11-03 user confirms current Filter row/contextual removal, native footer,
+terminal UI chrome removal and voice send/cancel/chat retention. Count/provider
+alignment meaning clarified, not newly verified. List spinner still failing.
+Re-asked exact persistent phone Menu layout label; answer required to distinguish
+disabled fallback from aligned renderer. Do not infer mode from missing transient
+Status text. No spinner code change or new beta yet.
+
+Unreleased1.0.17 source removes title-to-first-row gap (menu begins y28) and
+excludes non-agent shell panes using agentIdentity or exact-pane agentType, no
+provider allowlist. Actual cmd pane has neither field; four agent sessions
+remain (Codex, Codex, Claude, Pi). Bridge restarted; frontend gap verified in
+native simulator.72 tests/build pass. Hold beta upload pending spinner diagnosis.
+
 2026-11-03 session-list Braille still not spinning per user. Asked phone Menu
 layout label and exact marker (blank/slash/asterisk/static Braille); response
 pending. Local exact-pane bridge reports orca-glass beta busy, so upstream state

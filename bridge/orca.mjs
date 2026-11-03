@@ -6,6 +6,7 @@ import { parseChoices, validateChoice } from './choices.mjs';
 import { sessionTitles, sessionTitle } from './session-titles.mjs';
 import { activityState, reportedElapsed } from './activity.mjs';
 import { terminalConversation } from './reader-text.mjs';
+import { terminalProvider } from './terminal-provider.mjs';
 
 const run = promisify(execFile);
 const ORCA = orcaExecutable();
@@ -37,10 +38,15 @@ export async function listThreads() {
   const names = sessionTitles(visualLayouts, worktrees);
   return terminals
     .filter((t) => t.connected && !t.orphaned)
-    .map((t) => ({
+    .flatMap((t) => {
+      const workspace = worktrees.find(w => w.worktreeId === t.worktreeId);
+      const activity = workspace?.agents?.find(a => a.paneKey === `${t.tabId}:${t.leafId}`);
+      const provider = terminalProvider(t, activity);
+      if (!provider) return [];
+      return [{
       handle: t.handle,
       title: sessionTitle(t, names),
-      agent: t.agentIdentity,
+      agent: provider,
       state: (() => {
         const workspace = worktrees.find(w => w.worktreeId === t.worktreeId);
         const agent = workspace?.agents?.find(a => a.paneKey === `${t.tabId}:${t.leafId}`);
@@ -48,7 +54,7 @@ export async function listThreads() {
         return state === 'working' ? 'busy' : state === 'waiting' ? 'idle' : 'unknown';
       })(),
       lastOutputAt: t.lastOutputAt,
-    }))
+    }]; })
     .sort((a, b) => (b.lastOutputAt || 0) - (a.lastOutputAt || 0));
 }
 

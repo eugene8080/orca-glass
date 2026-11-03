@@ -554,6 +554,8 @@ test('compact session menu uses native text and one update per cursor move', asy
   assert.equal(h.animations.size, 0);
   const columns = h.pages.at(-1).textObject;
   assert.equal(columns.find(c => c.containerName === 'menu-count').xPosition, 300);
+  assert.equal(columns.find(c => c.containerName === 'head').height, 28);
+  assert.equal(columns.find(c => c.containerName === 'body').yPosition, 28);
   assert.equal(columns.find(c => c.containerName === 'menu-right').xPosition, 396);
   assert.ok(columns.find(c => c.containerName === 'body').content.trimStart().startsWith('Filter by Agent'));
   assert.match(columns.find(c => c.containerName === 'menu-right').content.split('\n')[0], /All sessions/);

@@ -1,6 +1,14 @@
 # Session list
 Updated: 2026-11-03
 
+Unreleased1.0.17: first menu row starts y28 directly after28px header. Cursor,
+right column and marker strip origin move together. Agent list excludes ordinary
+shells with no detected agentIdentity or exact-pane agentType, including observed
+cmd.exe pane, without a provider allowlist. Live metadata yields four agents
+(two Codex, Claude, Pi) and excludes the shell. Native simulator gap verified;
+72 tests/build pass. No beta upload while spinner mode diagnosis is pending.
+User confirms Filter placement/contextual removal; alignment not yet checked.
+
 2026-11-03 hardware confirmation: User confirms menu text remains stable during up/down swipes on physical G2. Startup/load and screen rejection recovery also confirmed. Spinner/alignment/filter placement are separate checks.
 
 Version1.0.16: Filter by Agent is the first main-list row; its right column shows
