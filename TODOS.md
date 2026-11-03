@@ -10,7 +10,9 @@ This list supersedes older pending statuses in the dated history below.
   Local bridge correctly reports this Codex session busy; no fix inferred yet.
 - **Filter placement/alignment:** first main-list row, selected provider beside
   it; Refresh below; contextual menu has only system controls. Placement/removal
-  confirmed2026-11-03. Only count/provider alignment remains unconfirmed.
+  confirmed2026-11-03. Agent tags ([Codex]/[Claude]/[Pi]) right alignment also
+  confirmed2026-11-03 in the one-at-a-time checklist. Connected-count alignment
+  remains unconfirmed.
 - **Native footer text:** confirmed fixed2026-11-03.
 - **Terminal UI chrome:** confirmed fixed2026-11-03. Public progress commentary
   still remains; final-only filtering is separate work.
