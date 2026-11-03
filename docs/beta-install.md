@@ -1,5 +1,12 @@
 # Personal beta installation
 
+2026-11-03 user approves simulator: "looks good all aligned". Beta1.0.20
+uploaded/promoted and channel verified (46,434 bytes),74 tests/build previously
+passed. Native dot/title alignment G2 check pending. Simulator intentionally left
+open in demo per review policy; ordinary prototype dist restored. Reader/bar
+unchanged, scrollbar location question remains unanswered. No new1.0.21 work.
+
+
 2026-11-03 beta1.0.19 replaces session-list raster markers with native text
 in six containers. Working marker is one middle-height dot in three positions
 ('·  ', ' · ', '  ·'),500ms frames. Marker shares cursor gutter and serial/coalesced
