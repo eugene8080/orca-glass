@@ -34,6 +34,11 @@ workspace/worktree. This applies to every agent working here.
 
 ## Current work
 
+2026-11-03 user confirms selected filter ([All sessions]/agent) is right-aligned
+on the Filter by Agent row on G2. Both count/filter alignment checks closed in
+TODOS.md. Header-to-first-row gap remains unconfirmed; spinner unresolved.
+Documentation only; no new beta. Next one-at-a-time check: title gap removal.
+
 2026-11-03 user confirms connected-terminal count is right-aligned on G2 after
 1.0.17 aligned native text/static fallback. Count alignment hardware check closed.
 Selected-filter alignment and header gap remain unconfirmed; spinner unresolved.
