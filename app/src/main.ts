@@ -663,9 +663,11 @@ function usage() {
     const ok = all.filter(([, v]) => v.status === 'ok');
     const ng = all.filter(([, v]) => v.status !== 'ok').map(([name]) => name);
     const lines = ok.map(([name, v]) => {
-      const s = v.session ? `5h ${v.session.usedPercent}% (${v.session.resetDescription})` : '';
-      const w = v.weekly ? `${tr('weekly')} ${v.weekly.usedPercent}% (${v.weekly.resetDescription})` : '';
-      return `${name}\n  ${[s, w].filter(Boolean).join(' / ') || tr('noInfo')}`;
+      const percent = (value: number) => Math.round(value * 10) / 10;
+      const s = v.session ? `5h ${percent(v.session.usedPercent)}% (${v.session.resetDescription})` : '';
+      const w = v.weekly ? `${tr('weekly')} ${percent(v.weekly.usedPercent)}% (${v.weekly.resetDescription})` : '';
+      const m = v.monthly ? `Monthly ${percent(v.monthly.usedPercent)}% (${v.monthly.resetDescription})` : '';
+      return `${providerName(v.provider || name)}\n  ${[s, w, m].filter(Boolean).join(' / ') || tr('noInfo')}`;
     });
     if (ng.length) lines.push(tr('unavailable', ng.join(', ')));
     await show({ kind: 'text', title: tr('usageTitle'), text: lines.join('\n'), onBack: home, onClick: home });

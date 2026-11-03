@@ -48,3 +48,25 @@ export async function proxyUsage() {
   })();
   try { return await pending; } finally { pending = null; }
 }
+
+
+// Expose usage windows, not Orca account/auth metadata or raw provider errors.
+// A failed Codex fallback must not discard the other providers' successful data.
+export async function collectUsage(rateLimits = {}, codexFallback = proxyUsage) {
+  const output = {};
+  const window = value => value && Number.isFinite(value.usedPercent) && value.usedPercent >= 0
+    ? { usedPercent: value.usedPercent, resetDescription: typeof value.resetDescription === 'string' ? value.resetDescription : '' }
+    : null;
+  for (const provider of ['codex', 'claude', 'cursor']) {
+    const value = rateLimits?.[provider];
+    output[provider] = {
+      provider, status: value?.status === 'ok' ? 'ok' : 'unavailable',
+      session: window(value?.session), weekly: window(value?.weekly), monthly: window(value?.monthly),
+    };
+  }
+  if (output.codex.status !== 'ok') {
+    try { output.codex = await codexFallback(); }
+    catch { output.codex = { provider: 'codex', status: 'error', error: 'Codex usage unavailable through the selected proxy. Check routing and Codex login.' }; }
+  }
+  return output;
+}

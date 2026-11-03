@@ -7,6 +7,11 @@ const fixture = {
   text: Array.from({ length: 35 }, (_, i) => `Chat line ${i + 1}: native reader scroll retention check.`).join('\n'),
   transcript: Array.from({ length: 30 }, (_, i) => `Draft line ${i + 1}: review this transcription.`).join('\n'),
   sends: [],
+  usage: {
+    codex: { provider: 'codex', status: 'ok', weekly: { usedPercent: 63, resetDescription: 'Thursday' } },
+    claude: { provider: 'claude', status: 'ok', session: { usedPercent: 3, resetDescription: '9:50 AM' }, weekly: { usedPercent: 2, resetDescription: '1:00 PM' } },
+    cursor: { provider: 'cursor', status: 'ok', monthly: { usedPercent: 2.02, resetDescription: 'Nov 5' } },
+  },
 };
 const api = `
 const request=async()=>{const r=await fetch('/__fixture');return r.json();};
@@ -17,6 +22,7 @@ export const api={
   thread:async()=>({text:(await request()).text}),history:async()=>{const s=await request();return {text:s.text,source:s.source};},
   activity:async()=>({state:(await request()).state}),
   health:async()=>({ok:true}),capabilities:async()=>({voice:true}),
+  usage:async()=>(await request()).usage,
   transcribe:async()=>({text:(await request()).transcript}),
   say:async(handle,text)=>{await fetch('/__fixture/send',{method:'POST',body:JSON.stringify({handle,text})});return {sent:text};}
 };`;
@@ -53,8 +59,11 @@ const server = await createServer({
             let body = ''; for await (const part of req) body += part;
             const data = JSON.parse(body);
             if (req.url === '/__fixture/send') fixture.sends.push(data);
-            else for (const key of ['state', 'text', 'source', 'transcript']) {
-              if (typeof data[key] === 'string') fixture[key] = data[key];
+            else {
+              if (data.usage && typeof data.usage === 'object') fixture.usage = data.usage;
+              for (const key of ['state', 'text', 'source', 'transcript']) {
+                if (typeof data[key] === 'string') fixture[key] = data[key];
+              }
             }
           }
           res.setHeader('content-type', 'application/json');

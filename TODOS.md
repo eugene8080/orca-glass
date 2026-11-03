@@ -7,6 +7,11 @@ Completed/superseded release notes: [history](docs/todo-history.md).
 
 ## Open work
 
+- [ ] **Claude/Cursor usage:** implemented; simulator review pending. Read existing
+  Orca account usage, retain Codex fallback, add Cursor monthly display and Claude
+  five-hour/weekly figures.79 tests/build pass; native simulator shows sanitized
+  real usage snapshot. No provider prompts/Claude launch. Beta1.0.22 and production
+  bridge unchanged; next1.0.23 after approval, then restart bridge and verify HTTPS.
 - [ ] **Public release preparation:** user requests profile and screenshots on
   2026-11-03. CLI name/tagline/description saved; six native simulator captures
   and reproducible sample-data preview prepared. See [store/listing.md](store/listing.md).

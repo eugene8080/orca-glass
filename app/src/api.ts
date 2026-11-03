@@ -62,7 +62,7 @@ export type Provider = { id: string; models: string[]; ok: boolean; note: string
 export type Workspace = { id: string; name: string };
 export type Activity = 'working' | 'waiting' | 'attention' | 'unknown';
 type Limit = { usedPercent: number; resetDescription: string } | null;
-export type Usage = Record<string, { status: string; error?: string | null; session?: Limit; weekly?: Limit }>;
+export type Usage = Record<string, { provider?: string; status: string; error?: string | null; session?: Limit; weekly?: Limit; monthly?: Limit }>;
 
 export const api = {
   capabilities: () => call<{ voice: boolean }>('GET', '/api/capabilities'),

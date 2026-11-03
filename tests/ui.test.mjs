@@ -714,3 +714,17 @@ test('contextual actions refresh roster, open workspace picker and display usage
   assert.equal(h.pages.length, pages);
   assert.equal(h.sends.length, 0);
 });
+
+
+test('Usage renders Claude windows and Cursor monthly allowance without mislabelling', async () => {
+  const h = await harness();
+  h.api.usage = async () => ({
+    claude: { provider: 'claude', status: 'ok', session: { usedPercent: 3, resetDescription: '9:50 AM' }, weekly: { usedPercent: 2, resetDescription: '1:00 PM' } },
+    cursor: { provider: 'cursor', status: 'ok', monthly: { usedPercent: 2.020596, resetDescription: 'Nov 5' } },
+  });
+  await h.menu(1003);
+  const text = h.pages.at(-1).textObject[1].content;
+  assert.match(text, /Claude\n  5h 3%/);
+  assert.match(text, /Cursor\n  Monthly 2% \(Nov 5\)/);
+  assert.ok(!text.includes('2.020596'));
+});

@@ -1,5 +1,23 @@
 # Personal beta installation
 
+2026-11-03 user requests Cursor/Claude usage from existing Orca sessions. Orca
+account list reports Claude session3%/weekly2%, Cursor monthly~2.02%, Codex weekly
+~64%. Bridge usage previously returned only Codex. New collectUsage retains all
+three provider windows, strips account/auth metadata and raw errors, preserves
+Claude/Cursor even if Codex proxy fallback fails. UI adds Monthly label and one-
+decimal percentage display, provider display names.79 tests/build pass. Native
+simulator verified all three using a sanitized real Orca usage snapshot injected
+into isolated fixture; no agent prompts, Claude launch or authenticated provider
+browser access. Production bridge NOT restarted; installed beta remains1.0.22.
+Next1.0.23 after user simulator approval. Simulator left OPEN on Usage.
+User also requests close unused pwsh tabs in this workspace: closed unconnected
+Dev Server5173 (term_771aa5b7-f4dd-48de-82d2-a1644eca22ae) and Store Preview8792
+(term_8e847b51-490a-482e-8dc1-02b3a280ac87); neither had active TCP clients.
+Empty shell already exited. Both agent panes retained; simulator
+term_70868121-7d70-44ee-9021-ae43e2bc4468 and Usage Preview8791
+term_fb9c320c-6a93-402e-b6bb-748a21072f5e remain healthy. Keep simulator open.
+
+
 2026-11-03 physical G2 confirmation: user confirms full-width session text and
 marks remaining native-menu/moving-dot/selected-row slash checks done. Includes
 retained OS controls and the already-confirmed Refresh/New Session/Usage actions.

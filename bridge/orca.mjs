@@ -239,14 +239,8 @@ export async function sendToThread(handle, text, enter) {
 
 export async function usage() {
   const result = await orca(['account', 'list']).catch(() => null);
-  if (result?.rateLimits?.codex?.status === 'ok') return { codex: result.rateLimits.codex };
-  try {
-    const { proxyUsage } = await import('./usage.mjs');
-    return { codex: await proxyUsage() };
-  } catch {
-    // Do not forward provider HTML errors or subprocess output to the phone.
-    return { codex: { provider: 'codex', status: 'error', error: 'Codex usage unavailable through the selected proxy. Check routing and Codex login.' } };
-  }
+  const { collectUsage } = await import('./usage.mjs');
+  return collectUsage(result?.rateLimits);
 }
 
 export async function listWorkspaces() {
