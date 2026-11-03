@@ -1,5 +1,21 @@
 # Session reader
-Updated: 2026-11-02
+Updated: 2026-11-03
+
+2026-11-03 version1.0.13 reserves six chat rows (y32,height162) and three input
+rows (y202,height81), with a28px title and divider at y198. Review displays an
+instruction row plus two transcription rows. The voice border grows to84px at
+y200, never overlaps body ending y194. Isolated native simulator verifies all
+three input rows visible, no voice rebuild/body update and chat pixels identical
+after cancel. This implements the user's two/three-row request, not the cancelled
+six-row overlay. Native font size remains unchanged.
+
+Terminal UI chrome filtering now removes recognized trailing input composers,
+model/path/session status lines and shortcut hints. Codex's actual placeholder
+Ask Codex to do anything plus GPT/model/path and left-arrow shortcut footer is
+covered. Claude/generic empty prompts and shortcuts/permission hints have
+synthetic coverage only. Filtering is confined to terminal fallback; genuine
+conversation messages quoting those strings survive. This does not add support
+for otherwise unknown agent conversation formats or exclude public commentary.
 
 User subsequently cancelled the six-row overlay. Keep1.0.9 layout; the layout
 choice below is closed, with no new build required.

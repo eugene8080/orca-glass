@@ -12,7 +12,7 @@ const hintExports = {};
 vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../app/src/footer-hint.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, { exports: hintExports, document: { createElement: () => ({ getContext: () => ({ fillRect() {}, fillText() {}, getImageData: () => ({ data: new Uint8ClampedArray(280 * 28 * 4) }) }) }) } });
 
 const listExports = {};
-vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../app/src/session-list.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, { exports: listExports, __APP_VERSION__: '1.0.12', require: () => textExports, TextEncoder });
+vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../app/src/session-list.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, { exports: listExports, __APP_VERSION__: '1.0.12', require: () => textExports, TextEncoder, document: { createElement: () => ({ getContext: () => ({ font: '', measureText: t => ({ width: t.length * 10 }) }) }) } });
 
 // Exercise the real controller with a simulated Even bridge: no agent input,
 // microphone access, network, or hardware claims.
@@ -79,7 +79,7 @@ async function harness(count = 2, voice = false, mode = 'tap', savedView = '') {
   };
 }
 
-const menuItems = h => h.pages.at(-1).listObject?.[0].itemContainer.itemName || h.pages.at(-1).textObject[1].content.split('\n').map(row => row.slice(2));
+const menuItems = h => h.pages.at(-1).listObject?.[0].itemContainer.itemName || h.pages.at(-1).textObject.find(c => c.containerName === 'body').content.split('\n');
 
 test('every live terminal remains reachable through session-list pages', async () => {
   const h = await harness(40);
@@ -385,7 +385,7 @@ test('capture and bottom-panel review never rebuild or rewrite the chat on send 
     const page = h.pages.at(-1), count = h.pages.length, writes = h.upgrades.length;
     const panel = page.textObject.find(c => c.containerName === 'voice');
     assert.equal(panel.width, 544);
-    assert.ok(panel.height <= 72);
+    assert.ok(panel.height <= 81);
     const reader = page.textObject.find(c => c.containerName === 'body');
     assert.ok(reader.yPosition + reader.height <= panel.yPosition);
     assert.ok(panel.yPosition + panel.height <= 288);
@@ -534,7 +534,7 @@ test('voice border is precreated, appears for capture/review and clears on cance
   assert.equal(page.imageObject.length, 4);
   for (const tile of page.imageObject.filter(c => c.containerName.startsWith('voice-border'))) {
     assert.ok(tile.width <= 288 && tile.height <= 144);
-    assert.ok(tile.yPosition >= 208);
+    assert.ok(tile.yPosition >= 198);
   }
   const count = h.pages.length;
   h.press(); await h.flush(); h.audio(); h.release(); await h.flush();
@@ -550,18 +550,36 @@ test('voice border is precreated, appears for capture/review and clears on cance
 test('compact session menu uses native text and one update per cursor move', async () => {
   const h = await harness();
   const pages = h.pages.length;
-  assert.equal(h.pages.at(-1).imageObject, undefined);
+  assert.ok(h.pages.at(-1).imageObject.every(c => c.width === 20));
   assert.equal(h.pages.at(-1).listObject, undefined);
-  assert.equal(h.pages.at(-1).textObject[1].isEventCapture, 1);
+  assert.equal(h.pages.at(-1).textObject.find(c => c.containerName === 'menu-input').isEventCapture, 1);
+  assert.ok(h.pages.at(-1).textObject.filter(c => c.containerName !== 'menu-input').every(c => c.isEventCapture === 0));
   assert.equal(h.images.length, 0);
   assert.equal(h.animations.size, 0);
+  const columns = h.pages.at(-1).textObject;
+  assert.equal(columns.find(c => c.containerName === 'menu-count').xPosition, 300);
+  assert.equal(columns.find(c => c.containerName === 'menu-right').xPosition, 396);
+  assert.ok(columns.find(c => c.containerName === 'menu-markers').content.startsWith('*'));
   await h.scroll('down');
   assert.equal(h.upgrades.length, 1);
-  assert.match(h.upgrades[0].content, /\n> \+ New Session/);
+  assert.equal(h.upgrades[0].containerName, 'menu-cursor');
+  assert.equal(h.upgrades[0].content.split('\n')[1], '>');
   await h.scroll('down'); await h.scroll('down');
   assert.equal(h.pages.length, pages);
   await h.tap();
   assert.equal(h.pages.at(-1).textObject[1].content, 'Content terminal-0');
+});
+
+test('reader reserves six native chat rows and three input rows without overlap', async () => {
+  const h = await harness();
+  await h.pick(3);
+  const page = h.pages.at(-1);
+  const body = page.textObject.find(c => c.containerName === 'body');
+  const voice = page.textObject.find(c => c.containerName === 'voice');
+  assert.equal(body.height, 162);
+  assert.equal(voice.height, 81);
+  assert.ok(body.yPosition + body.height < voice.yPosition);
+  assert.ok(voice.yPosition + voice.height < 288);
 });
 
 test('rapid native-text menu swipes coalesce instead of queuing every redraw', async () => {
@@ -572,6 +590,6 @@ test('rapid native-text menu swipes coalesce instead of queuing every redraw', a
   await h.scroll('down'); await h.scroll('down'); await h.scroll('down'); await h.scroll('down');
   finish(); await h.flush();
   assert.equal(h.upgrades.length, 2);
-  assert.match(h.upgrades.at(-1).content, /\n> \? Session 1/);
+  assert.equal(h.upgrades.at(-1).content.split('\n')[4], '>');
   assert.equal(h.images.length, 0);
 });

@@ -1,5 +1,18 @@
 # Session list
-Updated: 2026-11-02
+Updated: 2026-11-03
+
+2026-11-03 version1.0.13 supersedes the moving-block1.0.12 trial. A dedicated
+blank native text container captures gestures. Static native title/marker/right
+columns never receive cursor updates; a separate cursor column alone changes.
+Header is Orca-glass VERSION with a right-hand connected count. Refresh has *
+and the current filter on its right; session providers occupy a right column,
+idle entries use / and active entries have animated Braille. Native text has
+no alignment flag, so right columns use measured proportional-width space
+padding; actual G2 alignment requires checking. Only Braille dots use images:
+two20px-wide strips, serial guarded updates every500ms, no image labels/menus.
+All row/title/agent text remains native. The native simulator title/right crop
+is pixel-identical after a swipe. User verified1.0.12 speed;1.0.13 hardware speed,
+stability and alignment remain pending.
 
 Version1.0.12 is an authorized compact native-text trial. The sessions page uses
 one multiline native text container with a `>` selection cursor, following the

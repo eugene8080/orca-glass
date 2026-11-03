@@ -1,15 +1,26 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { formatMessages, terminalConversation } from '../bridge/reader-text.mjs';
+import { formatMessages, terminalConversation, stripTerminalChrome } from '../bridge/reader-text.mjs';
 
 test('compact role markers hang-indent continuation lines without blank rows between turns', () => {
   assert.equal(formatMessages([{ role: 'user', text: 'Question\ncontinued' }, { role: 'assistant', text: 'Answer\ncontinued' }]),
     '/ Question\n  continued\n> Answer\n  continued');
 });
 
+test('Codex composer/model/path/shortcut chrome does not become a user turn', () => {
+  assert.equal(terminalConversation(['› Real question', '• Real answer', '› Ask Codex to do anything',
+    '  GPT-6.1-Sol low · D:\\dev\\orca-glass · orca-glass beta', '  ← for agents · ? for shortcuts'], 'codex'), '/ Real question\n> Real answer');
+});
+
+test('synthetic Claude and other harness footers are stripped without live harness access', () => {
+  assert.equal(terminalConversation(['❯ Question', '⏺ Answer', '❯ ', '  ⏵⏵ accept edits on (shift+tab to cycle)', '  ? for shortcuts'], 'claude'), '/ Question\n> Answer');
+  assert.deepEqual(stripTerminalChrome(['Visible reply', '> Type your message', '~/work · model', '? for shortcuts']), ['Visible reply']);
+  assert.equal(terminalConversation(['› Explain the phrase Ask Codex to do anything', '• The footer shows GPT-6.1-Sol and ? for shortcuts.'], 'codex'), '/ Explain the phrase Ask Codex to do anything\n> The footer shows GPT-6.1-Sol and ? for shortcuts.');
+});
+
 test('Codex screen keeps user/reply turns but omits tool blocks, thinking and empty input prompt', () => {
   const text = terminalConversation(['› My question', '  continued', '• Ran a command', '  private tool output', '• Thinking about tools',
-    '  internal continuation', '• Public reply', '  More reply', '└ command output', '  hidden', '› '], 'codex');
+    '  internal continuation', '• Exited (status 1) node helper.mjs', '• Public reply', '  More reply', '└ command output', '  hidden', '› '], 'codex');
   assert.equal(text, '/ My question\n  continued\n> Public reply\n  More reply');
 });
 

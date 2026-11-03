@@ -1,8 +1,11 @@
 # Orca Glass work
-Updated: 2026-11-02
+Updated: 2026-11-03
 
 | Task | Status | Evidence / remaining work |
 | --- | --- | --- |
+| Stabilize menu and restore aligned columns/status markers | Simulator verified; G2 pending | 2026-11-03: user confirms1.0.12 speed.1.0.13 blank capture owns swipes; only cursor text changes, titles/right columns stay pixel-identical. Native version/count/filter/provider columns, idle / and Refresh *, 20px-wide raster Braille strips only. No full menu images. G2 check pending. |
+| Three-row native input area | Simulator verified; G2 pending | 2026-11-03: retains six chat rows/title, reserves81px input at y202; instruction plus two draft rows. Native fake review/cancel/send no rebuild/body write; chat pixels identical after cancel.66 tests/build/doctor pass. |
+| Filter agent terminal UI chrome | Implemented; hardware check pending | 2026-11-03: trailing composer/status/shortcut chrome stripped for Codex and recognized Claude/generic patterns. Actual Codex pattern read, synthetic Claude tests only. Genuine quoted messages preserved. Unknown conversation parser formats remain unavailable; commentary filtering unchanged. |
 | Compact native-text session menu trial | Simulator verified; G2 pending | 2026-11-02: user requests Nick's text-cursor approach.1.0.12 one multiline native text container, > cursor, four terminals/page; one text update per swipe, rapid moves coalesced, no list images/timer. Pending writes finish before page navigation.63 tests/build; native simulator session/filter navigation verified. Reader/voice unchanged. |
 | Investigate Books dense/fast menus | Comparison complete; exact Books source unavailable | 2026-11-02: author notes document native-text custom menus and per-call overhead. Our1.0.10 selection always sent4 images because navigation omitted pixel cache; serial uncoalesced queue could backlog. Compact native text is viable but not verified Books implementation. Optional app/source link requested. No behavior/beta change. See docs/books-rendering-investigation.md. |
 | Restore native session list speed | Simulator verified; G2 pending | 2026-11-02: user rejects image list as slow.1.0.11 restores native header/list/capture/scroll, no list images or animation timer. Version/count/filter/providers inline; / idle, * active, ? unknown snapshots.15 terminals/page.62 tests/build pass; native simulator selection works. Reader/voice unchanged. |

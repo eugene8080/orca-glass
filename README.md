@@ -25,8 +25,10 @@ provenance; its Mac setup and store listing describe the upstream project.
 This Windows fork supports English only.
 
 The session list shows the installed app version, connected count, active-agent
-filter and provider labels as native text. `/` marks idle sessions and `*` marks
-working sessions; `?` means activity is unknown. Refresh updates these markers. Use up/down and Click to select;
+filter and provider labels in native text columns. `/` marks idle sessions and
+small animated Braille markers identify working sessions; `?` means activity is
+unknown. Refresh updates these states. Swipes move a separate cursor without
+scrolling the menu text. Use up/down and Click to select;
 Previous/Next page keeps every session reachable. Reference images under the
 root `images/` directory are local and ignored by Git.
 

@@ -1,7 +1,15 @@
 # Personal beta installation
-Updated: 2026-11-02
+Updated: 2026-11-03
 
 ## Current state
+
+2026-11-03 beta **1.0.13** uploaded/promoted and channel verified (46,081 bytes).
+Stable compact native text columns with separate blank gesture capture/cursor;
+right-hand count/filter/providers, Refresh *, idle / and tiny marker-only Braille
+strips. Six chat rows plus three input rows (instruction + two draft rows).
+Terminal composer/status/shortcut chrome filter added.66 tests/build/doctor pass;
+native simulator fixed menu pixels and voice chat-position retention verified.
+G2 stability/alignment/spinner/speed/input-area checks pending.
 
 2026-11-02 beta **1.0.12** uploaded/promoted and channel verified (45,260 bytes).
 Authorized compact native-text menu trial: one multiline text container and >

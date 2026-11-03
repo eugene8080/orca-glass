@@ -1,5 +1,5 @@
 # Orca Glass fork
-Updated: 2026-11-02
+Updated: 2026-11-03
 
 Read the machine-level instructions first. This fork targets Windows desktop
 Orca, the Even Realities Android app, and G2 glasses.
@@ -11,6 +11,30 @@ authorizes it. Keep server-side provider restrictions in place. Historical
 upstream Claude code is not evidence of authorization to test it.
 
 ## Current work
+
+2026-11-03 user confirms1.0.12 G2 speed fixed but text shifts on swipes.1.0.13
+separates blank event capture, static native text columns and cursor-only update.
+Header version/count and Refresh filter/provider tags use dedicated right columns
+with measured space padding (native has no alignment flag). Idle / and Refresh *;
+active Braille uses only two20px-wide marker strips, no label/screen rasterization,
+500ms serial guarded animation. Native simulator static title/right columns pixel
+identical after swipe. G2 stability/alignment/spinner/speed check pending.
+
+User authorizes larger reserved input area: six native chat rows (162px at y32),
+three input rows (81px at y202), retaining title. Review shows one instruction
+and two transcription rows. No separate screen. Synthetic native review/cancel/
+send has no rebuild/body write; chat pixels identical after cancel.66 tests/build/
+doctor pass. Existing small border images grow to84px height within reserved area.
+
+User asks to remove terminal UI chrome across harnesses. Shared trailing-region
+filter removes Codex input placeholder/model/path/session/shortcut footer and
+recognized Claude/generic composer hints; real messages quoting them retained.
+Actual Codex screen pattern verified; Claude tests synthetic only. Unknown agent
+conversation parsing remains unsupported; no final-response-only change. See
+docs/session-list.md and docs/session-reader.md.
+Beta1.0.13 uploaded/promoted and channel verified (46,081 bytes).
+Actual Codex readThread tail no longer ends in input chrome; Exited(status)
+background-helper tool notices also excluded. G2 validation pending.
 
 2026-11-02 user authorizes Nick-style native-text menu trial.1.0.12 sessions
 page uses one multiline TextContainerProperty with > selection cursor; four

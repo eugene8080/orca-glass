@@ -4,9 +4,9 @@ export const WORKING_LABELS = ['Processing', 'Thinking', 'Pondering', 'Cooking',
 // Two tiles fit the SDK's 288px image limit. Black pixels are transparent;
 // drawing only inside the reserved footer leaves the mounted chat untouched.
 export function voiceBorderPixels(side: 'left' | 'right', visible: boolean): number[] {
-  return Array.from({ length: 280 * 64 }, (_, i) => {
+  return Array.from({ length: 280 * 84 }, (_, i) => {
     const x = i % 280, y = Math.floor(i / 280);
-    return visible && (y < 2 || y >= 62 || (side === 'left' ? x < 2 : x >= 278)) ? 255 : 0;
+    return visible && (y < 2 || y >= 82 || (side === 'left' ? x < 2 : x >= 278)) ? 255 : 0;
   });
 }
 
