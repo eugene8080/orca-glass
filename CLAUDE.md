@@ -49,6 +49,12 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-03 physical G2 confirmation: user confirms full-width session text and
+marks remaining native-menu/moving-dot/selected-row slash checks done. Includes
+retained OS controls and the already-confirmed Refresh/New Session/Usage actions.
+TODOS.md moves reader-width and remaining G2 checklist into Completed. No related
+hardware checks remain pending. Documentation only; no code/runtime/beta change.
+
 2026-11-03 user approves full-width simulator preview and requests beta upload.
 Beta1.0.22 uploaded/promoted; channel verified (47,461 bytes).76 tests/build/doctor
 passed for width change; ordinary prototype dist restored after packaging. Existing

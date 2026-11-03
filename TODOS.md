@@ -7,13 +7,6 @@ Completed/superseded release notes: [history](docs/todo-history.md).
 
 ## Open work
 
-- [ ] **Full-width session reader:** beta1.0.22 live; G2 check pending.
-  Removed fixed50-character wrapping; native renderer wraps to560px body at x8
-  with padding0. Explicit paragraph/code breaks retained, reader/voice heights
-  unchanged.76 tests/build pass; native simulator long text reaches right edge.
-  User approved preview and requested upload2026-11-03. Beta1.0.22 channel
-  verified; production bridge restarted and local/HTTPS health checked. Preview
-  left open on fixture8791; awaiting physical G2 width confirmation.
 - [ ] **Public release preparation:** user requests profile and screenshots on
   2026-11-03. CLI name/tagline/description saved; six native simulator captures
   and reproducible sample-data preview prepared. See [store/listing.md](store/listing.md).
@@ -39,10 +32,6 @@ Completed/superseded release notes: [history](docs/todo-history.md).
   Await maintainer response/API guidance for following newest LLM output while
   preserving the user's position when reading older text.
 
-- [ ] **Remaining G2 check of beta1.0.21:** verify retained OS Display off/
-  Brightness/Close, moving dot, and no displaced slash when a working session is
-  selected. Refresh sessions/New Session/Usage are now hardware-confirmed.
-  Ask one remaining check at a time, per user preference.
 - [ ] **Main-response-only filtering:** tool records/internal reasoning and terminal
   footer chrome are filtered, but public assistant progress commentary remains.
   Final-only filtering was requested earlier and is not implemented. See
@@ -63,6 +52,11 @@ Completed/superseded release notes: [history](docs/todo-history.md).
 
 ## Completed / confirmed
 
+- [x] Full-width session reader — user confirmed on G2, beta1.0.22,2026-11-03.
+  Native wrapping uses560px body at x8, padding0; fixed50-character wrapping removed.
+- [x] Remaining native-menu checks — Display off/Brightness/Close, moving dot,
+  and no displaced slash when a working session is selected; user marks the
+  remaining G2 checklist done2026-11-03. No further checks pending for these items.
 - [x] Three contextual actions (Refresh sessions, New Session, Usage) work on G2
   — user confirmed2026-11-03 for beta1.0.21.
 - [x] Bold vertical bar is gone — user confirmed resolved2026-11-03; exact cause
@@ -77,7 +71,7 @@ Completed/superseded release notes: [history](docs/todo-history.md).
 - [x] Dynamic agent filtering, English-only fork and /images ignore.
 - [x] Codex usage restored; user confirmed working in the conversation.
 - [x] Orca-workspace terminal policy and simulator placement.
-- [x] Private beta installation/update flow established; current1.0.21 uploaded.
+- [x] Private beta installation/update flow established; current1.0.22 uploaded.
 
 ## Deferred / closed scope
 
