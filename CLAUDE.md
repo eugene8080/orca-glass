@@ -34,6 +34,11 @@ workspace/worktree. This applies to every agent working here.
 
 ## Current work
 
+2026-11-03 user confirms connected-terminal count is right-aligned on G2 after
+1.0.17 aligned native text/static fallback. Count alignment hardware check closed.
+Selected-filter alignment and header gap remain unconfirmed; spinner unresolved.
+Documentation only; no new beta. Next one-at-a-time check: selected filter alignment.
+
 2026-11-03 G2 follow-up: user reports Menu layout Aligned native text (Static
 markers) after1.0.17. This proves six-text aligned fallback accepted and full
 marker-image profile rejected; shorter strips alone did not resolve rejection.

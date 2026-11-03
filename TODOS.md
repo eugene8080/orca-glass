@@ -12,13 +12,15 @@ This list supersedes older pending statuses in the dated history below.
   Menu layout: Aligned native text (Static markers) on2026-11-03 after1.0.17.
   Full marker-image profile rejected; six-text aligned fallback accepted. Shorter
   images alone did not resolve G2 rejection. Exact rejection constraint unknown.
-  Count/filter visual right alignment and header gap still need confirmation.
+  Connected count right alignment confirmed2026-11-03. Selected filter alignment
+  and header gap still need confirmation.
 - **Filter placement/alignment:** first main-list row, selected provider beside
   it; Refresh below; contextual menu has only system controls. Placement/removal
   confirmed2026-11-03. Agent tags ([Codex]/[Claude]/[Pi]) right alignment also
   confirmed2026-11-03 in the one-at-a-time checklist. Connected count is on the
-  same header row as name/version but is **not right-aligned**, confirmed by
-  user2026-11-03. Header count alignment needs correction.
+  same header row as name/version and **right alignment is confirmed** by the
+  user2026-11-03 on the1.0.17 aligned static fallback. This supersedes the
+  earlier compact-mode alignment failure.
   Selected filter ([All sessions]/[Codex]) is also on the correct Filter by Agent
   row but **not right-aligned**, confirmed by user2026-11-03. Its alignment needs
   correction; provider tags remain confirmed aligned.
