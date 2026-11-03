@@ -3,6 +3,8 @@ import {
   CreateStartUpPageContainer,
   ListContainerProperty,
   ListItemContainerProperty,
+  MenuContainerProperty,
+  MenuItemProperty,
   OsEventTypeList,
   RebuildPageContainer,
   TextContainerProperty,
@@ -29,7 +31,7 @@ const TEXT_BYTES = 999;
 const POLL_MS = 1000;
 
 type Screen =
-  | { kind: 'list'; title: string; items: string[]; onPick: (i: number) => void; onBack?: () => void }
+  | { kind: 'list'; title: string; items: string[]; sessionList?: boolean; onPick: (i: number) => void; onBack?: () => void }
   | { kind: 'text'; title: string; text: string; tail?: boolean; offset?: number; reading?: boolean; activityLabel?: string; savedHistory?: boolean; reader?: Thread; onClick?: () => void; onBack?: () => void; onHold?: () => void; };
 
 let bridge: EvenAppBridge;
@@ -41,6 +43,9 @@ let sending = false;
 let holding = false;
 let releaseCapture: (() => void) | null = null;
 let movingReader = false;
+const VIEW_OPTIONS_ID = 1001;
+let viewProvider = 'all';
+const providerName = (id: string) => ({ claude: 'Claude', codex: 'Codex', opencode: 'OpenCode', gemini: 'Gemini' }[id] || id);
 
 function selectThread(t: Thread | null) {
   if (selectedThread?.handle !== t?.handle) {
@@ -117,10 +122,16 @@ async function show(s: Screen, reloadText = false) {
   const content = s.kind === 'text' ? bodyText(s) : '';
   const uploadText = reloadText || (s.kind === 'text' && !!s.reader && s.text.length > 900) || new TextEncoder().encode(content).length > 999;
   const head = new TextContainerProperty({ ...HEAD, ...(s.kind === 'text' && s.reader ? { zOrderIndex: 0 } : {}), content: clipBytes(screenTitle(s), TEXT_BYTES), isEventCapture: 0 });
+  // Display off, Brightness and Close are OS-owned. Declare only our action;
+  // omitting menuObject on other pages removes View options but keeps system rows.
+  const menu = s.kind === 'list' && s.sessionList ? {
+    menuObject: new MenuContainerProperty({ menuItems: [new MenuItemProperty({ itemID: VIEW_OPTIONS_ID, itemName: 'View options >' })] }),
+  } : {};
   const page =
     s.kind === 'list'
       ? {
           containerTotalNum: 2,
+          ...menu,
           textObject: [head],
           listObject: [
             new ListContainerProperty({
@@ -189,7 +200,8 @@ async function guard(title: string, f: () => Promise<void>, back: () => void) {
 function home(page = 0) {
   selectThread(null);
   return guard('Orca', async () => {
-    const threads = await api.threads();
+    const allThreads = await api.threads();
+    const threads = viewProvider === 'all' ? allThreads : allThreads.filter(t => t.agent === viewProvider);
     // Leave room for navigation; never silently truncate live terminals.
     const pageSize = LIST_MAX - 5;
     page = Math.max(0, Math.min(page, Math.ceil(threads.length / pageSize) - 1));
@@ -205,9 +217,33 @@ function home(page = 0) {
     await show({
       kind: 'list',
       title: tr('homeTitle', threads.length),
+      sessionList: true,
       items: actions.map(a => a.label),
       onPick: (i) => { actions[i]?.run(); },
     });
+  }, home);
+}
+
+function viewOptions(page = 0) {
+  return guard('View options', async () => {
+    const threads = await api.threads();
+    const providers = ['all', 'claude', 'codex', ...new Set(threads.map(t => t.agent).filter(Boolean))]
+      .filter((id, index, ids) => ids.indexOf(id) === index);
+    if (!providers.includes(viewProvider)) providers.push(viewProvider);
+    const size = LIST_MAX - 3;
+    const actions: { label: string; run: () => unknown }[] = [{ label: '<-', run: () => home() }];
+    for (const id of providers.slice(page * size, (page + 1) * size)) {
+      actions.push({ label: `${id === 'all' ? 'All Sessions' : providerName(id)}${viewProvider === id ? ' ✓' : ''}`,
+        run: async () => {
+          await bridge.setLocalStorage('view-provider', id);
+          viewProvider = id;
+          await home();
+        } });
+    }
+    if (page > 0) actions.push({ label: 'Previous page', run: () => viewOptions(page - 1) });
+    if ((page + 1) * size < providers.length) actions.push({ label: 'Next page', run: () => viewOptions(page + 1) });
+    await show({ kind: 'list', title: 'View options', items: actions.map(a => a.label),
+      onPick: i => { void actions[i]?.run(); }, onBack: home });
   }, home);
 }
 
@@ -557,6 +593,12 @@ function confirm(w: Workspace, p: Provider, model: string, prompt: number, label
 // ---- 入力 ----
 
 function onEvent(e: EvenHubEvent) {
+  if (e.menuItemClickEvent) {
+    if (e.menuItemClickEvent.itemID === VIEW_OPTIONS_ID && current?.kind === 'list' && current.sessionList) {
+      void viewOptions();
+    }
+    return;
+  }
   const systemType = e.sysEvent?.eventType;
   if (systemType === OsEventTypeList.SYSTEM_EXIT_EVENT || systemType === OsEventTypeList.ABNORMAL_EXIT_EVENT) {
     clearInterval(poll);
@@ -669,6 +711,7 @@ async function main() {
     if (v != null) await bridge.setLocalStorage(k, v);
   }
   const pref = (await bridge.getLocalStorage('lang')) || 'auto';
+  viewProvider = (await bridge.getLocalStorage('view-provider')) || 'all';
   $('lang').value = pref;
   useLang(pref);
   const draft = document.getElementById('reply-text') as HTMLTextAreaElement;

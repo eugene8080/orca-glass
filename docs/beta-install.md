@@ -3,6 +3,14 @@ Updated: 2026-11-02
 
 ## Current state
 
+2026-11-02 latest beta is **1.0.6** (46,466 bytes), channel verified. App display
+name is now **Orca Glass** in manifest and portal. Added native View options >
+only on the sessions list, opening persisted provider filters; session Menu keeps
+OS-owned Display off/Brightness/Close.56 tests/build/doctor pass; native simulator
+menu/filter/context checks passed. Firmware system rows, close wording and ✓
+glyph appearance require G2 verification. The SDK cannot customize system slot
+ordering or exact close toast. See docs/context-menu.md. No public publication.
+
 2026-11-02 spacing fix (server-only): user reported restarted or displayed as
 restartedor. cleanScreen's heuristic concatenated full-width terminal rows after
 stripping whitespace. A synthetic two-row example reproduced that exact string.

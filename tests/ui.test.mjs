@@ -9,7 +9,7 @@ vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../app/src/text.ts',
 
 // Exercise the real controller with a simulated Even bridge: no agent input,
 // microphone access, network, or hardware claims.
-async function harness(count = 2, voice = false, mode = 'tap') {
+async function harness(count = 2, voice = false, mode = 'tap', savedView = '') {
   const elements = new Map();
   const element = id => {
     if (!elements.has(id)) elements.set(id, { value: '', hidden: false, textContent: '', listeners: {}, addEventListener(name, fn) { this.listeners[name] = fn; } });
@@ -28,7 +28,8 @@ async function harness(count = 2, voice = false, mode = 'tap') {
     say: async (handle, text) => { sends.push({ handle, text }); return { sent: text }; },
   };
   const bridge = {
-    getLocalStorage: async key => key === 'code' ? 'demo' : key === 'recording-mode' ? mode : 'en',
+    getLocalStorage: async key => key === 'code' ? 'demo' : key === 'recording-mode' ? mode : key === 'lang' ? 'en' : key === 'view-provider' ? savedView : '',
+    setLocalStorage: async () => {},
     createStartUpPageContainer: async p => { pages.push(p); return 0; },
     rebuildPageContainer: async p => { pages.push(p); return true; },
     textContainerUpgrade: async value => { upgrades.push(value); return true; },
@@ -54,6 +55,8 @@ async function harness(count = 2, voice = false, mode = 'tap') {
   const flush = () => new Promise(resolve => setImmediate(resolve));
   await flush();
   return { api, bridge, elements, pages, sends, timers, mic, upgrades, transcriptions, flush,
+    menu: async id => { event({ menuItemClickEvent: { itemID: id } }); await flush(); },
+    system: async type => { event({ sysEvent: { eventType: type } }); await flush(); },
     press: () => { event({ sysEvent: { eventType: 9 } }); },
     release: () => { event({ sysEvent: { eventType: 10 } }); },
     audio: () => { event({ audioEvent: { audioPcm: new Uint8Array(32000) } }); },
@@ -71,6 +74,54 @@ test('every live terminal remains reachable beyond the 20-item display limit', a
   assert.ok(h.pages.at(-1).listObject[0].itemContainer.itemName.some(s => s.includes('Session 29')));
   await h.pick(19); // next page after previous-page action
   assert.ok(h.pages.at(-1).listObject[0].itemContainer.itemName.some(s => s.includes('Session 39')));
+});
+
+test('native View options belongs only to the session list and does not duplicate OS controls', async () => {
+  const h = await harness();
+  assert.equal(h.pages.at(-1).menuObject.menuItems.length, 1);
+  assert.equal(h.pages.at(-1).menuObject.menuItems[0].itemName, 'View options >');
+  await h.system(4);
+  assert.equal(h.pages.length, 1);
+  await h.pick(3);
+  assert.equal(h.pages.at(-1).menuObject, undefined);
+  const count = h.pages.length;
+  await h.menu(1001);
+  await h.system(5);
+  assert.equal(h.pages.length, count);
+  assert.equal(h.sends.length, 0);
+});
+
+test('View options discovers providers, marks selection, filters and restores All Sessions', async () => {
+  const h = await harness();
+  h.api.threads = async () => [
+    { handle: 'codex', title: 'Codex conversation', agent: 'codex' },
+    { handle: 'open', title: 'OpenCode worker', agent: 'opencode' },
+    { handle: 'gemini', title: 'Gemini conversation', agent: 'gemini' },
+  ];
+  const saved = [];
+  h.bridge.setLocalStorage = async (key, value) => { saved.push([key, value]); };
+  await h.menu(1001);
+  assert.deepEqual([...h.pages.at(-1).listObject[0].itemContainer.itemName],
+    ['<-', 'All Sessions ✓', 'Claude', 'Codex', 'OpenCode', 'Gemini']);
+  await h.pick(4);
+  assert.deepEqual(saved, [['view-provider', 'opencode']]);
+  let items = h.pages.at(-1).listObject[0].itemContainer.itemName;
+  assert.equal(items.length, 4);
+  assert.match(items[3], /OpenCode worker/);
+  await h.menu(1001);
+  assert.match(h.pages.at(-1).listObject[0].itemContainer.itemName[4], /OpenCode ✓/);
+  await h.pick(1);
+  items = h.pages.at(-1).listObject[0].itemContainer.itemName;
+  assert.equal(items.length, 6);
+  assert.equal(h.sends.length, 0);
+});
+
+test('saved provider filter restores even with no matching live sessions', async () => {
+  const h = await harness(2, false, 'tap', 'claude');
+  assert.equal(h.pages.at(-1).listObject[0].itemContainer.itemCount, 3);
+  await h.menu(1001);
+  assert.equal(h.pages.at(-1).listObject[0].itemContainer.itemName[2], 'Claude ✓');
+  assert.equal(h.sends.length, 0);
 });
 
 test('phone message requires review and cannot be sent to a newly selected session', async () => {

@@ -12,6 +12,15 @@ upstream Claude code is not evidence of authorization to test it.
 
 ## Current work
 
+2026-11-02 beta1.0.6: sessions-list contextual menu adds View options >;
+session reader has system-only menu. Provider filter persists (All Sessions,
+Claude, Codex plus providers in current local sessions); selected label has ✓.
+Native OS owns Display off, Brightness and Close, including order/close wording;
+SDK cannot set exact close toast. App manifest/portal display name now Orca Glass.
+56 tests/build/doctor pass; simulator verified menu action/filter and removal
+inside a reader. Simulator omits OS slots; G2 brightness/off/close/glyph checks
+remain pending. No app-owned scrolling, fake display-off, or provider launch.
+
 2026-11-02 latest user ruling: retain smooth native scrolling; reject app-owned
 line scrolling; remove separate review screen and restore bottom-panel review.
 Beta1.0.5 implements that rollback plus fixed status payload (no layout fields
