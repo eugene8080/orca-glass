@@ -20,7 +20,9 @@ Completed/superseded release notes: [history](docs/todo-history.md).
   complete. Portal generated/attached policy and all checklist items complete, but
   template misstates developer collection/sharing and includes phone/address in
   publicly retrievable PDF. Corrected store/Orca-Glass-Privacy-and-Terms.pdf ready;
-  portal replacement pending (only generator exposed). Do not submit old document.
+  user approved it and requested submission. Refreshed portal still points to old
+  PDF; replacement pending (only generator exposed). Submission held for corrected
+  attachment and public connection/setup (1.0.22 remains pinned to private PC).
   AI category saved; description checklist
   complete. User selected earlier orca-glass-icon-preview.png;
   matching24x24 orca-glass-icon.png saved and verified in portal. Preview in

@@ -31,6 +31,12 @@ Rebuild with `python scripts/render-store-policy.py` (requires reportlab).
 the same generator, not custom upload. Do not submit the currently attached
 generated document. No review/publication performed; no support message sent.
 
+User approved the corrected PDF and requested review submission on 2026-11-03.
+Fresh portal reload and attachment-open verified the exact original generated PDF
+is still attached. Current beta1.0.22 manifest/build still pins the private PC
+origin. Submission remains held for these two concrete blockers; PDF approval
+does not need to be requested again.
+
 Phone visibility check, 2026-11-03: the portal requires telephone but explicitly
 labels only email as public. [Developer terms, section 3.1](https://support.evenrealities.com/hc/en-us/articles/15606676690703-Even-Hub-Developer-Platform-Terms-of-Service)
 allow display of developer contact details without identifying individual fields.

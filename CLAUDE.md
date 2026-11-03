@@ -49,6 +49,13 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-03 user approves corrected PDF and requests review submission. Refreshed
+portal still opens the exact original generated-PDF URL, not corrected local PDF.
+Current beta1.0.22 manifest/build script still hard-code the private PC origin;
+cannot serve arbitrary users' own bridges. No Submit for review clicked: approved
+document replacement and public connection/setup remain concrete blockers. User
+approval of corrected PDF recorded; no need to request that approval again.
+
 2026-11-03 privacy generator completed and auto-attached PDF (no separate save),
 all checklist items complete. Download/read shows misleading developer collection/
 retention/sharing, reverse-engineering prohibition, and embedded phone/address.
