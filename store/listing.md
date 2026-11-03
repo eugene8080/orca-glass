@@ -8,12 +8,18 @@ Updated: 2026-11-03
 - Tagline: **Read your coding sessions. Speak your next step.**
 - Description: [exact portal text](description.txt), under 2,000 characters.
 - Windows source/setup: https://github.com/eugene8080/orca-glass/tree/windows-android-codex
-- Chosen creator: Quiet Signal (portal developer information is not yet saved).
+- Chosen creator: Quiet Signal (Personal Information now complete in portal).
 - Language: English.
 - Attribution: based on 2ero20ne's MIT-licensed Orca Glass. The upstream developer name, privacy URL and Mac-only instructions do not describe this fork.
 - Chosen public developer: Quiet Signal; support: quietsignal.apps@gmail.com.
-  Entered in contact wizard but not saved: portal requires contact telephone.
-  Phone visibility/address requirement unknown; no phone/address entered.
+  User entered phone/address directly; do not copy those values into this repository.
+  Public phone visibility remains unverified.
+
+Privacy wizard progress, 2026-11-03: microphone/local network selected, location,
+push, Bluetooth and background services left unchecked. Data collection: AI used,
+location not tracked; voice/transcript/session data and local transcription plus
+confirmed-reply purpose entered. Chrome blocks Next while an extension UI is open.
+Await user dismissing that UI; no final privacy save, review or publication.
 
 Phone visibility check, 2026-11-03: the portal requires telephone but explicitly
 labels only email as public. [Developer terms, section 3.1](https://support.evenrealities.com/hc/en-us/articles/15606676690703-Even-Hub-Developer-Platform-Terms-of-Service)

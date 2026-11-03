@@ -49,6 +49,15 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-03 user enters phone/address themselves and asks to complete privacy
+wizard. Portal now shows Quiet Signal and Personal Information complete. Selected
+microphone/local network only; data collection AI checked, location unchecked;
+entered voice audio/transcripts/agent-session data with local transcription and
+confirmed-reply purposes. Next click blocked by Chrome extension UI. No final
+privacy save/review/publication. Await user closing extension panel to continue;
+do not bypass browser block or copy phone/address into repo. Source checks:
+app manifest, bridge/whisper.mjs, bridge/server.mjs and app/src/pairing.ts.
+
 2026-11-03 phone-publicity check: official Developer Terms3.1 allow display of
 developer contact details but do not specify telephone. OcuClaw web catalogue
 listing shows name, no contact section; mobile visibility not verified. Cannot

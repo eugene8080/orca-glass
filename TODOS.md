@@ -16,9 +16,10 @@ Completed/superseded release notes: [history](docs/todo-history.md).
   is local/supplemental. List shows fictional Cursor/Pi/Claude/Codex/OpenCode.
   Original-author credit added; production build now carries original MIT license
   and attribution (not yet uploaded). User requires preview before Publish.
-  Developer profile unsaved: Quiet Signal / quietsignal.apps@gmail.com chosen,
-  but portal requires contact telephone. Await support number or Even clarification;
-  phone visibility/address requirement unknown. AI category saved; description checklist
+  User completed contact details; Quiet Signal and Personal Information now shown
+  complete. Privacy wizard partly filled (mic/network, AI, voice/session-data purposes),
+  blocked by open Chrome extension UI before next step/final save. Await user closing
+  panel. AI category saved; description checklist
   complete. User selected earlier orca-glass-icon-preview.png;
   matching24x24 orca-glass-icon.png saved and verified in portal. Preview in
   store/gallery.html. No review/publication.
