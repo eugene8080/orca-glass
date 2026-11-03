@@ -1,6 +1,16 @@
 # Native contextual menu
 Updated: 2026-11-02
 
+## Open regression report
+
+2026-11-02 user supplied Windows simulator screenshots showing only View options
+and reported that Display off/Brightness/Close existed before1.0.6. Asked whether
+the controls are also missing on physical G2; not yet answered.1.0.5 had no
+menuObject;1.0.6 declares only View options, following the documented additive
+contract. The discrepancy remains unresolved. Do not claim the complete native
+menu was simulator-verified, assume hardware retention from the docs, or add
+nonfunctional copies of OS controls. No new beta/code change for this report yet.
+
 ## Implementation
 
 Beta1.0.6 adds one first-level OS menu action, `View options >`, only to the
