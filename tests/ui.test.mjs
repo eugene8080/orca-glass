@@ -33,7 +33,7 @@ async function harness(count = 2, voice = false, mode = 'tap', savedView = '') {
     say: async (handle, text) => { sends.push({ handle, text }); return { sent: text }; },
   };
   const bridge = {
-    updateImageRawData: async value => { images.push(value); return 0; },
+    updateImageRawData: async value => { images.push(value); return 'success'; },
     getLocalStorage: async key => key === 'code' ? 'demo' : key === 'recording-mode' ? mode : key === 'lang' ? 'en' : key === 'view-provider' ? savedView : '',
     setLocalStorage: async () => {},
     createStartUpPageContainer: async p => { pages.push(p); return 0; },
@@ -43,7 +43,7 @@ async function harness(count = 2, voice = false, mode = 'tap', savedView = '') {
     audioControl: async on => { mic.push(on); return true; },
   };
   class Property { constructor(value) { Object.assign(this, value); } }
-  const sdk = new Proxy({ waitForEvenAppBridge: async () => bridge, AudioInputSource: { Glasses: 0 }, OsEventTypeList: { CLICK_EVENT: 0, SCROLL_TOP_EVENT: 1, SCROLL_BOTTOM_EVENT: 2, DOUBLE_CLICK_EVENT: 3, SYSTEM_EXIT_EVENT: 7, ABNORMAL_EXIT_EVENT: 6, LONG_PRESS_EVENT: 9, LONG_PRESS_RELEASE_EVENT: 10 } }, { get: (target, key) => target[key] ?? Property });
+  const sdk = new Proxy({ ImageRawDataUpdateResult: { success: 'success' }, waitForEvenAppBridge: async () => bridge, AudioInputSource: { Glasses: 0 }, OsEventTypeList: { CLICK_EVENT: 0, SCROLL_TOP_EVENT: 1, SCROLL_BOTTOM_EVENT: 2, DOUBLE_CLICK_EVENT: 3, SYSTEM_EXIT_EVENT: 7, ABNORMAL_EXIT_EVENT: 6, LONG_PRESS_EVENT: 9, LONG_PRESS_RELEASE_EVENT: 10 } }, { get: (target, key) => target[key] ?? Property });
   const imports = {
     '@evenrealities/even_hub_sdk': sdk,
     './api': { api, setDemo() {}, setApiLang() {}, currentBase: () => '' },
@@ -515,4 +515,24 @@ test('a rejected live text update is retried instead of marking unseen text as d
   assert.equal(frame.borderWidth, 2);
   assert.equal(divider.height, 2);
   assert.equal(h.pages.at(-1).textObject.find(c => c.containerName === 'voice').content, '/ Status unavailable');
+});
+
+test('voice border is precreated, appears for capture/review and clears on cancel', async () => {
+  const h = await harness(2, true, 'hold');
+  await h.pick(3);
+  const page = h.pages.at(-1);
+  assert.equal(page.imageObject.length, 4);
+  for (const tile of page.imageObject.filter(c => c.containerName.startsWith('voice-border'))) {
+    assert.ok(tile.width <= 288 && tile.height <= 144);
+    assert.ok(tile.yPosition >= 208);
+  }
+  const count = h.pages.length;
+  h.press(); await h.flush(); h.audio(); h.release(); await h.flush();
+  const borders = h.images.filter(i => i.containerName.startsWith('voice-border'));
+  assert.equal(borders.length, 2);
+  assert.ok(borders.every(i => i.imageData.some(p => p === 255)));
+  await h.back();
+  assert.equal(h.pages.length, count);
+  assert.ok(h.images.filter(i => i.containerName.startsWith('voice-border')).slice(-2).every(i => i.imageData.every(p => p === 0)));
+  assert.ok(h.upgrades.every(u => u.containerName === 'voice'));
 });

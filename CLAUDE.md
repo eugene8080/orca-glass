@@ -12,6 +12,20 @@ upstream Claude code is not evidence of authorization to test it.
 
 ## Current work
 
+2026-11-02 voice-border trial1.0.9: user authorizes bordered input overlay
+provided mounted chat never refreshes/resets behind it. Added two precreated
+280x64 image border tiles in reserved footer; capture/review toggles pixels only,
+never rebuilds or updates body. Border tiles behind voice text (tested: images
+above text masked it).59 tests/build pass; isolated native simulator fake audio
+review/cancel/send: no rebuild/body write, one complete fake send, chat text crop
+pixel-identical. Scrollbar alone changes as it fades. Normal polling resumes after
+successful send. Native chat still owns swipes; no optical-depth claim.
+Sequential contextual menus cannot auto-open via public API; replacement needs
+another Menu gesture and always includes system slots. No native scroll/End/
+Page Down command exists; click remains no-op pending a supported alternative.
+One worktree is sufficient because all changes touch shared reader controller.
+Beta1.0.9 uploaded/promoted and channel verified (47,673 bytes); G2 trial pending.
+
 2026-11-02 user confirms Filter by Agent works on G2 and includes Pi and
 Cursor alongside Claude/Codex. Dynamic provider discovery/filter behavior is
 hardware-confirmed. This does not verify near-field submenu depth or reading

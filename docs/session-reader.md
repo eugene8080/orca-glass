@@ -1,6 +1,24 @@
 # Session reader
 Updated: 2026-11-02
 
+Version1.0.9 voice trial: two precreated280x64 image tiles draw a border around
+the reserved footer at x8/y220, total560x64. They sit behind voice text, within
+the four-image limit. Border uploads share the serialized panel queue and clear
+on dismissal. The body is neither rebuilt nor rewritten throughout recording,
+transcription, review and cancellation. Successful send resumes normal polling.
+This is an app-drawn footer overlay, not native optical near-field depth; swipes
+remain with native chat.59 tests/build pass. Official isolated simulator checks
+with fake audio show no rebuild/body writes, one complete fake send and identical
+chat text pixels through review/cancel/send. Scrollbar fading changes only its
+own pixels; no real agent input or Claude interaction occurred.
+
+Sequential native menus: replacing menuObject changes the next menu registration
+but does not open it. There is no public open-menu command, and system entries
+cannot be removed. A second Menu gesture is required. Native Page Down, End and
+scroll-down commands likewise are not exposed. Session click remains unchanged;
+no content replacement workaround was introduced. These reader changes share
+state/rendering and are maintained in one worktree rather than three.
+
 User confirms Filter by Agent works on G2, with Pi and Cursor visible alongside
 Claude and Codex. Dynamic provider discovery and filtering are hardware-confirmed;
 this report does not establish conversation parsing or near-field submenu depth.

@@ -3,6 +3,13 @@ Updated: 2026-11-02
 
 ## Current state
 
+2026-11-02 beta **1.0.9** uploaded/promoted and channel verified (47,673 bytes).
+Trial app-drawn border around reserved voice input/review footer.59 tests/build
+pass; isolated native simulator verifies no chat rebuild/body writes during
+capture/review/cancel/send, identical chat text pixels and one complete fake send.
+No new optical-depth or draft-scroll capability. Sequential contextual menus
+and click-as-native-scroll remain blocked by missing public SDK commands.
+
 User confirms Filter by Agent works on G2, including Pi and Cursor alongside
 Claude and Codex. Filtering and dynamic provider discovery are verified.
 

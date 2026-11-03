@@ -3,6 +3,8 @@ Updated: 2026-11-02
 
 | Task | Status | Evidence / remaining work |
 | --- | --- | --- |
+| Bordered voice overlay preserving chat | Simulator verified; G2 trial pending | 2026-11-02: precreated two-tile footer border; no rebuild/body write during capture/review/cancel/send; chat text crop identical, one complete fake send.59 tests/build pass. No optical depth or independent draft scrolling claimed. |
+| Sequential contextual menu and click scroll | Public SDK capability blocked | 2026-11-02: menu replacement supported but no programmatic open; OS entries always remain. No native scroll/End/Page Down command in public bridge. No unsupported commands or text replacement workaround added. Single worktree recommended for shared reader code. |
 | Filter by Agent behavior and provider discovery | Hardware confirmed | 2026-11-02: user confirms filtering works on G2; Pi and Cursor appear alongside Claude and Codex. Near-field submenu depth and provider conversation parsing remain separate from this check. |
 | Filter by Agent label | Hardware confirmed | 2026-11-02: user confirms the renamed menu label on physical G2. Near-field submenu request remains separate and unresolved. |
 | Session click and G2 frame/slash corrections | Hardware confirmed for click/frame/divider/slash/hint | 2026-11-02: user confirms on G2 that session click does nothing, frame/divider are present, slash precedes Waiting input, and input hint is visible.58 tests/build previously passed. This report does not newly validate spinner/timer/filter label or voice send. |

@@ -5,6 +5,7 @@ import {
   ListItemContainerProperty,
   ImageContainerProperty,
   ImageRawDataUpdate,
+  ImageRawDataUpdateResult,
   MenuContainerProperty,
   MenuItemProperty,
   OsEventTypeList,
@@ -19,7 +20,7 @@ import { api, currentBase, setApiLang, setConnection, setDemo, type Provider, ty
 import { parseCode, resolveBase } from './pairing';
 import { applyPage, detectLang, setLang, t as tr } from './i18n';
 import { clipBytes, textSections } from './text';
-import { readerStatus, statusPixels } from './reader-status';
+import { readerStatus, statusPixels, voiceBorderPixels } from './reader-status';
 import { footerHint, hintPixels } from './footer-hint';
 
 // 画面 576x288。上に見出し(テキスト)、下に本文(リスト or テキスト)の2段構成で統一する。
@@ -32,6 +33,8 @@ const FRAME = { containerID: 4, containerName: 'frame', xPosition: 0, yPosition:
 const DIVIDER = { containerID: 5, containerName: 'divider', xPosition: 16, yPosition: 216, width: 544, height: 2 };
 const HINT = { containerID: 6, containerName: 'hint', xPosition: 280, yPosition: 224, width: 280, height: 28 };
 const STATUS_ICON = { containerID: 7, containerName: 'status-icon', xPosition: 16, yPosition: 224, width: 20, height: 28 };
+const VOICE_BORDER_LEFT = { containerID: 8, containerName: 'voice-border-l', xPosition: 8, yPosition: 220, width: 280, height: 64 };
+const VOICE_BORDER_RIGHT = { containerID: 9, containerName: 'voice-border-r', xPosition: 288, yPosition: 220, width: 280, height: 64 };
 const READER_HEIGHT = 168;
 const LIST_ITEM_BYTES = 63;
 const LIST_MAX = 20;
@@ -48,6 +51,7 @@ let started = false;
 let poll: ReturnType<typeof setInterval> | undefined;
 let statusAnimation: ReturnType<typeof setInterval> | undefined;
 let panelWrites: Promise<void> = Promise.resolve();
+let voiceBorderVisible = false;
 let selectedThread: Thread | null = null;
 let sending = false;
 let holding = false;
@@ -86,6 +90,17 @@ function writePanel(content: string, active: () => boolean = () => true, statusM
   const write = panelWrites.then(async () => {
     if (!active()) return false;
     const status = statusMode ?? (current?.kind === 'text' && !!current.reader);
+    if (voiceBorderVisible !== !status) {
+      // Mark ownership first so cancellation clears even a partially uploaded border.
+      voiceBorderVisible = !status;
+      for (const [geometry, side] of [[VOICE_BORDER_LEFT, 'left'], [VOICE_BORDER_RIGHT, 'right']] as const) {
+        const result = await bridge.updateImageRawData(new ImageRawDataUpdate({
+          containerID: geometry.containerID, containerName: geometry.containerName,
+          imageData: voiceBorderPixels(side, !status),
+        }));
+        if (result !== ImageRawDataUpdateResult.success) throw new Error('Glasses rejected the voice border update. Chat position preserved.');
+      }
+    }
     // The four-space gutter reserves the icon's 20px without changing voice
     // panel geometry when capture/review temporarily takes ownership.
     let visible = status && content[0] !== '/' && content.length > 2 ? '    ' + content.slice(2) : content;
@@ -122,6 +137,7 @@ async function show(s: Screen, reloadText = false) {
   if (s.kind === 'text' && s.reader) s.activityLabel ??= readerStatus('unknown');
   const previous = current;
   current = s;
+  voiceBorderVisible = false;
   const content = s.kind === 'text' ? bodyText(s) : '';
   const uploadText = reloadText || (s.kind === 'text' && !!s.reader && s.text.length > 900) || new TextEncoder().encode(content).length > 999;
   const head = new TextContainerProperty({ ...HEAD, ...(s.kind === 'text' && s.reader ? { xPosition: 16, yPosition: 4, width: 544, height: 32, zOrderIndex: 1 } : {}), content: clipBytes(screenTitle(s), TEXT_BYTES), isEventCapture: 0 });
@@ -148,14 +164,19 @@ async function show(s: Screen, reloadText = false) {
           ],
         }
       : {
-          containerTotalNum: s.reader ? 7 : 2,
+          containerTotalNum: s.reader ? 9 : 2,
           textObject: [head, new TextContainerProperty({ ...BODY, ...(s.reader ? { xPosition: 16, width: 544, zOrderIndex: 2, height: READER_HEIGHT } : {}), content: uploadText ? '' : content, isEventCapture: 1 }),
             ...(s.reader ? [
-              new TextContainerProperty({ ...VOICE, content: s.activityLabel![0] === '/' ? s.activityLabel : '    ' + s.activityLabel!.slice(2), textColor: 4, isEventCapture: 0, zOrderIndex: 5 }),
+              new TextContainerProperty({ ...VOICE, content: s.activityLabel![0] === '/' ? s.activityLabel : '    ' + s.activityLabel!.slice(2), textColor: 4, isEventCapture: 0, zOrderIndex: 7 }),
               new TextContainerProperty({ ...FRAME, content: ' ', textColor: 4, borderWidth: 2, borderColor: 15, borderRadius: 0, isEventCapture: 0, zOrderIndex: 0 }),
               new TextContainerProperty({ ...DIVIDER, content: ' ', textColor: 4, borderWidth: 2, borderColor: 15, isEventCapture: 0, zOrderIndex: 3 }),
             ] : [])],
-          ...(s.reader ? { imageObject: [new ImageContainerProperty({ ...STATUS_ICON, zOrderIndex: 4 }), new ImageContainerProperty({ ...HINT, zOrderIndex: 6 })] } : {}),
+          ...(s.reader ? { imageObject: [
+            new ImageContainerProperty({ ...STATUS_ICON, zOrderIndex: 6 }),
+            new ImageContainerProperty({ ...HINT, zOrderIndex: 8 }),
+            new ImageContainerProperty({ ...VOICE_BORDER_LEFT, zOrderIndex: 4 }),
+            new ImageContainerProperty({ ...VOICE_BORDER_RIGHT, zOrderIndex: 5 }),
+          ] } : {}),
         };
   try {
     if (!started) {
