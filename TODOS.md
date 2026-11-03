@@ -8,11 +8,11 @@ This list supersedes older pending statuses in the dated history below.
 - **Plain-shell exclusion:** confirmed2026-11-03; user reports cmd.exe is gone
   from the G2 sessions list after Refresh. Header gap change included in beta1.0.17; hardware check pending.
 
-- **Spinner: G2 retest pending.** User confirms Menu Layout: Compact compatibility
-  on2026-11-03. That profile deliberately disables spinner images and uses inline
-  count/filter labels.1.0.17 tries shorter session-only image strips, then six
-  aligned native text containers with static markers, then proven compact recovery.
-  Simulator animation verified; actual G2 acceptance remains unverified.
+- **Spinner: unresolved; aligned static fallback hardware-confirmed.** User reports
+  Menu layout: Aligned native text (Static markers) on2026-11-03 after1.0.17.
+  Full marker-image profile rejected; six-text aligned fallback accepted. Shorter
+  images alone did not resolve G2 rejection. Exact rejection constraint unknown.
+  Count/filter visual right alignment and header gap still need confirmation.
 - **Filter placement/alignment:** first main-list row, selected provider beside
   it; Refresh below; contextual menu has only system controls. Placement/removal
   confirmed2026-11-03. Agent tags ([Codex]/[Claude]/[Pi]) right alignment also

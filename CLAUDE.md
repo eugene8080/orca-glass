@@ -34,6 +34,13 @@ workspace/worktree. This applies to every agent working here.
 
 ## Current work
 
+2026-11-03 G2 follow-up: user reports Menu layout Aligned native text (Static
+markers) after1.0.17. This proves six-text aligned fallback accepted and full
+marker-image profile rejected; shorter strips alone did not resolve rejection.
+Spinner remains unresolved, and exact image/container constraint is unknown.
+Count/filter visual alignment and header gap remain hardware-unconfirmed. Next
+one-at-a-time check: connected-terminal count right alignment. No code/beta change.
+
 2026-11-03 user confirms phone Menu Layout: Compact compatibility. This profile
 intentionally disables marker images/animation and uses inline count/filter labels,
 explaining reported symptoms without proving why G2 rejects the aligned profile.
