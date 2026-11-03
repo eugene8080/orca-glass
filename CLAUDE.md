@@ -49,6 +49,14 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-03 user requests store/icon cleanup: retained only selected
+orca-glass-icon.png and matching orca-glass-icon.xcf, hashes unchanged. Removed
+unused studies/previews/README; gallery now enlarges native PNG directly. Earlier
+history below refers to removed studies retained in Git history. Third-party form
+guidance: omit inactive prototype ntfy/Cloudflare; identify Tailscale and user-
+configured LLM accounts as dependencies without claiming developer data sharing.
+No portal regeneration or submission during this cleanup.
+
 2026-11-03 user approves corrected PDF and requests review submission. Refreshed
 portal still opens the exact original generated-PDF URL, not corrected local PDF.
 Current beta1.0.22 manifest/build script still hard-code the private PC origin;

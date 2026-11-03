@@ -24,7 +24,7 @@ Completed/superseded release notes: [history](docs/todo-history.md).
   PDF; replacement pending (only generator exposed). Submission held for corrected
   attachment and public connection/setup (1.0.22 remains pinned to private PC).
   AI category saved; description checklist
-  complete. User selected earlier orca-glass-icon-preview.png;
+  complete. User selected orca-glass-icon.png (earlier design);
   matching24x24 orca-glass-icon.png saved and verified in portal. Preview in
   store/gallery.html. No review/publication.
 - [ ] **Monitor native popup request:** [GitHub #44](https://github.com/even-realities/everything-evenhub/issues/44)

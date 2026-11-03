@@ -16,6 +16,12 @@ Updated: 2026-11-03
   The generated policy PDF includes those details and is accessible by its CDN URL
   without signing in. Do not commit that original PDF or its URL to the repository.
 
+Selected icon assets: [24x24 PNG](icon/orca-glass-icon.png) and
+[matching editable GIMP source](icon/orca-glass-icon.xcf). These are the only files
+retained in store/icon at user request; earlier design studies remain in Git
+history. PNG validation passed: transparent or opaque #F4F4F4 pixels, aligned 2x2
+blocks, under 1 MB. Gallery enlarges this exact PNG with nearest-neighbour display.
+
 Privacy status, 2026-11-03: portal generator completed and auto-attached a PDF;
 all six checklist items now show complete. Its template incorrectly describes
 developer collection/retention/sharing and embeds the entered phone/address.
