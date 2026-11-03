@@ -11,6 +11,9 @@ vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../app/src/reader-st
 const hintExports = {};
 vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../app/src/footer-hint.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, { exports: hintExports, document: { createElement: () => ({ getContext: () => ({ fillRect() {}, fillText() {}, getImageData: () => ({ data: new Uint8ClampedArray(280 * 28 * 4) }) }) }) } });
 
+const listExports = {};
+vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../app/src/session-list.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, { exports: listExports, __APP_VERSION__: '1.0.10', require: () => statusExports, document: { createElement: () => ({ getContext: () => ({ fillRect() {}, fillText() {}, measureText: text => ({ width: text.length * 9 }), getImageData: () => ({ data: new Uint8ClampedArray(288 * 144 * 4) }) }) }) } });
+
 // Exercise the real controller with a simulated Even bridge: no agent input,
 // microphone access, network, or hardware claims.
 async function harness(count = 2, voice = false, mode = 'tap', savedView = '') {
@@ -52,6 +55,7 @@ async function harness(count = 2, voice = false, mode = 'tap', savedView = '') {
     './text': textExports,
     './reader-status': statusExports,
     './footer-hint': hintExports,
+    './session-list': listExports,
   };
   const source = ts.transpileModule(readFileSync(new URL('../app/src/main.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
   vm.runInNewContext(source, {
@@ -75,13 +79,17 @@ async function harness(count = 2, voice = false, mode = 'tap', savedView = '') {
   };
 }
 
-test('every live terminal remains reachable beyond the 20-item display limit', async () => {
+test('every live terminal remains reachable through session-list pages', async () => {
   const h = await harness(40);
-  assert.equal(h.pages.at(-1).listObject[0].itemContainer.itemCount, 19);
-  await h.pick(18); // next page
-  assert.ok(h.pages.at(-1).listObject[0].itemContainer.itemName.some(s => s.includes('Session 29')));
-  await h.pick(19); // next page after previous-page action
-  assert.ok(h.pages.at(-1).listObject[0].itemContainer.itemName.some(s => s.includes('Session 39')));
+  const seen = new Set();
+  for (let page = 0; page < 20; page++) {
+    const labels = h.pages.at(-1).listObject[0].itemContainer.itemName;
+    labels.filter(s => s.startsWith('Session ')).forEach(s => seen.add(s));
+    const next = labels.indexOf('Next page');
+    if (next < 0) break;
+    await h.pick(next);
+  }
+  assert.equal(seen.size, 40);
 });
 
 test('native Filter by Agent belongs only to the session list and does not duplicate OS controls', async () => {
@@ -535,4 +543,16 @@ test('voice border is precreated, appears for capture/review and clears on cance
   assert.equal(h.pages.length, count);
   assert.ok(h.images.filter(i => i.containerName.startsWith('voice-border')).slice(-2).every(i => i.imageData.every(p => p === 0)));
   assert.ok(h.upgrades.every(u => u.containerName === 'voice'));
+});
+
+test('session list navigates image rows without rebuilding during spinner animation', async () => {
+  const h = await harness();
+  const count = h.pages.length;
+  assert.equal(h.pages.at(-1).imageObject.length, 4);
+  assert.equal(h.pages.at(-1).textObject[0].isEventCapture, 1);
+  await h.scroll('down'); await h.scroll('down'); await h.scroll('down');
+  await [...h.animations.values()][0]();
+  assert.equal(h.pages.length, count);
+  await h.tap();
+  assert.equal(h.pages.at(-1).textObject[1].content, 'Content terminal-0');
 });

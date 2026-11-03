@@ -2,69 +2,33 @@
   "workspaces": [],
   "replies": [
     {
-      "label": {
-        "ja": "1 (はい)",
-        "en": "1 (Yes)"
-      },
-      "text": {
-        "ja": "1",
-        "en": "1"
-      },
+      "label": "1 (Yes)",
+      "text": "1",
       "enter": false
     },
     {
-      "label": {
-        "ja": "2 (はい・今後は確認なし)",
-        "en": "2 (Yes, don't ask again)"
-      },
-      "text": {
-        "ja": "2",
-        "en": "2"
-      },
+      "label": "2 (Yes, don't ask again)",
+      "text": "2",
       "enter": false
     },
     {
-      "label": {
-        "ja": "3 (いいえ)",
-        "en": "3 (No)"
-      },
-      "text": {
-        "ja": "3",
-        "en": "3"
-      },
+      "label": "3 (No)",
+      "text": "3",
       "enter": false
     },
     {
-      "label": {
-        "ja": "続けて",
-        "en": "Continue"
-      },
-      "text": {
-        "ja": "続けて",
-        "en": "Continue"
-      },
+      "label": "Continue",
+      "text": "Continue",
       "enter": true
     },
     {
-      "label": {
-        "ja": "OK、進めて",
-        "en": "OK, go ahead"
-      },
-      "text": {
-        "ja": "OK、その方針で進めて",
-        "en": "OK, go ahead with that plan"
-      },
+      "label": "OK, go ahead",
+      "text": "OK, go ahead with that plan",
       "enter": true
     },
     {
-      "label": {
-        "ja": "状況を3行で",
-        "en": "Status in 3 lines"
-      },
-      "text": {
-        "ja": "今の状況を3行で教えて",
-        "en": "Summarize the current status in 3 lines"
-      },
+      "label": "Status in 3 lines",
+      "text": "Summarize the current status in 3 lines",
       "enter": true
     }
   ],
@@ -89,34 +53,16 @@
   ],
   "prompts": [
     {
-      "label": {
-        "ja": "指示なしで起動",
-        "en": "Start without a prompt"
-      },
-      "text": {
-        "ja": "",
-        "en": ""
-      }
+      "label": "Start without a prompt",
+      "text": ""
     },
     {
-      "label": {
-        "ja": "テストを回して報告",
-        "en": "Run tests and report"
-      },
-      "text": {
-        "ja": "テストを実行して、結果を3行で報告して",
-        "en": "Run the tests and report the results in 3 lines"
-      }
+      "label": "Run tests and report",
+      "text": "Run the tests and report the results in 3 lines"
     },
     {
-      "label": {
-        "ja": "変更点を要約",
-        "en": "Summarize changes"
-      },
-      "text": {
-        "ja": "git status と直近の差分を確認して、変更点を3行で要約して",
-        "en": "Check git status and the recent diff, and summarize the changes in 3 lines"
-      }
+      "label": "Summarize changes",
+      "text": "Check git status and the recent diff, and summarize the changes in 3 lines"
     }
   ]
 }

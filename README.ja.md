@@ -1,3 +1,5 @@
+> Historical upstream documentation. This Windows fork is English-only; see [README.md](README.md).
+
 # Orca Glass
 
 [English](README.md)

@@ -37,7 +37,7 @@ const timer=setInterval(()=>{
 </script>`;
 const server = await createServer({
   root: fileURLToPath(new URL('../app/', import.meta.url)), configFile: false,
-  define: { __BRIDGE_ORIGIN__: '""' },
+  define: { __BRIDGE_ORIGIN__: '""', __APP_VERSION__: JSON.stringify(JSON.parse((await import('node:fs')).readFileSync(new URL('../app/app.json', import.meta.url), 'utf8')).version) },
   server: { host: '127.0.0.1', port: 8791, strictPort: true },
   plugins: [{
     name: 'isolated-native-simulator', enforce: 'pre',

@@ -76,10 +76,10 @@ function wav(pcm) {
   return Buffer.concat([h, pcm]);
 }
 
-export async function transcribe(pcm, lang = 'ja') {
+export async function transcribe(pcm, lang = 'en') {
   if (!voiceAvailable()) throw new Error('Local speech recognition is not configured');
   if (!Buffer.isBuffer(pcm) || pcm.length % 2 || pcm.length > 16000 * 2 * 90) throw new Error('Invalid microphone PCM');
-  if (!['en', 'ja'].includes(lang)) throw new Error('Unsupported transcription language');
+  if (lang !== 'en') throw new Error('Unsupported transcription language');
   // Empty/tiny captures and digital silence must not produce a hallucinated reply.
   if (pcm.length < 8000) return '';
   let energy = 0;

@@ -16,3 +16,6 @@ store/screenshots/review-*/
 .DS_Store
 .local/
 even-terminal-*.log
+
+# Reference images supplied during development
+/images/

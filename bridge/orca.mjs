@@ -41,7 +41,12 @@ export async function listThreads() {
       handle: t.handle,
       title: sessionTitle(t, names),
       agent: t.agentIdentity,
-      state: stateFromTitle(t.title),
+      state: (() => {
+        const workspace = worktrees.find(w => w.worktreeId === t.worktreeId);
+        const agent = workspace?.agents?.find(a => a.paneKey === `${t.tabId}:${t.leafId}`);
+        const state = activityState(agent);
+        return state === 'working' ? 'busy' : state === 'waiting' ? 'idle' : 'unknown';
+      })(),
       lastOutputAt: t.lastOutputAt,
     }))
     .sort((a, b) => (b.lastOutputAt || 0) - (a.lastOutputAt || 0));

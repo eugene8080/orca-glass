@@ -159,8 +159,8 @@ It installs whisper.cpp b5454 (the build linked by v1.9.5) and the English
 base.en model in ignored `.local/voice`. Downloads are SHA-256 checked against
 GitHub release metadata and the model repository LFS hash. No global PATH or
 network settings are changed. Override WHISPER_BIN and WHISPER_MODEL for an
-existing installation. The English model is about 148 MB; use a multilingual
-model if choosing Japanese in the app.
+existing installation. The English model is about 148 MB. This fork supports
+English only, including speech transcription.
 
 On the glasses, open a terminal and tap to reply. An explicit Codex choice menu
 shows its real options; otherwise the app starts microphone capture when local

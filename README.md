@@ -22,7 +22,13 @@ provenance; its Mac setup and store listing describe the upstream project.
 
 # Orca Glass
 
-[日本語](README.ja.md)
+This Windows fork supports English only.
+
+The session list shows the installed app version, connected count, active-agent
+filter and provider labels. `/` marks idle sessions and animated Braille marks
+working sessions; `?` means activity is unknown. Use up/down and Click to select;
+Previous/Next page keeps every session reachable. Reference images under the
+root `images/` directory are local and ignored by Git.
 
 Control [Orca](https://github.com/stablyai/orca) agent sessions from **Even Realities G2** glasses — from anywhere.
 
@@ -30,7 +36,7 @@ Control [Orca](https://github.com/stablyai/orca) agent sessions from **Even Real
 - **Reply** — one-tap templates, or **voice** (transcribed on your own Mac with whisper.cpp, then confirmed on the glasses)
 - **New session** — pick workspace, agent, model and a first prompt
 - **Usage** — 5-hour / weekly limits per provider
-- **English / 日本語** — follows the phone language (or pick one); reply templates, prompts and voice recognition switch too
+- **English only** — interface, demo, reply templates, prompts and voice recognition use English
 
 | Threads | Latest answer | Reply |
 | --- | --- | --- |

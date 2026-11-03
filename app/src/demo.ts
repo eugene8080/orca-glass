@@ -4,23 +4,6 @@ import type { Lang } from './i18n';
 type Thread = { handle: string; title: string; agent: string; state: 'idle' | 'busy' | 'unknown' };
 
 const content = {
-  ja: {
-    threads: [
-      ['demo-1', '認証ミドルウェアの整理', 'claude', 'idle'],
-      ['demo-2', 'CIの不安定なテストを修正', 'codex', 'busy'],
-      ['demo-3', 'リリースノートの下書き', 'claude', 'idle'],
-    ],
-    texts: {
-      'demo-1':
-        'セッション検証を1か所にまとめました。\n- 期限切れトークンは401を返す\n- 管理画面のルートにも同じ検証を適用\n\nテストは42件すべて通過しています。この内容でコミットしてよいですか？\n1. はい\n2. いいえ、差分を見せて',
-      'demo-2': 'タイムアウトの原因を調べています。\n並列実行時に同じポートを使っていたため、テストごとに空きポートを使うよう変更中です。',
-      'demo-3': 'v2.3.0 のリリースノートを下書きしました。\n- 新機能: CSV 書き出し\n- 修正: 日付の表示ずれ\n\n公開前に文面を確認してください。',
-    },
-    replies: ['1 (はい)', '2 (はい・今後は確認なし)', '3 (いいえ)', '続けて', 'OK、進めて', '状況を3行で'],
-    prompts: ['指示なしで起動', 'テストを回して報告', '変更点を要約'],
-    heard: 'いいですね、その方針で進めてください',
-    week: '週',
-  },
   en: {
     threads: [
       ['demo-1', 'Refactor auth middleware', 'claude', 'idle'],

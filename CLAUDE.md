@@ -12,6 +12,21 @@ upstream Claude code is not evidence of authorization to test it.
 
 ## Current work
 
+2026-11-02 beta1.0.10 session-list redesign: version from app manifest, right
+aligned total connected count/filter/provider labels, * Refresh, / idle and
+raster Braille for active rows. Session list alone uses four image tiles plus
+app-owned highlight/page selection (four terminals/page); animations update
+changed tiles without rebuild or selection reset. Reader retains native scrolling.
+List activity now joins exact worktree/pane state rather than terminal titles.
+62 tests/build/doctor pass; native simulator row selection→reader, contextual
+filter and right-aligned [Codex] verified; screenshot diff confined to spinner.
+User requests /images ignored and English-only fork: root/images ignored,
+manifest/UI/demo/templates/server/STT fixed English, legacy language preference
+migrated, old language controls removed. Japanese README marked historical.
+Live bridge reports busy/idle/unknown and legacy lang=ja prompts return English.
+Unknown activity renders ? rather than falsely claiming idle. G2 check pending.
+Beta1.0.10 uploaded/promoted and channel verified (45,860 bytes).
+
 2026-11-02 user cancels six-row voice overlay; retain existing1.0.9 layout.
 No layout choice remains pending. User asks whether verbose tool/thinking text
 is already filtered to main response. Inspection: visibleMessage excludes tool

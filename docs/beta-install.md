@@ -3,6 +3,14 @@ Updated: 2026-11-02
 
 ## Current state
 
+2026-11-02 beta **1.0.10** uploaded/promoted and channel verified (45,860 bytes).
+Session list now has manifest version/count header, right-aligned filter and
+provider tags, idle slash and animated active-session Braille. The list uses
+highlighted rows with four terminals/page; reader scrolling and voice layout
+remain unchanged. English-only manifest/UI/demo/templates/STT; root/images ignored.
+62 tests/build/doctor pass; native simulator navigation/filter/spinner verified.
+G2 validation pending. See docs/session-list.md.
+
 2026-11-02 beta **1.0.9** uploaded/promoted and channel verified (47,673 bytes).
 Trial app-drawn border around reserved voice input/review footer.59 tests/build
 pass; isolated native simulator verifies no chat rebuild/body writes during

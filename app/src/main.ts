@@ -22,6 +22,7 @@ import { applyPage, detectLang, setLang, t as tr } from './i18n';
 import { clipBytes, textSections } from './text';
 import { readerStatus, statusPixels, voiceBorderPixels } from './reader-status';
 import { footerHint, hintPixels } from './footer-hint';
+import { SESSION_TILES, drawSessionList, agentLabel, type SessionListView } from './session-list';
 
 // 画面 576x288。上に見出し(テキスト)、下に本文(リスト or テキスト)の2段構成で統一する。
 const HEAD = { containerID: 1, containerName: 'head', xPosition: 0, yPosition: 0, width: 576, height: 36 };
@@ -42,7 +43,7 @@ const TEXT_BYTES = 999;
 const POLL_MS = 1000;
 
 type Screen =
-  | { kind: 'list'; title: string; items: string[]; sessionList?: boolean; onPick: (i: number) => void; onBack?: () => void }
+  | { kind: 'list'; title: string; items: string[]; sessionList?: boolean; view?: SessionListView; onPick: (i: number) => void; onBack?: () => void }
   | { kind: 'text'; title: string; text: string; tail?: boolean; offset?: number; reading?: boolean; activityLabel?: string; activityState?: string; reportedSeconds?: number | null; statusFrame?: number; statusStartedAt?: number; savedHistory?: boolean; reader?: Thread; onClick?: () => void; onBack?: () => void; onHold?: () => void; };
 
 let bridge: EvenAppBridge;
@@ -51,6 +52,7 @@ let started = false;
 let poll: ReturnType<typeof setInterval> | undefined;
 let statusAnimation: ReturnType<typeof setInterval> | undefined;
 let panelWrites: Promise<void> = Promise.resolve();
+let listAnimation: ReturnType<typeof setInterval> | undefined;
 let voiceBorderVisible = false;
 let selectedThread: Thread | null = null;
 let sending = false;
@@ -58,7 +60,7 @@ let holding = false;
 let releaseCapture: (() => void) | null = null;
 const VIEW_OPTIONS_ID = 1001;
 let viewProvider = 'all';
-const providerName = (id: string) => ({ claude: 'Claude', codex: 'Codex', opencode: 'OpenCode', gemini: 'Gemini' }[id] || id);
+const providerName = agentLabel;
 
 function selectThread(t: Thread | null) {
   if (selectedThread?.handle !== t?.handle) {
@@ -134,13 +136,14 @@ async function inputHint(visible: boolean) {
 async function show(s: Screen, reloadText = false) {
   clearInterval(poll);
   clearInterval(statusAnimation);
+  clearInterval(listAnimation);
   if (s.kind === 'text' && s.reader) s.activityLabel ??= readerStatus('unknown');
   const previous = current;
   current = s;
   voiceBorderVisible = false;
   const content = s.kind === 'text' ? bodyText(s) : '';
   const uploadText = reloadText || (s.kind === 'text' && !!s.reader && s.text.length > 900) || new TextEncoder().encode(content).length > 999;
-  const head = new TextContainerProperty({ ...HEAD, ...(s.kind === 'text' && s.reader ? { xPosition: 16, yPosition: 4, width: 544, height: 32, zOrderIndex: 1 } : {}), content: clipBytes(screenTitle(s), TEXT_BYTES), isEventCapture: 0 });
+  const head = new TextContainerProperty({ ...HEAD, ...(s.kind === 'text' && s.reader ? { xPosition: 16, yPosition: 4, width: 544, height: 32, zOrderIndex: 1 } : {}), content: s.kind === 'list' && s.view ? ' ' : clipBytes(screenTitle(s), TEXT_BYTES), isEventCapture: s.kind === 'list' && s.view ? 1 : 0 });
   // Display off, Brightness and Close are OS-owned. Declare only our action;
   // omitting menuObject on other pages removes Filter by Agent but keeps system rows.
   const menu = s.kind === 'list' && s.sessionList ? {
@@ -149,13 +152,14 @@ async function show(s: Screen, reloadText = false) {
   const page =
     s.kind === 'list'
       ? {
-          containerTotalNum: 2,
+          containerTotalNum: s.view ? 6 : 2,
+          ...(s.view ? { imageObject: SESSION_TILES.map(tile => new ImageContainerProperty(tile)) } : {}),
           ...menu,
           textObject: [head],
           listObject: [
             new ListContainerProperty({
               ...BODY,
-              isEventCapture: 1,
+              isEventCapture: s.view ? 0 : 1,
               itemContainer: new ListItemContainerProperty({
                 itemCount: Math.min(s.items.length, LIST_MAX),
                 itemName: s.items.slice(0, LIST_MAX).map((t) => clipBytes(t, LIST_ITEM_BYTES)),
@@ -191,6 +195,7 @@ async function show(s: Screen, reloadText = false) {
       const accepted = await bridge.textContainerUpgrade(new TextContainerUpgrade({ containerID: BODY.containerID, containerName: BODY.containerName, content }));
       if (!accepted) throw new Error('Glasses could not load the selected text. Click to retry.');
     }
+    if (s.kind === 'list' && s.view) await startSessionList(s);
     if (s.kind === 'text' && s.reader) {
       await bridge.updateImageRawData(new ImageRawDataUpdate({ containerID: STATUS_ICON.containerID, containerName: STATUS_ICON.containerName, imageData: statusPixels(s.activityLabel![0] === '/' ? '' : s.activityLabel![0]) })).catch(e => diag((e as Error).message));
       await inputHint(true).catch(e => diag((e as Error).message));
@@ -230,30 +235,70 @@ async function guard(title: string, f: () => Promise<void>, back: () => void) {
 // ---- 画面 ----
 
 
+type HomeScreen = Extract<Screen, { kind: 'list' }>;
+async function paintSessionList(screen: HomeScreen, previous: number[][] = []) {
+  const pixels = drawSessionList(screen.view!);
+  const write = panelWrites.then(async () => {
+    for (let i = 0; i < SESSION_TILES.length; i++) {
+      if (current !== screen) return;
+      if (previous[i]?.every((value, p) => value === pixels[i][p])) continue;
+      const tile = SESSION_TILES[i];
+      const result = await bridge.updateImageRawData(new ImageRawDataUpdate({ containerID: tile.containerID, containerName: tile.containerName, imageData: pixels[i] }));
+      if (result !== ImageRawDataUpdateResult.success) throw new Error('Session list image update rejected');
+    }
+  });
+  panelWrites = write.then(() => {}, () => {});
+  await write;
+  return pixels;
+}
+async function startSessionList(screen: HomeScreen) {
+  let previous = await paintSessionList(screen);
+  if (current !== screen) return;
+  let busy = false, ticks = 0;
+  listAnimation = setInterval(async () => {
+    if (busy || current !== screen) return;
+    busy = true;
+    try {
+      screen.view!.frame++;
+      if (++ticks % 6 === 0) {
+        const latest = await api.threads();
+        if (current !== screen) return;
+        screen.view!.count = latest.length;
+        for (const row of screen.view!.rows) {
+          if (!row.handle) continue;
+          const t = latest.find(t => t.handle === row.handle);
+          row.state = t?.state || 'unknown';
+          if (t) { row.left = `${t.title} · ${t.handle.slice(-6)}`; row.right = `[${agentLabel(t.agent)}]`; }
+        }
+      }
+      previous = await paintSessionList(screen, previous);
+    } catch (e) { diag((e as Error).message); }
+    finally { busy = false; }
+  }, 200);
+}
 function home(page = 0) {
   selectThread(null);
-  return guard('Orca', async () => {
+  return guard('Orca-glass', async () => {
     const allThreads = await api.threads();
     const threads = viewProvider === 'all' ? allThreads : allThreads.filter(t => t.agent === viewProvider);
-    // Leave room for navigation; never silently truncate live terminals.
-    const pageSize = LIST_MAX - 5;
+    const pageSize = 4;
     page = Math.max(0, Math.min(page, Math.ceil(threads.length / pageSize) - 1));
     const visible = threads.slice(page * pageSize, (page + 1) * pageSize);
     const actions: { label: string; run: () => unknown }[] = [
-      { label: 'Refresh sessions', run: () => home(page) },
-      { label: tr('newSession'), run: newSession },
-      { label: tr('usage'), run: usage },
+      { label: '* Refresh sessions', run: () => home(page) },
+      { label: '+ New Session', run: newSession },
+      { label: '◇ Usage', run: usage },
       ...visible.map(t => ({ label: `${t.title} · ${t.handle.slice(-6)}`, run: () => thread(t) })),
     ];
     if (page > 0) actions.push({ label: 'Previous page', run: () => home(page - 1) });
     if ((page + 1) * pageSize < threads.length) actions.push({ label: 'Next page', run: () => home(page + 1) });
-    await show({
-      kind: 'list',
-      title: tr('homeTitle', threads.length),
-      sessionList: true,
-      items: actions.map(a => a.label),
-      onPick: (i) => { actions[i]?.run(); },
+    const rows = actions.map((a, i) => {
+      const t = i >= 3 ? visible[i - 3] : undefined;
+      return { left: a.label, right: i === 0 ? `[${viewProvider === 'all' ? 'All sessions' : agentLabel(viewProvider)}]` : t ? `[${agentLabel(t.agent)}]` : '', handle: t?.handle, state: t?.state };
     });
+    await show({ kind: 'list', title: `Orca-glass · ${allThreads.length} connected terminals`, sessionList: true,
+      view: { count: allThreads.length, rows, selected: 0, frame: 0 }, items: actions.map(a => a.label),
+      onPick: i => { actions[i]?.run(); } });
   }, home);
 }
 
@@ -660,6 +705,7 @@ function onEvent(e: EvenHubEvent) {
   if (systemType === OsEventTypeList.SYSTEM_EXIT_EVENT || systemType === OsEventTypeList.ABNORMAL_EXIT_EVENT) {
     clearInterval(poll);
     clearInterval(statusAnimation);
+    clearInterval(listAnimation);
     cancelCapture?.();
     return;
   }
@@ -676,6 +722,11 @@ function onEvent(e: EvenHubEvent) {
   if (!ev) return;
   // CLICK_EVENT(0) は既定値のため JSON から省かれて届くことがある
   const type = ev.eventType ?? OsEventTypeList.CLICK_EVENT;
+  if (s.kind === 'list' && s.view && (type === OsEventTypeList.SCROLL_TOP_EVENT || type === OsEventTypeList.SCROLL_BOTTOM_EVENT)) {
+    s.view.selected = Math.max(0, Math.min(s.items.length - 1, s.view.selected + (type === OsEventTypeList.SCROLL_TOP_EVENT ? -1 : 1)));
+    void paintSessionList(s).catch(e => diag((e as Error).message));
+    return;
+  }
   if (s.kind === 'text' && (type === OsEventTypeList.SCROLL_TOP_EVENT || type === OsEventTypeList.SCROLL_BOTTOM_EVENT)) {
     // Firmware scrolls overflowing text. Replacing content here causes visible jumps.
     // Pause polling so incoming output cannot reset the reader's scroll position.
@@ -705,7 +756,8 @@ function onEvent(e: EvenHubEvent) {
   if (type !== OsEventTypeList.CLICK_EVENT) return;
   if (s.kind === 'list') {
     // 先頭項目(0)も既定値として省かれうる
-    if (e.listEvent) s.onPick(e.listEvent.currentSelectItemIndex ?? 0);
+    if (s.view) s.onPick(e.listEvent?.currentSelectItemIndex ?? s.view.selected);
+    else if (e.listEvent) s.onPick(e.listEvent.currentSelectItemIndex ?? 0);
   } else {
     s.onClick?.();
   }
@@ -763,14 +815,14 @@ async function main() {
   bridge = await waitForEvenAppBridge();
   // 開発用URLからも接続コードと言語だけを読み込む
   const q = new URLSearchParams(location.search);
-  for (const k of ['code', 'lang']) {
-    // evenhub qr は QR 内の & を &amp; にするため "amp;lang" でも受ける
+  for (const k of ['code']) {
+    // Accept escaped QR query keys; language is fixed to English.
     const v = q.get(k) ?? q.get(`amp;${k}`);
     if (v != null) await bridge.setLocalStorage(k, v);
   }
-  const pref = (await bridge.getLocalStorage('lang')) || 'auto';
+  const pref = 'en';
+  await bridge.setLocalStorage('lang', 'en');
   viewProvider = (await bridge.getLocalStorage('view-provider')) || 'all';
-  $('lang').value = pref;
   useLang(pref);
   const draft = document.getElementById('reply-text') as HTMLTextAreaElement;
   const send = document.getElementById('send-reply') as HTMLButtonElement;
@@ -805,8 +857,8 @@ async function main() {
     ev.preventDefault();
     cancelCapture?.();
     holding = false;
-    await bridge.setLocalStorage('lang', $('lang').value);
-    useLang($('lang').value);
+    await bridge.setLocalStorage('lang', 'en');
+    useLang('en');
     const code = $('code').value.trim();
     if (code && code !== 'demo' && !parseCode(code)) return diag(tr('badCode'));
     await bridge.setLocalStorage('code', code);
@@ -817,7 +869,7 @@ async function main() {
     await connect();
   });
   bridge.onEvenHubEvent(onEvent);
-  window.addEventListener('pagehide', () => { clearInterval(poll); clearInterval(statusAnimation); cancelCapture?.(); });
+  window.addEventListener('pagehide', () => { clearInterval(poll); clearInterval(statusAnimation); clearInterval(listAnimation); cancelCapture?.(); });
   await connect();
 }
 

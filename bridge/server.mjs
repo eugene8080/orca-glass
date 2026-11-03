@@ -32,23 +32,18 @@ async function installed(cmd) {
   return !!executable(cmd);
 }
 
-// アプリから届く ?lang= に合わせた文言(日本語・英語)
+// This Windows fork always serves English, including legacy ?lang=ja URLs.
 const L = {
-  ja: {
-    unknownUsage: '使用量不明', unavailable: '使用不可', weekLimit: '週上限 ({0})', sessionLimit: '5h上限 ({0})',
-    week: '週', notInstalled: '未インストール', noMenu: '選択肢が出ていません',
-    dialog: '確認ダイアログ表示中', notReady: 'エージェントの準備が終わりません',
-  },
   en: {
     unknownUsage: 'usage unknown', unavailable: 'unavailable', weekLimit: 'weekly limit ({0})', sessionLimit: '5h limit ({0})',
     week: 'week', notInstalled: 'not installed', noMenu: 'No choice menu on screen',
     dialog: 'a confirmation dialog is open', notReady: 'the agent did not become ready',
   },
 };
-const langOf = (q) => (q.get('lang') === 'ja' ? 'ja' : 'en');
+const langOf = (_q) => 'en';
 const msg = (lang, key, ...a) => L[lang][key].replace(/\{(\d)\}/g, (_, i) => a[i]);
-// config の文言は文字列か { ja, en }
-const pick = (v, lang) => (typeof v === 'string' ? v : v[lang] ?? v.en ?? v.ja);
+// Accept English strings and legacy localized objects containing an en value.
+const pick = (v, lang) => (typeof v === 'string' ? v : v.en ?? '');
 
 function limitSummary(rl, lang) {
   if (!rl) return { ok: true, note: msg(lang, 'unknownUsage') };

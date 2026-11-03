@@ -1,61 +1,7 @@
-// 表示文言(日本語・英語)。G2 のフォントは絵文字を出せないので記号・文字だけで書く
-export type Lang = 'ja' | 'en';
+// English-only interface. Use symbols supported by the G2 font.
+export type Lang = 'en';
 
 const dict = {
-  ja: {
-    error: 'エラー: {0}',
-    homeTitle: 'Orca 接続端末 {0}',
-    newSession: '＋ 新規セッション',
-    usage: '◇ 使用量',
-    replyTitle: '返信 → {0}',
-    voice: '[音声] 話して返信',
-    sent: '送信: {0}',
-    failed: '失敗 {0}',
-    transcribing: '文字起こし中…',
-    processing: '{0}秒の音声を PC で処理しています',
-    voiceTitle: '音声入力',
-    notHeard: '聞き取れませんでした',
-    confirmSend: 'クリック=送信 / ダブル=やめる',
-    recording: '● 録音中 {0}秒',
-    recordingHint: '話し終えたらクリック\nダブルクリックで中止',
-    micFailed: 'マイクを開始できませんでした',
-    usageTitle: '使用量',
-    weekly: '週',
-    noInfo: '情報なし',
-    unavailable: '使用不可: {0}',
-    newTitle: '新規セッション',
-    step1: '新規 1/4 作業場所',
-    step2: '新規 2/4 エージェント ({0})',
-    step3: '新規 3/4 モデル ({0})',
-    step4: '新規 4/4 最初の指示',
-    launch: '▶ 起動する',
-    cancel: 'やめる',
-    launching: '起動中…',
-    waitingAgent: 'エージェントの準備を待っています(最大60秒)',
-    launched: '起動しました',
-    launchedNotSent: '起動しましたが指示は未送信です({0})',
-    notPairedDiag: '未設定: 接続コードを貼って保存してください',
-    notPaired: 'スマホの Orca Glass を開いて\n接続コードを設定してください\n\n(PC 側の準備が必要です)',
-    noRelay: '連絡板に PC の接続先が見つかりません(PC 側のトンネルが止まっている可能性)',
-    viaCode: '接続コード',
-    diagOk: 'OK {0}ms\n方式: {1}\n接続先: {2}\nスレッド {3}件',
-    diagNg: 'NG {0}\n方式: {1}\n接続先: {2}',
-    offlineTitle: 'PC につながりません',
-    offline: 'PC の中継サーバとトンネルが動いているか確認してください\n\n{0}\n\nクリックで再接続',
-    badCode: 'NG 接続コードの形式が違います(eho1. で始まる1行)',
-    // スマホ側の設定画面
-    pageIntro: 'G2 から PC 上の <a href="https://github.com/stablyai/orca">Orca</a> のエージェントを見る・返信する・起動するアプリです。<b>PC 側の準備が必要です。</b>',
-    setupTitle: 'はじめに(PC 側の準備)',
-    setupSteps: '<li>PC に Orca を入れておく</li><li>PC のエージェント(Claude Code など)に「Orca Glass をセットアップして」と頼む(スキル: <a href="https://github.com/eugene8080/orca-glass">github.com/eugene8080/orca-glass</a>)</li><li>最後に出る「接続コード」を下の欄に貼って保存</li>',
-    opsTitle: 'グラスでの操作',
-    opsList: '<li>上下スワイプ: 選ぶ / クリック: 決定 / ダブルクリック: 戻る</li><li>接続端末数を表示します。入力待ち状態は判定しません。</li><li>タップ録音: タップして話す → タップで文字起こし → 確認して送信</li><li>長押し録音: 長押しして話す → 字幕を表示 → 離して送信。録音中はダブルタップで中止</li>',
-    codeLabel: '接続コード(PC で <code>npm run pair</code> を実行して貼り付け)',
-    langLabel: '言語',
-    save: '保存して再接続',
-    diagLabel: '診断',
-    tryDemo: 'デモを試す(PC なし)',
-    viaDemo: 'デモ(架空のデータ)',
-  },
   en: {
     error: 'Error: {0}',
     homeTitle: 'Orca · {0} connected terminals',
@@ -101,7 +47,7 @@ const dict = {
     setupTitle: 'Getting started (on your PC)',
     setupSteps: '<li>Install Orca on your PC</li><li>Ask Codex to "set up Orca Glass" (skill: <a href="https://github.com/eugene8080/orca-glass">github.com/eugene8080/orca-glass</a>)</li><li>Paste the pairing code it gives you below and save</li>',
     opsTitle: 'On the glasses',
-    opsList: '<li>Conversation: hold to talk directly; release to review. Click to send or double-click to cancel. No Reply menu is required. Double-click while recording to cancel.</li><li>Click for reading controls or actual numbered choices. Double-click from the conversation to return to sessions.</li><li>Scroll naturally within the text block. Click and choose Earlier text or Later text to switch blocks.</li><li>Scrolling pauses updates; choose Resume latest output to resume.</li>',
+    opsList: '<li>Conversation: hold to talk directly; release to review. Click to send or double-click to cancel. No Reply menu is required. Double-click while recording to cancel.</li><li>Single click in a conversation does nothing. Double-click to return to sessions.</li><li>Scroll naturally within the text block.</li><li>Scrolling pauses updates. Return to the session list and reopen the session to resume.</li>',
     codeLabel: 'Pairing code (run <code>npm run pair</code> on your PC and paste)',
     langLabel: 'Language',
     save: 'Save and reconnect',
@@ -111,13 +57,12 @@ const dict = {
   },
 } satisfies Record<Lang, Record<string, string>>;
 
-export type Key = keyof typeof dict.ja;
+export type Key = keyof typeof dict.en;
 
 let lang: Lang = 'en';
 
-export function detectLang(pref: string): Lang {
-  if (pref === 'ja' || pref === 'en') return pref;
-  return navigator.language?.toLowerCase().startsWith('ja') ? 'ja' : 'en';
+export function detectLang(_pref: string): Lang {
+  return 'en';
 }
 
 export function setLang(l: Lang) {
