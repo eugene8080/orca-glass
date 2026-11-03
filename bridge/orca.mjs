@@ -63,28 +63,14 @@ const NOISE = [
 export function cleanScreen(lines) {
   const seps = lines.flatMap((l, i) => (/^\s*─{10,}\s*$/.test(l) ? [i] : []));
   const body = seps.length >= 2 ? lines.slice(0, seps[seps.length - 2]) : lines;
-  return unwrap(body.map((l) => l.trimEnd()))
+  // Screen rows do not tell us whether a wrap split a word or replaced a space.
+  // Preserve the boundary instead of guessing and silently joining words/paths.
+  return body.map((l) => l.trimEnd())
     .map((l) => l.trim())
     .filter((l) => !NOISE.some((re) => re.test(l)))
     .join('\n')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
-}
-
-// 全角は2桁として数える
-const cols = (s) => [...s].reduce((n, c) => n + (/[ᄀ-￿]/.test(c) ? 2 : 1), 0);
-
-// 端末幅で折り返された行をつなぎ直す(グラスは自前で折り返すため)
-function unwrap(lines) {
-  const width = Math.max(0, ...lines.map(cols));
-  const out = [];
-  let prevFull = false;
-  for (const l of lines) {
-    if (prevFull && l.trim()) out[out.length - 1] += l.trim();
-    else out.push(l);
-    prevFull = cols(l) >= width - 4;
-  }
-  return out;
 }
 
 // Claude Code の画面から回答の文章だけを残す。行頭の記号で種類を見分け、続く字下げ行は同じ種類として扱う

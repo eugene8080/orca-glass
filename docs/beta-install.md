@@ -3,6 +3,17 @@ Updated: 2026-11-02
 
 ## Current state
 
+2026-11-02 spacing fix (server-only): user reported restarted or displayed as
+restartedor. cleanScreen's heuristic concatenated full-width terminal rows after
+stripping whitespace. A synthetic two-row example reproduced that exact string.
+Removed heuristic unwrapping; preserve newline boundaries instead of guessing
+whether a wrap split a word or replaced a separator. Internal spaces are retained.
+53 tests and doctor pass; bridge restarted and HTTPS200 verified. No beta update
+or reader/scroll/voice-layout change. Original phrase was no longer in the current
+pc-settings output, so this is a reproduced mechanism, not a captured original
+render. Simulator fixture was stopped; automatic relaunch rejected blocked by
+policy. No new simulator screenshot or G2 verification performed.
+
 2026-11-02 later hardware report: user saw Working after initially reporting it
 stayed on Waiting; both states are now user-observed on G2. User also reported
 needing Resume latest output to refresh text. That symptom remains distinct and
