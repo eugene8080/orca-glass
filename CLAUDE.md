@@ -42,6 +42,17 @@ it available. Automatic commit/push does not authorize beta promotion.
 
 ## Current work
 
+2026-11-03 user requests move Refresh sessions/New Session/Usage to contextual
+menu. Implemented session-list-only first-level actions1001/1002/1003; Filter by
+Agent stays first list row. Native reader contextual menu remains OS-only. List
+capacity now7 terminals first page/6 later (navigation rows fit nine native rows).
+Marker-wrap preview fix retained.75 tests/build pass; native simulator verified
+Refresh, New Session workspace picker (no launch), Usage demo and popup labels.
+Leave popup OPEN for user approval in existing simulator terminal
+term_f3709459-44be-4b71-b9a5-9ac192a45f0d. No beta uploaded: current beta1.0.20,
+next release1.0.21 only after approval. Preview still shows1.0.20 manifest define.
+Simulator omits OS Display off/Brightness/Close; hardware must verify those remain.
+
 2026-11-03 user screenshot shows trailing idle slash displaced below row when
 working session selected. Reproduced native marker-column wrap: arrow+separator+
 three dot cells exceed narrow gutter. Unreleased preview fix removes separator,

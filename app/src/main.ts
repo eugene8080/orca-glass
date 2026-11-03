@@ -3,6 +3,8 @@ import {
   CreateStartUpPageContainer,
   ListContainerProperty,
   ListItemContainerProperty,
+  MenuContainerProperty,
+  MenuItemProperty,
   ImageContainerProperty,
   ImageRawDataUpdate,
   ImageRawDataUpdateResult,
@@ -41,7 +43,7 @@ const TEXT_BYTES = 999;
 const POLL_MS = 1000;
 
 type Screen =
-  | { kind: 'list'; title: string; items: string[]; sessionList?: boolean; compat?: boolean; columns?: SessionColumns[]; connectedCount?: number; selected?: number; paintedSelection?: number; menuFrame?: number; paintedCursor?: string; cursorWriting?: boolean; onPick: (i: number) => void; onBack?: () => void }
+  | { kind: 'list'; title: string; items: string[]; sessionList?: boolean; menuActions?: { id: number; label: string; run: () => unknown }[]; compat?: boolean; columns?: SessionColumns[]; connectedCount?: number; selected?: number; paintedSelection?: number; menuFrame?: number; paintedCursor?: string; cursorWriting?: boolean; onPick: (i: number) => void; onBack?: () => void }
   | { kind: 'text'; title: string; text: string; tail?: boolean; offset?: number; reading?: boolean; activityLabel?: string; activityState?: string; reportedSeconds?: number | null; statusFrame?: number; statusStartedAt?: number; savedHistory?: boolean; reader?: Thread; onClick?: () => void; onBack?: () => void; onHold?: () => void; };
 
 let bridge: EvenAppBridge;
@@ -145,8 +147,10 @@ async function show(s: Screen, reloadText = false) {
   const content = s.kind === 'text' ? bodyText(s) : '';
   const uploadText = reloadText || (s.kind === 'text' && !!s.reader && s.text.length > 900) || new TextEncoder().encode(content).length > 999;
   const head = new TextContainerProperty({ ...HEAD, ...(s.kind === 'text' && s.reader ? { xPosition: 16, yPosition: 2, width: 544, height: 28, zOrderIndex: 1 } : {}), content: s.kind === 'list' && s.sessionList ? sessionHeading() : clipBytes(screenTitle(s), TEXT_BYTES), isEventCapture: 0 });
-  // Only OS-owned Display off, Brightness and Close remain in the contextual menu.
-  const menu = {};
+  // Firmware retains Display off, Brightness and Close alongside these actions.
+  const menu = s.kind === 'list' && s.sessionList ? { menuObject: new MenuContainerProperty({
+    menuItems: s.menuActions!.map(action => new MenuItemProperty({ itemID: action.id, itemName: action.label })),
+  }) } : {};
   let page =
     s.kind === 'list'
       ? {
@@ -317,27 +321,29 @@ function home(page = 0) {
   return guard('Orca-glass', async () => {
     const allThreads = await api.threads();
     const threads = viewProvider === 'all' ? allThreads : allThreads.filter(t => t.agent === viewProvider);
-    const pageCount = threads.length <= 4 ? 1 : 1 + Math.ceil((threads.length - 4) / 3);
+    const pageCount = threads.length <= 7 ? 1 : 1 + Math.ceil((threads.length - 7) / 6);
     page = Math.max(0, Math.min(page, pageCount - 1));
-    const pageSize = page === 0 ? 4 : 3;
-    const start = page === 0 ? 0 : 4 + (page - 1) * 3;
+    const pageSize = page === 0 ? 7 : 6;
+    const start = page === 0 ? 0 : 7 + (page - 1) * 6;
     const visible = threads.slice(start, start + pageSize);
     const actions: { label: string; run: () => unknown }[] = [
       { label: `* Filter by Agent [${viewProvider === 'all' ? 'All sessions' : agentLabel(viewProvider)}]`, run: () => viewOptions() },
-      { label: '* Refresh sessions', run: () => home(page) },
-      { label: '+ New Session', run: newSession },
-      { label: '◊ Usage', run: usage },
       ...visible.map(t => ({ label: sessionRow(t.title, t.handle, t.agent, t.state), run: () => thread(t) })),
     ];
     if (page > 0) actions.push({ label: 'Previous page', run: () => home(page - 1) });
     if (page + 1 < pageCount) actions.push({ label: 'Next page', run: () => home(page + 1) });
     const columns = actions.map((a, i): SessionColumns => {
-      const t = i >= 4 ? visible[i - 4] : undefined;
+      const t = i >= 1 ? visible[i - 1] : undefined;
       if (t) return { marker: t.state === 'idle' ? '/' : t.state === 'busy' ? '' : '?', title: compactSessionTitle(t.title, t.handle), right: `[${agentLabel(t.agent)}]`, busy: t.state === 'busy', handle: t.handle };
       return i === 0 ? { marker: '*', title: 'Filter by Agent', right: `[${viewProvider === 'all' ? 'All sessions' : agentLabel(viewProvider)}]` }
-        : { marker: i === 1 ? '*' : i === 2 ? '+' : i === 3 ? '◊' : '', title: i === 1 ? 'Refresh sessions' : i === 2 ? 'New Session' : i === 3 ? 'Usage' : a.label, right: '' };
+        : { marker: '', title: a.label, right: '' };
     });
     await show({ kind: 'list', title: sessionListTitle(allThreads.length), sessionList: true, columns, connectedCount: allThreads.length, selected: 0, paintedSelection: 0,
+      menuActions: [
+        { id: 1001, label: 'Refresh sessions', run: () => home(page) },
+        { id: 1002, label: 'New Session', run: newSession },
+        { id: 1003, label: 'Usage', run: usage },
+      ],
       items: actions.map(a => a.label),
       onPick: i => { actions[i]?.run(); } });
   }, home);
@@ -738,7 +744,14 @@ function confirm(w: Workspace, p: Provider, model: string, prompt: number, label
 // ---- 入力 ----
 
 function onEvent(e: EvenHubEvent) {
-  if (e.menuItemClickEvent) return;
+  if (e.menuItemClickEvent) {
+    const screen = current;
+    if (screen?.kind === 'list' && screen.sessionList) {
+      const action = screen.menuActions?.find(a => a.id === e.menuItemClickEvent!.itemID);
+      if (action) void sessionCursorWrites.then(() => { if (current === screen) action.run(); });
+    }
+    return;
+  }
   const systemType = e.sysEvent?.eventType;
   if (systemType === OsEventTypeList.SYSTEM_EXIT_EVENT || systemType === OsEventTypeList.ABNORMAL_EXIT_EVENT) {
     clearInterval(poll);
