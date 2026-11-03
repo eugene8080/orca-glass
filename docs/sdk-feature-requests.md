@@ -1,6 +1,28 @@
 # Even SDK feature requests
 Updated: 2026-11-03
 
+## Submitted requests
+
+2026-11-03 user explicitly authorizes filing the requests in GitHub and Discord.
+Used the user-designated dedicated Chrome profile (Eugene), not the restricted
+pscapital.com.hk profile. Verified published issue/thread bodies after submission.
+
+| Request | GitHub | Discord |
+| --- | --- | --- |
+| Native near-field framed popup | [#44](https://github.com/even-realities/everything-evenhub/issues/44) | [Forum thread](https://discord.com/channels/1301124787740868620/1484753075590664332/threads/1567124600658202754) |
+| Scroll-to-bottom / auto-follow | [#45](https://github.com/even-realities/everything-evenhub/issues/45) | [Forum thread](https://discord.com/channels/1301124787740868620/1484753075590664332/threads/1567124754475909202) |
+
+Popup clarification: hold-to-talk is the PRIMARY use case. A larger native input
+window must show more rows of dictated/transcribed text and support longer draft
+review. After Send or Cancel closes it, the underlying LLM session must stay at
+exactly the same position, with no top jump, refresh/reset or text movement. Agent
+choice menus are secondary. GitHub #44 body edited to make this explicit; matching
+clarification posted in the existing Discord popup thread and verified visible.
+
+SDK response/implementation pending; filing is complete. No other requests filed.
+The earlier search notes below predate these submissions.
+
+
 ## Current priorities and submission route
 
 2026-11-03 user narrows the main requests to these two; other ideas below are

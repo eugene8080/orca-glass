@@ -53,7 +53,8 @@ Completed/superseded release notes: [history](docs/todo-history.md).
 
 - [Even SDK requests](docs/sdk-feature-requests.md): native scroll controls/offset
   preservation, voice overlay/STT, contextual submenus, text controls and optional
-  scrollbar visibility. No SDK ticket or Discord message sent by agent.
+  scrollbar visibility. Main popup/auto-follow requests filed with user authorization
+  as GitHub #44/#45 and separate Discord threads; links/status in that document.
 - Six-row overlay and app-managed Click paging cancelled; separate review screen
   removed. Single Click in a session stays no-op except voice review Send.
 - Native Even AI router abandoned in favour of custom Orca Glass UI. Old native

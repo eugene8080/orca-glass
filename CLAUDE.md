@@ -40,7 +40,24 @@ after automated checks. Hold beta upload/promotion until he approves the preview
 Necessary reloads/restarts to prepare the preview should be explained; then keep
 it available. Automatic commit/push does not authorize beta promotion.
 
+## Browser policy
+
+User requires his dedicated agent browser for GitHub/Discord work, not restricted
+work Chrome.2026-11-03 he explicitly designated the connected Eugene Chrome profile
+with GitHub/Discord open. Confirm the dedicated profile from fresh browser inventory;
+do not fall back to pscapital.com.hk because it has an existing logged-in tab.
+
 ## Current work
+
+2026-11-03 user authorizes external SDK request filing. Dedicated Eugene Chrome:
+GitHub everything-evenhub issues44 (native popup) and45 (scroll-to-bottom) created;
+separate even-hub-help Discord forum posts created and linked. User clarifies popup
+PRIMARY use case is hold-to-talk with MORE visible input rows and NO session text
+movement/reset when input window closes. Issue44 body edited accordingly and explicit
+Discord-thread clarification posted; published content verified. All links in
+ docs/sdk-feature-requests.md. This replaces prior no-submission status for these
+requests only; no broader permission to send messages inferred. Await SDK response.
+No application/runtime/beta changes.
 
 2026-11-03 user narrows SDK priorities to native near-field framed popups and
 native scroll-to-bottom/auto-follow of newest LLM text. Read-only Discord browser
