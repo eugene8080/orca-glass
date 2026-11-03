@@ -7,7 +7,8 @@ the frame and divider are present, `/` appears before Waiting input, and
 The user subsequently confirmed visible Braille spinner, animated thinking and
 pondering labels, cycling . / .. / ... dots and response timer present on G2.
 Exact five-second cadence and numerical timer accuracy were not explicitly
-checked. Filter label and voice flow remain separate checks.
+checked. User also confirmed the menu label Filter by Agent on G2. Voice flow remains
+a separate check; near-field filter submenu behavior is not verified.
 
 Version1.0.8: clicking the session reader does nothing, even if the terminal
 contains numbered choices. Resume latest output/Earlier/Later/Back controls

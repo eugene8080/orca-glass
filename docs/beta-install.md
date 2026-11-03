@@ -11,7 +11,8 @@ reader pixels after click. User subsequently confirmed session click does nothin
 frame/divider present, slash before Waiting input and input hint visible on G2.
 User further confirmed visible Braille spinner, animated thinking/pondering
 labels, cycling dots and response timer present on G2. Exact cadence, numerical
-timer accuracy, filter label and voice flow were not explicitly checked.
+timer accuracy and voice flow were not explicitly checked. The user also
+confirmed the Filter by Agent menu label on G2.
 
 2026-11-02 beta **1.0.7** uploaded/promoted and channel verified (47,887 bytes).
 Adds framed compact conversation, visible Braille spinner, five-second working

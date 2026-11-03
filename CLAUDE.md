@@ -12,6 +12,9 @@ upstream Claude code is not evidence of authorization to test it.
 
 ## Current work
 
+2026-11-02 user confirms menu label Filter by Agent on physical G2.
+Label verification complete; this does not verify a near-field filter submenu.
+
 2026-11-02 further beta1.0.8 G2 confirmation: Braille spinner is visible,
 thinking/pondering labels animate, dots cycle . / .. / ..., and response timer
 is present. This verifies rendering/animation and timer visibility; exact
