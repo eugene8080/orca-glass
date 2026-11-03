@@ -11,8 +11,9 @@ This list supersedes older pending statuses in the dated history below.
 - **Filter placement/alignment:** first main-list row, selected provider beside
   it; Refresh below; contextual menu has only system controls. Placement/removal
   confirmed2026-11-03. Agent tags ([Codex]/[Claude]/[Pi]) right alignment also
-  confirmed2026-11-03 in the one-at-a-time checklist. Connected-count alignment
-  remains unconfirmed.
+  confirmed2026-11-03 in the one-at-a-time checklist. Connected count is on the
+  same header row as name/version but is **not right-aligned**, confirmed by
+  user2026-11-03. Header count alignment needs correction.
 - **Native footer text:** confirmed fixed2026-11-03.
 - **Terminal UI chrome:** confirmed fixed2026-11-03. Public progress commentary
   still remains; final-only filtering is separate work.
