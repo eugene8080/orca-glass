@@ -3,6 +3,13 @@ Updated: 2026-11-02
 
 ## Current facts
 
+2026-11-02 live desktop dev startup: default Vite bound ::1:5173 while the
+documented simulator URL used127.0.0.1:5173, producing connection refused.
+Confirmed localhost/IPv6 HTTP200 versus IPv4 refusal. Set app/vite.config.ts
+server host127.0.0.1, port5173, strictPort true so the documented URL matches.
+No plugin/beta/bridge behavior change. Refresh the simulator Browser after the
+dev server restarts, then use the real pairing code rather than demo.
+
 2026-11-02 final1.0.5 checks supersede the review-focus candidate:
 User explicitly retained smooth native scrolling and requested bottom-panel
 review restoration. Removed the separate screen, draft line-scrolling code and
