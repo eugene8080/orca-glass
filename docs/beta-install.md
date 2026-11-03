@@ -3,6 +3,15 @@ Updated: 2026-11-02
 
 ## Current state
 
+2026-11-02 update availability report: user cannot see the1.0.6 update and has
+not checked the new menu on G2. CLI recheck confirms version1.0.6 assigned beta,
+signed account eugene8080@gmail.com, tester roster still Invited. Earlier user
+acceptance/installations do not resolve that server mismatch; do not dismiss it
+as proven cosmetic. App listing was renamed Orca Glass (without Windows).
+Asked user to reopen phone app and report Me→Beta tester listing/details version.
+No reinvitation, membership removal, reinstall, beta-channel mutation or code
+change performed for this report. Native-menu regression scope remains pending.
+
 2026-11-02 latest beta is **1.0.6** (46,466 bytes), channel verified. App display
 name is now **Orca Glass** in manifest and portal. Added native View options >
 only on the sessions list, opening persisted provider filters; session Menu keeps
