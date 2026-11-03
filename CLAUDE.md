@@ -12,6 +12,16 @@ upstream Claude code is not evidence of authorization to test it.
 
 ## Current work
 
+2026-11-02 Books v3.2.1 investigation only: exact Books source not found among
+Nick Ustinov's29 public repos; optional app/source link requested. His public
+even-g2-notes documents native-text custom menus (one text upgrade per cursor
+move) and measured per-host-call overhead. Our1.0.10 navigation called
+paintSessionList without its previous-pixels cache, causing all four image tiles
+to upload serially on each move; no coalescing, so swipes could backlog. Native
+text custom layouts may provide density without that image queue; not proof of
+Books implementation.1.0.11 native list remains unchanged. See
+docs/books-rendering-investigation.md for pinned sources and timing caveats.
+
 2026-11-02 user rejects1.0.10 custom session-list rendering as too slow and
 requests native text.1.0.11 restores native header/ListContainerProperty,
 removes all session-list images and animation timers. Version/count/filter/
