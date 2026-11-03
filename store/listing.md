@@ -1,38 +1,64 @@
-# Even Hub store listing — Orca Glass
+# Even Hub listing — Orca Glass
+Updated: 2026-11-03
 
-Language policy: this Windows fork supports English only. Other upstream
-platform/listing details below are historical and must be reviewed before publication.
+## Profile
 
-- App name: Orca Glass
-- Tagline (≤50): View and reply to Orca agent sessions
-- Developer: 2ero20ne
-- Privacy & terms: https://www.2ero20ne.com/orca-glass/privacy
-- Source / setup: https://github.com/2ero20ne/orca-glass
+- Package ID: `com.eugene8080.orcaglass`
+- App name: **Orca Glass**
+- Tagline: **Read your coding sessions. Speak your next step.**
+- Description: [exact portal text](description.txt), under 2,000 characters.
+- Windows source/setup: https://github.com/eugene8080/orca-glass/tree/windows-android-codex
+- Suggested creator: eugene8080 (portal developer information is still blank).
+- Language: English.
+- Attribution: based on 2ero20ne's MIT-licensed Orca Glass. The upstream developer name, privacy URL and Mac-only instructions do not describe this fork.
 
-## Description (English)
+Name, tagline and description saved through the authenticated Even Hub CLI on 2026-11-03. Five primary screenshots and the portal's Office environment cover were saved through the browser; the sixth contextual-menu image remains supplemental/local. User requests preview before Publish: do not submit for review or publish without approval. Beta remains 1.0.21; no build uploaded or submitted for public review.
 
-Keep an eye on your coding agents without going back to your desk.
+The description and README credit the original author and link the upstream project. Root `LICENSE` retains `Copyright (c) 2026 2ero20ne` and the full MIT text. `app/vite.config.ts` now emits `LICENSE.txt` and `ATTRIBUTION.txt` in production builds; the built license was checked byte-for-byte against the original. This packaging change is not yet in beta1.0.21; include it in the next release candidate.
 
-Orca Glass connects your G2 to Orca running on your own Mac:
+## Screenshots
 
-- Threads — every Claude Code / Codex session, which ones are waiting for you (●), and the latest answer. Tool output and thinking are filtered out.
-- Reply — one-tap replies (Yes / No / Continue …), or speak a reply: it is transcribed on your Mac and shown on the glasses before you send it.
-- New session — pick a workspace, agent, model and a first prompt.
-- Usage — 5-hour and weekly limits per provider.
-- English only.
+Official native simulator captures using the unchanged 1.0.21 app renderer and fictional data. The list includes Cursor, Pi, Claude, Codex and OpenCode at the user's request; the reader/voice example is Codex. List discovery does not establish reader compatibility for every provider. All glasses images are 576 × 288. No real conversations, credentials, account usage or microphone audio appear. These are simulator captures, not G2 photographs.
 
-Requires setup on your Mac. Orca Glass talks to a small open-source bridge on your Mac (github.com/2ero20ne/orca-glass). Ask your coding agent to "set up Orca Glass", then paste the pairing code into this app once. It works away from home: the bridge is reached through a Cloudflare Quick Tunnel and reconnects automatically when the tunnel address changes.
+| Order | Image | Content |
+| --- | --- | --- |
+| 1 | [Sessions](screenshots/1-threads.png) | Names, activity, provider labels and filter |
+| 2 | [Conversation](screenshots/2-answer.png) | Native reader and waiting status |
+| 3 | [Voice review](screenshots/3-reply.png) | Transcription below the preserved conversation |
+| 4 | [Usage](screenshots/4-usage.png) | Example allowance usage |
+| 5 | [New session](screenshots/5-new-session.png) | Workspace picker |
+| 6 | [Actions](screenshots/6-actions.png) | Refresh sessions, New Session and Usage |
 
-Your data stays yours: the developer runs no server and collects nothing. Voice is transcribed on your Mac and never leaves it.
+Untouched RGBA exports are in [screenshots/native](screenshots/native). The linked RGB copies composite the same pixels onto black for ordinary image viewers. No text, layout or content was retouched. The simulator omits OS contextual entries; image 6 is supplemental and does not represent the complete hardware menu.
 
-## Review notes
+Open [the gallery](gallery.html) to review. `store/works-eyecatch.png` and `store/screenshots/phone-setup.png` are historical upstream assets, excluded from this release set.
 
-- The app needs a companion bridge running on the user's own Mac (open source, linked above). Without it the app shows setup instructions.
-- Network: the app contacts ntfy.sh (listed) to find the user's bridge URL, then the user's own Cloudflare Quick Tunnel URL (`https://<random>.trycloudflare.com`, different for every user). All bridge requests require the user's token; URLs from ntfy are accepted only with a valid HMAC signature.
-- Microphone: used only when the user chooses a voice reply; audio is sent to the user's own Mac for transcription.
-- To review without a Mac: open the app and tap **Try the demo (no Mac needed)**. Every screen (threads, answer, replies, voice reply, new session, usage) works with sample data.
+## Capture again
 
-## Assets to prepare
+Use named PowerShell terminals in this repo's Orca workspace; reuse or close confirmed old preview processes first.
 
-- Cover image
-- Screenshots of the glasses display (576×288): home (thread list), thread (answer), reply menu, voice confirm, new session, usage — in English
+1. Run `node scripts/store-preview.mjs` (loopback 8792).
+2. Run `app/node_modules/@evenrealities/sim-win32-x64/bin/evenhub-simulator.exe` with URL `http://127.0.0.1:8792/?code=demo&lang=en` and `--automation-port 9899`.
+3. Starting at the fresh session list, run:
+
+```powershell
+node scripts/store-capture.mjs 1-threads
+node scripts/store-capture.mjs 2-answer down down down down click
+node scripts/store-capture.mjs 3-reply long_press long_press_release
+node scripts/store-capture.mjs 6-actions double_click double_click context_menu
+node scripts/store-capture.mjs 4-usage down down click
+node scripts/store-capture.mjs 5-new-session double_click context_menu down click
+python scripts/store-previews.py
+```
+
+The Python step requires Pillow. Verify each image visually. The fixture replaces data and microphone capture only; native rendering/gestures use the real app and SDK. Send and Launch are disabled. Leave the simulator open for review.
+
+## Public release preparation
+
+- **General-user connection:** `scripts/build-beta.mjs` pins the build to the single PC origin allowed by `app/app.json`. Arbitrary users cannot pair their PCs with this installed build. Resolve public connection/setup before advertising a self-service install.
+- **Privacy:** complete a fork-specific policy covering microphone audio, network routes, local transcription and confirmed replies to desktop agents. Do not reuse the upstream policy as this developer's policy.
+- **Developer information:** complete the portal's currently blank personal/developer information before submission. Replace the current question-mark placeholder with a distinct 24×24 monochrome icon; no replacement icon was created in this screenshot task.
+- **Name consistency:** manifest/portal say `Orca Glass`; on-glasses header says `Orca-glass`. Align in a later build before submission.
+- **Hardware:** retain open 1.0.21 checks in [TODOS.md](../TODOS.md). Final-only assistant filtering is not implemented; do not promise it.
+
+[Even submission guidelines](https://hub.evenrealities.com/docs/ship/app-submission) require complete developer/permission information, foreground/background artwork, a legible icon and accurate simulator screenshots. Public review and publication happen in the portal. This task prepares the profile and assets; it does not submit or publish the application.

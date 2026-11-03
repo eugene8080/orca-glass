@@ -49,6 +49,18 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-03 Even Hub profile/screenshots prepared at user request. Name/tagline/
+description saved; five native576x288 screenshots and stock Office cover saved
+in portal. Session list has fictional Cursor/Pi/Claude/Codex/OpenCode; reader/
+voice samples remain Codex. Sixth contextual-menu screenshot is supplemental/local.
+User explicitly requires preview BEFORE Publish; no submission/publication or
+beta change. Original2ero20ne attribution now in description/README; build emits
+unchanged MIT LICENSE.txt plus ATTRIBUTION.txt, build and byte comparison pass.
+Legal assets need a later version upload. Public blockers: one-PC-pinned origin,
+blank developer/privacy fields, name consistency, existing hardware checks.
+See store/listing.md and store/gallery.html. Isolated preview8792 and simulator9899
+remain open in Orca pwsh terminals; no real agent/microphone interaction.
+
 2026-11-03 user requests TODO follow-ups to monitor both filed SDK requests.
 Added two unchecked entries to TODOS.md with GitHub44/45 and corresponding Discord
 thread links, expected capabilities and awaiting-maintainer-response status.

@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Orca Glass — Even Hub screenshots</title>
+<style>
+:root{color-scheme:dark;font:16px/1.55 system-ui,sans-serif;background:#111315;color:#eef0ee}
+body{max-width:1240px;margin:0 auto;padding:48px 28px 64px}.eyebrow{color:#aeb8b1;letter-spacing:.12em;text-transform:uppercase;font-size:12px}
+h1{font-size:clamp(36px,6vw,64px);line-height:1.1;margin:14px 0 18px;letter-spacing:-.035em}.intro{max-width:760px;color:#bbc3bd}a{color:#b8dfc4}
+main{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:32px 24px;margin-top:36px}figure{margin:0}img{display:block;width:100%;height:auto;aspect-ratio:2;background:#000;border:1px solid #303630;border-radius:4px}
+figcaption{margin-top:12px;color:#bcc5be}strong{display:block;color:#f3f5f3;font-weight:600}footer{border-top:1px solid #303630;margin-top:40px;padding-top:20px;color:#aeb8b1;font-size:14px}
+.profile{margin-top:48px;border-top:1px solid #303630;padding-top:24px;max-width:900px}.profile pre{font:inherit;white-space:pre-wrap;color:#cbd3cd}
+@media(max-width:760px){main{grid-template-columns:1fr}body{padding:28px 18px}}
+</style>
+</head>
+<body>
+<header><div class="eyebrow">Even Hub profile · version 1.0.21 · 03 November 2026</div>
+<h1>Orca Glass</h1><p>Read your coding sessions. Speak your next step.</p>
+<p class="intro">Six native simulator captures, using fictional Cursor, Pi, Claude, Codex and OpenCode sessions. The reader and voice example is Codex. Each image is 576 × 288 pixels. App rendering is unchanged; exported transparency is displayed on black.</p>
+<a href="description.txt">Exact profile description</a> · <a href="listing.md">Asset details and release preparation</a></header>
+<main>
+<figure><a href="screenshots/native/1-threads.png"><img src="screenshots/1-threads.png" alt="Sample Cursor, Pi, Claude, Codex and OpenCode sessions with activity and provider labels"></a><figcaption><strong>01 · Your sessions at a glance</strong>Cursor, Pi, Claude, Codex and OpenCode.</figcaption></figure>
+<figure><a href="screenshots/native/2-answer.png"><img src="screenshots/2-answer.png" alt="Authentication refactor conversation waiting for input"></a><figcaption><strong>02 · Read the conversation</strong>Native text with persistent activity status.</figcaption></figure>
+<figure><a href="screenshots/native/3-reply.png"><img src="screenshots/3-reply.png" alt="Spoken reply shown below the unchanged conversation"></a><figcaption><strong>03 · Review before you send</strong>Voice transcription alongside the conversation.</figcaption></figure>
+<figure><a href="screenshots/native/4-usage.png"><img src="screenshots/4-usage.png" alt="Sample five-hour and weekly Codex usage"></a><figcaption><strong>04 · Check available usage</strong>Illustrative allowance figures and reset times.</figcaption></figure>
+<figure><a href="screenshots/native/5-new-session.png"><img src="screenshots/5-new-session.png" alt="Sample app, website and documentation workspace picker"></a><figcaption><strong>05 · Pick a workspace</strong>Start from an existing Orca workspace.</figcaption></figure>
+<figure><a href="screenshots/native/6-actions.png"><img src="screenshots/6-actions.png" alt="Contextual Refresh sessions, New Session and Usage menu"></a><figcaption><strong>06 · Session actions</strong>Supplemental capture; simulator omits OS entries.</figcaption></figure>
+</main>
+<section class="profile"><h2>Profile description and attribution</h2><!-- profile:start --><pre>Keep up with your coding agents from your G2 glasses.
+
+Orca Glass connects to Orca on your Windows PC so you can read a conversation, check whether an agent is working or waiting, and speak your next instruction without returning to the keyboard.
+
+• Browse connected agent sessions and filter by provider.
+• Read conversation text with native scrolling and live activity status.
+• Hold to speak, release to review the transcription, then click to send or double-click to cancel.
+• Keep the conversation visible while you review a voice reply.
+• Start a Codex session in an existing Orca workspace.
+• Check available usage limits from the session-list menu.
+
+Requires G2 glasses, the Even Realities Android app, Orca running on Windows, and the open-source Orca Glass companion bridge on your PC. The Windows bridge source and setup notes are available on GitHub below. Voice transcription runs locally on your PC using Whisper. English only.
+
+Codex is the primary supported workflow. Other connected agents can appear in the session list; conversation support depends on their terminal format. This app controls agents running on your PC; it does not run a coding agent on the glasses.
+
+Try the built-in demo to explore sample sessions without a PC connection.
+
+The current build uses a private Tailscale connection and requires access to the configured PC. It is not yet a self-service setup for arbitrary PCs.
+
+Windows bridge source and setup: https://github.com/eugene8080/orca-glass/tree/windows-android-codex
+Independent Windows/Android fork of Orca Glass by 2ero20ne, used under the MIT License.
+Original project: https://github.com/2ero20ne/orca-glass</pre><!-- profile:end --></section>
+<footer>Click an image for its untouched RGBA export. Simulator captures, not G2 photographs. Current distribution is a personal beta; public publication has not been submitted.</footer>
+</body></html>

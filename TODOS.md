@@ -7,6 +7,16 @@ Completed/superseded release notes: [history](docs/todo-history.md).
 
 ## Open work
 
+- [ ] **Public release preparation:** user requests profile and screenshots on
+  2026-11-03. CLI name/tagline/description saved; six native simulator captures
+  and reproducible sample-data preview prepared. See [store/listing.md](store/listing.md).
+  Public build still pins one private PC origin; general-user connection/setup,
+  fork privacy policy and on-glasses/portal name consistency remain open.
+  Five primary screenshots and Office cover saved in the portal; sixth screenshot
+  is local/supplemental. List shows fictional Cursor/Pi/Claude/Codex/OpenCode.
+  Original-author credit added; production build now carries original MIT license
+  and attribution (not yet uploaded). User requires preview before Publish.
+  Developer profile remains blank. No public review or publication submitted.
 - [ ] **Monitor native popup request:** [GitHub #44](https://github.com/even-realities/everything-evenhub/issues/44)
   and [Discord thread](https://discord.com/channels/1301124787740868620/1484753075590664332/threads/1567124600658202754).
   Await maintainer response/API guidance. Primary use case: hold-to-talk with more
@@ -66,6 +76,7 @@ Completed/superseded release notes: [history](docs/todo-history.md).
   removed. Single Click in a session stays no-op except voice review Send.
 - Native Even AI router abandoned in favour of custom Orca Glass UI. Old native
   Terminal pairing/QR trials are historical, not active blockers for this beta.
-- Direct mobile-protocol transport deferred; public marketplace release not requested.
+- Direct mobile-protocol transport deferred; public marketplace preparation is
+  now requested (profile/assets only), with the release work listed above.
 - Historical numbered-choice trials are not a current task; do not submit agent
   input for verification without authorization.

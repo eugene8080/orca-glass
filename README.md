@@ -1,87 +1,56 @@
-# Windows / Android fork
-Updated: 2026-10-29
-
-**Current setup: use [native Even Terminal with Codex](docs/native-terminal.md).**
-The official package supports Windows and the Android app's Terminal Mode, with
-structured Codex questions and approvals. The native host is configured over
-Tailscale; phone/glasses verification is pending.
-
-This fork also contains an experimental Windows port of Orca Glass using a
-local Node bridge plus an HTTPS Quick Tunnel. That bridge is currently stopped.
-**Codex only. Claude testing is prohibited until explicitly authorized.**
-
-For that alternative, read [Windows / Android setup](docs/windows-android.md) and [current status](TODOS.md).
-Run `npm --prefix app ci`, `npm --prefix app run build`, `npm run doctor`, then
-`npm start`. The original store app is not this fork: load our build with a
-developer QR. Hardware verification is still pending.
-
-Based on 2ero20ne's MIT-licensed Orca Glass. The original README follows for
-provenance; its Mac setup and store listing describe the upstream project.
-
----
-
 # Orca Glass
 
-This Windows fork supports English only.
+**Read your coding sessions. Speak your next step.**
 
-The session list shows the installed app version, connected count, active-agent
-filter and provider labels in native text columns. `/` marks idle sessions and
-small animated Braille markers identify working sessions; `?` means activity is
-unknown. Refresh updates these states. Swipes move a separate cursor without
-scrolling the menu text. Use up/down and Click to select;
-Previous/Next page keeps every session reachable. Reference images under the
-root `images/` directory are local and ignored by Git.
+Orca Glass connects Even Realities G2 glasses to Orca on Windows. Browse connected sessions, read a conversation, check agent activity, and review a spoken instruction before sending it back to your PC.
 
-Control [Orca](https://github.com/stablyai/orca) agent sessions from **Even Realities G2** glasses — from anywhere.
+This is Eugene's Windows/Android fork of [2ero20ne's Orca Glass](https://github.com/2ero20ne/orca-glass), licensed under MIT. Interface and speech recognition use English.
 
-- **Threads** — see every Claude / Codex session, which ones are waiting for you, and the latest answer (tool output and thinking filtered out)
-- **Reply** — one-tap templates, or **voice** (transcribed on your own Mac with whisper.cpp, then confirmed on the glasses)
-- **New session** — pick workspace, agent, model and a first prompt
-- **Usage** — 5-hour / weekly limits per provider
-- **English only** — interface, demo, reply templates, prompts and voice recognition use English
+## Availability
 
-| Threads | Latest answer | Reply |
+As of 2026-11-03, **1.0.21 is a personal beta**, not a public Even Hub release. The installed build connects to a specific PC over Tailscale; it is not yet a self-service installation for arbitrary PCs. Orca and the companion bridge must remain running. The phone and glasses do not run the coding agent.
+
+The active app is the custom Orca Glass bridge. Earlier native Even Terminal experiments are historical. See [current work](TODOS.md) and [beta setup/release history](docs/beta-install.md).
+
+## Features and controls
+
+- **Sessions:** browse connected agent terminals, filter by provider, and see working/idle activity. The contextual menu offers Refresh sessions, New Session and Usage.
+- **Conversation:** read native scrollable text with live activity status. Scrolling pauses text updates; return to the list and reopen to resume.
+- **Voice:** hold to talk, release to review, click to send, double-click to cancel. Whisper transcribes on the PC. The conversation stays mounted above the voice review area.
+- **New session:** choose an existing Orca workspace and start Codex.
+- **Usage:** view available allowance windows; absent windows are not invented.
+
+Codex is the primary supported workflow. Other connected agents may appear in the list and filter, but reader support depends on their terminal format. Tool records, internal reasoning and terminal chrome are filtered; public assistant progress messages can still appear. New-session creation is Codex-only. Live Claude testing is not authorized in this project.
+
+## Screenshots
+
+Native 576 × 288 simulator captures of 1.0.21 with fictional sample data.
+
+| Sessions | Conversation | Voice review |
 | --- | --- | --- |
-| ![Threads](store/screenshots/1-threads.png) | ![Answer](store/screenshots/2-answer.png) | ![Reply](store/screenshots/3-reply.png) |
-| **Usage** | **New session** | **Phone: pairing** |
-| ![Usage](store/screenshots/4-usage.png) | ![New session](store/screenshots/5-new-session.png) | Run `npm run pair` on your Mac, then paste the code into the app. |
+| ![Sessions](store/screenshots/1-threads.png) | ![Conversation](store/screenshots/2-answer.png) | ![Voice review](store/screenshots/3-reply.png) |
+| **Usage** | **Workspace picker** | **App actions** |
+| ![Usage](store/screenshots/4-usage.png) | ![Workspace picker](store/screenshots/5-new-session.png) | ![App actions](store/screenshots/6-actions.png) |
 
-<sub>Glasses screens (576×288) from the built-in demo with sample data — tap **Try the demo** in the app to see them without a Mac.</sub>
+The simulator omits OS contextual entries. See [store profile/capture instructions](store/listing.md) for raw exports, the local gallery and remaining public-release preparation.
 
+## Development
+
+Requirements: Windows, Node.js 20+, installed/running Orca, and local Whisper for voice. The installed beta and earlier Quick Tunnel prototype use different network routes.
+
+```powershell
+npm --prefix app ci
+npm test
+npm --prefix app run build
+npm run doctor
 ```
-G2 ⇄ Even app (Orca Glass) ⇄ Cloudflare Quick Tunnel ⇄ Mac bridge ⇄ orca CLI
-                     ↑ tunnel URL announced via ntfy.sh, signed with your token
-```
 
-## Setup
+Run development servers and the simulator in named PowerShell terminals inside this repo's Orca workspace. See [project instructions](CLAUDE.md), [voice implementation](docs/voice-input.md), [reader behavior](docs/session-reader.md) and [session-list behavior](docs/session-list.md).
 
-1. Install **Orca Glass** from Even Hub on your phone.
-2. Install the setup skill in your coding agent and ask it to "set up Orca Glass".
-   - Orca: install from the [Orca skill link](https://share.onorca.dev/skills/share/shr_d60bfc61c56982da57cd656cd0314f5d253ee99a77539873)
-   - Claude Code: `/plugin marketplace add 2ero20ne/orca-glass` → `/plugin install orca-glass@orca-glass`
-   - Other agents: `git clone https://github.com/2ero20ne/orca-glass.git ~/orca-glass` and point your agent at `skills/orca-glass-setup/SKILL.md`
-3. Paste the pairing code the agent gives you into Orca Glass on the phone. That's it — it reconnects automatically when the tunnel URL changes.
-
-Connection setup uses the pairing code only.
-
-Just want to look? Tap **Try the demo** in the app — no Mac needed.
-
-Manual setup: `sh scripts/doctor.sh`, then `npm start`, then `npm run pair`.
-
-## What leaves your Mac
-
-| Where | What |
-| --- | --- |
-| Cloudflare Quick Tunnel (`*.trycloudflare.com`) | Bridge traffic. Every API call requires your token. Free, no account, **no uptime guarantee**. |
-| ntfy.sh (random topic) | Tunnel URL + timestamp + HMAC signature. **Never the token.** The app ignores unsigned or wrongly signed URLs. |
-| Nowhere | Voice. Audio is transcribed locally by whisper.cpp. |
-
-Only fixed templates and text you confirm on the glasses are ever typed into your agents.
-
-## Requirements
-
-macOS, Node.js 20+, Orca (running), `cloudflared`, and for voice `whisper-cpp` + a ~550 MB model (`sh scripts/get-model.sh`).
+Pairing codes are credentials: keep them, authenticated QR files and local runtime settings out of Git and screenshots. Audio travels through the phone to the configured PC for local transcription. A confirmed reply is sent to the selected desktop agent, whose own provider/data policies then apply. Earlier prototype routes use Cloudflare and ntfy; the personal installed beta uses the configured Tailscale connection.
 
 ## License
 
-MIT
+[MIT](LICENSE). Original copyright: **Copyright (c) 2026 2ero20ne**.
+Production builds include the full original notice in `LICENSE.txt` and project
+links in `ATTRIBUTION.txt`. This independent fork does not imply upstream endorsement.
