@@ -16,16 +16,10 @@ Completed/superseded release notes: [history](docs/todo-history.md).
   Await maintainer response/API guidance for following newest LLM output while
   preserving the user's position when reading older text.
 
-- [ ] **G2 check of beta1.0.21:** verify the three contextual actions (Refresh
-  sessions, New Session, Usage), retained OS Display off/Brightness/Close, moving
-  dot, and no displaced slash when a working session is selected. Titles/count/
-  filter alignment were approved earlier; only latest-build regressions need checks.
-  Simulator routes all three actions and marker frames correctly. Ask one check
-  at a time, per user preference.
-- [ ] **Bold vertical bar:** identify the reported bar's location. Likely the
-  native reader scrollbar; location question remains unanswered. Installed SDK
-  has no scrollbar-hide setting. Preserve native smooth scrolling; do not claim
-  removal or add a destructive scrolling workaround.
+- [ ] **Remaining G2 check of beta1.0.21:** verify retained OS Display off/
+  Brightness/Close, moving dot, and no displaced slash when a working session is
+  selected. Refresh sessions/New Session/Usage are now hardware-confirmed.
+  Ask one remaining check at a time, per user preference.
 - [ ] **Main-response-only filtering:** tool records/internal reasoning and terminal
   footer chrome are filtered, but public assistant progress commentary remains.
   Final-only filtering was requested earlier and is not implemented. See
@@ -46,6 +40,10 @@ Completed/superseded release notes: [history](docs/todo-history.md).
 
 ## Completed / confirmed
 
+- [x] Three contextual actions (Refresh sessions, New Session, Usage) work on G2
+  — user confirmed2026-11-03 for beta1.0.21.
+- [x] Bold vertical bar is gone — user confirmed resolved2026-11-03; exact cause
+  not established. No further scrollbar-removal work required for this report.
 - [x] Compact native-text session menu trial — user marks done2026-11-03.
 - [x] Menu compatibility diagnosis and smaller markers — user marks done2026-11-03.
 - [x] Phone Failed to fetch follow-up — user marks resolved2026-11-03.
