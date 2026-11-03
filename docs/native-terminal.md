@@ -1,5 +1,41 @@
 # Native Even Terminal on Windows
-Updated: 2026-10-29
+Updated: 2026-11-03
+
+## PowerShell / Orca CLI and test-session cleanup
+
+Verified against installed Even Terminal0.10.5 on2026-11-03:
+
+```powershell
+# In a named pwsh terminal tab inside the Orca worktree:
+even-terminal codex
+# Open Codex's saved-session picker instead of a new conversation:
+even-terminal codex resume
+```
+
+These connect through the already-running Even Terminal Codex app-server. Do not
+start a second host. Ordinary Orca sessions are not automatically converted into
+Even Terminal remote sessions; do not resume an active thread in two backends.
+
+Even Terminal has no archive/delete CLI subcommand in this version. Its Codex
+list uses threadList(archived:false), so archiving the underlying Codex thread
+removes it from the native Terminal list. Installed Codex supports archive,
+unarchive and permanent delete. Prefer reversible archive; select by UUID when
+names are duplicated. Existing local PowerShell codex function injects --no-daemon
+and conflicts with --remote, so use the executable directly for remote management:
+
+```powershell
+$nativeCodexCli = 'C:\Users\eugen\AppData\Local\Programs\OpenAI\Codex\bin\codex.exe'
+& $nativeCodexCli archive --remote ws://127.0.0.1:8765 '<session-uuid>'
+# To restore:
+& $nativeCodexCli unarchive --remote ws://127.0.0.1:8765 '<session-uuid>'
+```
+
+2026-11-03 user requests cleanup of greeting tests. Two idle native-list sessions
+named hi contained only a greeting exchange or a lone hi. Archived those two via
+supported CLI; verified archived=1 and both absent from native sessions endpoint.
+No permanent deletion, agent prompt, Claude interaction or service restart.
+Other similarly short or test-looking names were not assumed safe to archive.
+Exact IDs and recovery record are in ignored .local/native-test-session-archive.json.
 
 ## Reconnected at Eugene's request, 2026-11-01
 
