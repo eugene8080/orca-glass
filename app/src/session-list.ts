@@ -11,7 +11,7 @@ export function sessionRow(title: string, handle: string, agent: string, state: 
   return prefix + clipBytes(title, budget) + suffix;
 }
 
-export type SessionColumns = { marker: string; title: string; right: string; busy?: boolean };
+export type SessionColumns = { marker: string; title: string; right: string; busy?: boolean; handle?: string };
 export const sessionHeading = () => `Orca-glass ${__APP_VERSION__}`;
 export const MENU_LEFT = { containerID: 2, containerName: 'body', xPosition: 16, yPosition: 40, width: 376, height: 248 };
 export const MENU_CURSOR = { containerID: 4, containerName: 'menu-cursor', xPosition: 0, yPosition: 40, width: 24, height: 248 };

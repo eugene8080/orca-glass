@@ -18,7 +18,7 @@ const snap = async name => {
   await fs.writeFile(`.local/${name}.png`, Buffer.from(await response.arrayBuffer()));
 };
 const initial = await fixture({ state: 'waiting', source: 'codex-transcript', text: Array.from({ length: 35 }, (_, i) => `Chat line ${i + 1}: preserve native scroll position.`).join('\n'), transcript: 'This is the draft to review in the bottom panel.' });
-for (let i = 0; i < 3; i++) await input('down');
+for (let i = 0; i < 4; i++) await input('down');
 await input('click');
 await wait(800);
 await snap('beta105-waiting');

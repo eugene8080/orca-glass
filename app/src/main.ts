@@ -6,8 +6,6 @@ import {
   ImageContainerProperty,
   ImageRawDataUpdate,
   ImageRawDataUpdateResult,
-  MenuContainerProperty,
-  MenuItemProperty,
   OsEventTypeList,
   RebuildPageContainer,
   TextContainerProperty,
@@ -21,7 +19,7 @@ import { parseCode, resolveBase } from './pairing';
 import { applyPage, detectLang, setLang, t as tr } from './i18n';
 import { clipBytes, textSections } from './text';
 import { readerStatus, statusPixels, voiceBorderPixels, SPINNER } from './reader-status';
-import { footerHint, hintPixels } from './footer-hint';
+import { footerHint } from './footer-hint';
 import { agentLabel, sessionRow, sessionListTitle, sessionHeading, MENU_LEFT, MENU_CURSOR, MENU_STRIPS, nativeRight, menuTitle, compactSessionTitle, cursorText, type SessionColumns } from './session-list';
 
 // 画面 576x288。上に見出し(テキスト)、下に本文(リスト or テキスト)の2段構成で統一する。
@@ -51,6 +49,7 @@ let current: Screen | null = null;
 let started = false;
 let compactMenuOnly = false;
 let poll: ReturnType<typeof setInterval> | undefined;
+let menuPoll: ReturnType<typeof setInterval> | undefined;
 let menuAnimation: ReturnType<typeof setInterval> | undefined;
 let statusAnimation: ReturnType<typeof setInterval> | undefined;
 let panelWrites: Promise<void> = Promise.resolve();
@@ -60,7 +59,6 @@ let selectedThread: Thread | null = null;
 let sending = false;
 let holding = false;
 let releaseCapture: (() => void) | null = null;
-const VIEW_OPTIONS_ID = 1001;
 let viewProvider = 'all';
 const providerName = agentLabel;
 
@@ -128,8 +126,8 @@ async function inputHint(visible: boolean) {
   const seconds = current?.kind === 'text' ? current.reportedSeconds : null;
   const write = panelWrites.then(async () => {
     if (visible && current !== owner) return;
-    await bridge.updateImageRawData(new ImageRawDataUpdate({ containerID: HINT.containerID, containerName: HINT.containerName,
-      imageData: hintPixels(visible ? footerHint(seconds) : '') }));
+    await bridge.textContainerUpgrade(new TextContainerUpgrade({ containerID: HINT.containerID, containerName: HINT.containerName,
+      content: visible ? nativeRight(footerHint(seconds), HINT.width) : ' ', textColor: 4 }));
   });
   panelWrites = write.then(() => {}, () => {});
   await write;
@@ -139,6 +137,7 @@ async function show(s: Screen, reloadText = false) {
   clearInterval(poll);
   clearInterval(statusAnimation);
   clearInterval(menuAnimation);
+  clearInterval(menuPoll);
   if (s.kind === 'text' && s.reader) s.activityLabel ??= readerStatus('unknown');
   const previous = current;
   current = s;
@@ -146,24 +145,21 @@ async function show(s: Screen, reloadText = false) {
   const content = s.kind === 'text' ? bodyText(s) : '';
   const uploadText = reloadText || (s.kind === 'text' && !!s.reader && s.text.length > 900) || new TextEncoder().encode(content).length > 999;
   const head = new TextContainerProperty({ ...HEAD, ...(s.kind === 'text' && s.reader ? { xPosition: 16, yPosition: 2, width: 544, height: 28, zOrderIndex: 1 } : {}), content: s.kind === 'list' && s.sessionList ? sessionHeading() : clipBytes(screenTitle(s), TEXT_BYTES), isEventCapture: 0 });
-  // Display off, Brightness and Close are OS-owned. Declare only our action;
-  // omitting menuObject on other pages removes Filter by Agent but keeps system rows.
-  const menu = s.kind === 'list' && s.sessionList ? {
-    menuObject: new MenuContainerProperty({ menuItems: [new MenuItemProperty({ itemID: VIEW_OPTIONS_ID, itemName: 'Filter by Agent >' })] }),
-  } : {};
+  // Only OS-owned Display off, Brightness and Close remain in the contextual menu.
+  const menu = {};
   let page =
     s.kind === 'list'
       ? {
           containerTotalNum: s.sessionList ? 8 : 2,
-          ...(s.sessionList ? { imageObject: MENU_STRIPS.map((tile, i) => new ImageContainerProperty({ ...tile, zOrderIndex: 4 + i })) } : {}),
+          ...(s.sessionList ? { imageObject: MENU_STRIPS.map((tile, i) => new ImageContainerProperty({ ...tile, zOrderIndex: 7 - i })) } : {}),
           ...menu,
           textObject: s.sessionList ? [
             new TextContainerProperty({ ...HEAD, width: 300, content: sessionHeading(), isEventCapture: 0, paddingLength: 0, zOrderIndex: 1 }),
             new TextContainerProperty({ containerID: 3, containerName: 'menu-count', xPosition: 300, yPosition: 0, width: 276, height: 36, content: nativeRight(`${s.connectedCount} connected terminals`, 276), isEventCapture: 0, paddingLength: 0, zOrderIndex: 2 }),
             new TextContainerProperty({ containerID: 5, containerName: 'menu-input', xPosition: 0, yPosition: 0, width: 576, height: 288, content: ' ', isEventCapture: 1, paddingLength: 0, zOrderIndex: 0 }),
             new TextContainerProperty({ ...MENU_CURSOR, content: cursorText(s.items.length, s.selected || 0), isEventCapture: 0, paddingLength: 0, zOrderIndex: 3 }),
-            new TextContainerProperty({ ...MENU_LEFT, content: s.columns!.map(r => `${r.marker ? r.marker + '   ' : '    '}${menuTitle(r.title)}`).join('\n'), isEventCapture: 0, paddingLength: 0, zOrderIndex: 6 }),
-            new TextContainerProperty({ containerID: 6, containerName: 'menu-right', xPosition: 396, yPosition: 40, width: 180, height: 248, content: s.columns!.map(r => nativeRight(r.right, 180)).join('\n'), isEventCapture: 0, paddingLength: 0, zOrderIndex: 7 }),
+            new TextContainerProperty({ ...MENU_LEFT, content: s.columns!.map(r => `     ${menuTitle(r.title)}`).join('\n'), isEventCapture: 0, paddingLength: 0, zOrderIndex: 4 }),
+            new TextContainerProperty({ containerID: 6, containerName: 'menu-right', xPosition: 396, yPosition: 40, width: 180, height: 248, content: s.columns!.map(r => nativeRight(r.right, 180)).join('\n'), isEventCapture: 0, paddingLength: 0, zOrderIndex: 5 }),
           ] : [head],
           ...(s.sessionList ? {} : { listObject: [
             new ListContainerProperty({
@@ -180,13 +176,13 @@ async function show(s: Screen, reloadText = false) {
           containerTotalNum: s.reader ? 9 : 2,
           textObject: [head, new TextContainerProperty({ ...BODY, ...(s.reader ? { xPosition: 16, yPosition: 32, width: 544, zOrderIndex: 2, height: READER_HEIGHT } : {}), content: uploadText ? '' : content, isEventCapture: 1 }),
             ...(s.reader ? [
+              new TextContainerProperty({ ...HINT, content: nativeRight(footerHint(s.reportedSeconds), HINT.width), textColor: 4, isEventCapture: 0, zOrderIndex: 8 }),
               new TextContainerProperty({ ...VOICE, content: s.activityLabel![0] === '/' ? s.activityLabel : '    ' + s.activityLabel!.slice(2), textColor: 4, isEventCapture: 0, zOrderIndex: 7 }),
               new TextContainerProperty({ ...FRAME, content: ' ', textColor: 4, borderWidth: 2, borderColor: 15, borderRadius: 0, isEventCapture: 0, zOrderIndex: 0 }),
               new TextContainerProperty({ ...DIVIDER, content: ' ', textColor: 4, borderWidth: 2, borderColor: 15, isEventCapture: 0, zOrderIndex: 3 }),
             ] : [])],
           ...(s.reader ? { imageObject: [
             new ImageContainerProperty({ ...STATUS_ICON, zOrderIndex: 6 }),
-            new ImageContainerProperty({ ...HINT, zOrderIndex: 8 }),
             new ImageContainerProperty({ ...VOICE_BORDER_LEFT, zOrderIndex: 4 }),
             new ImageContainerProperty({ ...VOICE_BORDER_RIGHT, zOrderIndex: 5 }),
           ] } : {}),
@@ -216,6 +212,8 @@ async function show(s: Screen, reloadText = false) {
       }
     }
     if (!accepted) throw new Error(`${sessionHeading()}: ${s.kind === 'list' && s.sessionList ? 'both aligned and compact menus rejected' : 'glasses rejected the screen update'}.`);
+    if (s.kind === 'list' && s.sessionList) document.getElementById('menu-layout')!.textContent = s.compat
+      ? 'Menu layout: Compact compatibility' : 'Menu layout: Aligned native text';
     if (uploadText && s.kind === 'text') {
       const accepted = await bridge.textContainerUpgrade(new TextContainerUpgrade({ containerID: BODY.containerID, containerName: BODY.containerName, content }));
       if (!accepted) throw new Error('Glasses could not load the selected text. Click to retry.');
@@ -223,7 +221,6 @@ async function show(s: Screen, reloadText = false) {
     if (s.kind === 'list' && s.sessionList && !s.compat) startMenuSpinner(s);
     if (s.kind === 'text' && s.reader) {
       await bridge.updateImageRawData(new ImageRawDataUpdate({ containerID: STATUS_ICON.containerID, containerName: STATUS_ICON.containerName, imageData: statusPixels(s.activityLabel![0] === '/' ? '' : s.activityLabel![0]) })).catch(e => diag((e as Error).message));
-      await inputHint(true).catch(e => diag((e as Error).message));
       startReaderUpdates(s);
     }
   } catch (e) {
@@ -273,33 +270,50 @@ function compatibilityText(screen: SessionMenuScreen, selected = screen.selected
   return screen.items.map((item, i) => `${i === selected ? '>' : ' '} ${clipBytes(item, 48)}`).join('\n');
 }
 function startMenuSpinner(screen: SessionMenuScreen) {
-  if (!screen.columns?.some(row => row.busy)) return;
-  let frame = 0, busy = false;
+  let frame = 0, busy = false, polling = false;
+  const previous: number[][] = [];
   const draw = async () => {
     if (busy || current !== screen) return;
     busy = true;
     try {
-      const glyph = statusPixels(SPINNER[frame++ % SPINNER.length]);
-      for (const tile of MENU_STRIPS) {
+      const glyph = SPINNER[frame++ % SPINNER.length];
+      for (let tileIndex = 0; tileIndex < MENU_STRIPS.length; tileIndex++) {
+        const tile = MENU_STRIPS[tileIndex];
         if (current !== screen) return;
         const pixels = Array(tile.width * tile.height).fill(0);
-        let present = false;
         screen.columns!.forEach((row, i) => {
-          if (!row.busy) return;
+          const icon = statusPixels(row.busy ? glyph : row.marker);
           for (let y = 0; y < 27; y++) {
             const target = 40 + i * 27 + y - tile.yPosition;
             if (target < 0 || target >= tile.height) continue;
-            present = true;
-            for (let x = 0; x < 20; x++) pixels[target * 20 + x] = glyph[y * 20 + x];
+            for (let x = 0; x < 20; x++) pixels[target * 20 + x] = icon[y * 20 + x];
           }
         });
-        if (present) await bridge.updateImageRawData(new ImageRawDataUpdate({ containerID: tile.containerID, containerName: tile.containerName, imageData: pixels }));
+        if (previous[tileIndex]?.every((p, i) => p === pixels[i])) continue;
+        const result = await bridge.updateImageRawData(new ImageRawDataUpdate({ containerID: tile.containerID, containerName: tile.containerName, imageData: pixels }));
+        if (result !== ImageRawDataUpdateResult.success) throw new Error('Session marker image transfer rejected.');
+        previous[tileIndex] = pixels;
       }
     } catch (e) { diag((e as Error).message); }
     finally { busy = false; }
   };
   void draw();
   menuAnimation = setInterval(() => { void draw(); }, 500);
+  menuPoll = setInterval(async () => {
+    if (polling || current !== screen) return;
+    polling = true;
+    try {
+      const latest = await api.threads();
+      if (current !== screen) return;
+      for (const row of screen.columns!) {
+        if (!row.handle) continue;
+        const state = latest.find(t => t.handle === row.handle)?.state || 'unknown';
+        row.busy = state === 'busy'; row.marker = state === 'idle' ? '/' : state === 'busy' ? '' : '?';
+      }
+      void draw();
+    } catch (e) { diag((e as Error).message); }
+    finally { polling = false; }
+  }, 3000);
 }
 async function updateSessionCursor(screen: SessionMenuScreen) {
   if (screen.cursorWriting) return;
@@ -323,22 +337,25 @@ function home(page = 0) {
   return guard('Orca-glass', async () => {
     const allThreads = await api.threads();
     const threads = viewProvider === 'all' ? allThreads : allThreads.filter(t => t.agent === viewProvider);
-    const pageSize = 4;
-    page = Math.max(0, Math.min(page, Math.ceil(threads.length / pageSize) - 1));
-    const visible = threads.slice(page * pageSize, (page + 1) * pageSize);
+    const pageCount = threads.length <= 4 ? 1 : 1 + Math.ceil((threads.length - 4) / 3);
+    page = Math.max(0, Math.min(page, pageCount - 1));
+    const pageSize = page === 0 ? 4 : 3;
+    const start = page === 0 ? 0 : 4 + (page - 1) * 3;
+    const visible = threads.slice(start, start + pageSize);
     const actions: { label: string; run: () => unknown }[] = [
-      { label: `* Refresh sessions [${viewProvider === 'all' ? 'All sessions' : agentLabel(viewProvider)}]`, run: () => home(page) },
+      { label: `* Filter by Agent [${viewProvider === 'all' ? 'All sessions' : agentLabel(viewProvider)}]`, run: () => viewOptions() },
+      { label: '* Refresh sessions', run: () => home(page) },
       { label: '+ New Session', run: newSession },
       { label: '◇ Usage', run: usage },
       ...visible.map(t => ({ label: sessionRow(t.title, t.handle, t.agent, t.state), run: () => thread(t) })),
     ];
     if (page > 0) actions.push({ label: 'Previous page', run: () => home(page - 1) });
-    if ((page + 1) * pageSize < threads.length) actions.push({ label: 'Next page', run: () => home(page + 1) });
+    if (page + 1 < pageCount) actions.push({ label: 'Next page', run: () => home(page + 1) });
     const columns = actions.map((a, i): SessionColumns => {
-      const t = i >= 3 ? visible[i - 3] : undefined;
-      if (t) return { marker: t.state === 'idle' ? '/' : t.state === 'busy' ? '' : '?', title: compactSessionTitle(t.title, t.handle), right: `[${agentLabel(t.agent)}]`, busy: t.state === 'busy' };
-      return i === 0 ? { marker: '*', title: 'Refresh sessions', right: `[${viewProvider === 'all' ? 'All sessions' : agentLabel(viewProvider)}]` }
-        : { marker: i === 1 ? '+' : i === 2 ? '◇' : '', title: i === 1 ? 'New Session' : i === 2 ? 'Usage' : a.label, right: '' };
+      const t = i >= 4 ? visible[i - 4] : undefined;
+      if (t) return { marker: t.state === 'idle' ? '/' : t.state === 'busy' ? '' : '?', title: compactSessionTitle(t.title, t.handle), right: `[${agentLabel(t.agent)}]`, busy: t.state === 'busy', handle: t.handle };
+      return i === 0 ? { marker: '*', title: 'Filter by Agent', right: `[${viewProvider === 'all' ? 'All sessions' : agentLabel(viewProvider)}]` }
+        : { marker: i === 1 ? '*' : i === 2 ? '+' : i === 3 ? '◇' : '', title: i === 1 ? 'Refresh sessions' : i === 2 ? 'New Session' : i === 3 ? 'Usage' : a.label, right: '' };
     });
     await show({ kind: 'list', title: sessionListTitle(allThreads.length), sessionList: true, columns, connectedCount: allThreads.length, selected: 0, paintedSelection: 0,
       items: actions.map(a => a.label),
@@ -381,7 +398,7 @@ function thread(t: Thread, note = '') {
       diag(`Activity request failed: ${(e as Error).message}`);
       return { state: 'unknown', elapsedSeconds: null };
     });
-    await show({ kind: 'text', title: title(), text, tail: true, activityState: state.state, reportedSeconds: state.elapsedSeconds, activityLabel: activityLabel(state.state), savedHistory: useSaved, reader: t, onBack: home,
+    await show({ kind: 'text', title: title(), text, tail: true, activityState: state.state, reportedSeconds: state.state === 'working' ? state.elapsedSeconds ?? null : null, activityLabel: activityLabel(state.state), savedHistory: useSaved, reader: t, onBack: home,
       onHold: () => { void record(t, true); } });
     startReaderUpdates(current);
   }, home);
@@ -417,7 +434,7 @@ function startReaderUpdates(screen: Screen | null) {
     if (current !== screen) { reading = false; return; }
     if (screen.activityState !== activity.state) { screen.statusFrame = 0; screen.statusStartedAt = Date.now(); }
     screen.activityState = activity.state;
-    const seconds = activity.state === 'working' ? activity.elapsedSeconds : null;
+    const seconds = activity.state === 'working' ? activity.elapsedSeconds ?? null : null;
     if (screen.reportedSeconds !== seconds) {
       screen.reportedSeconds = seconds;
       try { await inputHint(true); } catch (e) { diag((e as Error).message); }
@@ -520,7 +537,7 @@ async function record(t: Thread, hold = false) {
   const voiceShow = async (screen: Extract<Screen, { kind: 'text' }>) => {
     if (!overlayActive) return;
     current = screen;
-    try { await writeOverlay(clipBytes(`${screen.title}\n${screen.text}`, 900)); }
+    try { await writeOverlay(clipBytes(screen.title ? `${screen.title}\n${screen.text}` : screen.text, 900)); }
     catch (e) {
       diag(`${(e as Error).message} Chat position preserved; voice panel could not update.`);
       throw e;
@@ -529,9 +546,11 @@ async function record(t: Thread, hold = false) {
   const closeVoice = async () => {
     if (!overlayActive) return;
     overlayActive = false;
+    current = background;
+    await inputHint(true).catch(e => diag((e as Error).message));
     try { await writeOverlay(background.activityLabel || readerStatus('unknown'), true); }
     catch (e) { diag((e as Error).message); }
-    finally { current = background; await inputHint(true).catch(e => diag((e as Error).message)); startReaderUpdates(background); }
+    finally { startReaderUpdates(background); }
   };
   recording = [];
   const chunks = recording;
@@ -597,7 +616,7 @@ async function record(t: Thread, hold = false) {
         await voiceShow({ kind: 'text', title: tr('voiceTitle'), text: tr('notHeard'), onClick: () => closeVoice(), onBack: () => closeVoice() });
       } else {
         cancelCapture = cancel;
-        await voiceShow({ kind: 'text', title: tr('confirmSend'), text,
+        await voiceShow({ kind: 'text', title: '', text,
           onClick: () => { void sendText(text); }, onBack: () => { cancel(); void closeVoice(); } });
       }
     } catch (e) {
@@ -642,7 +661,7 @@ async function record(t: Thread, hold = false) {
         if (cancelled) return;
         lastBytes = pcm.length;
         caption = result.text.trim();
-        if (!stopped && caption) await voiceShow({ kind: 'text', title: 'Listening · provisional', text: caption,
+        if (!stopped && caption) await voiceShow({ kind: 'text', title: '', text: caption,
           onBack: () => { void stop(false); } });
       } catch { /* Final transcription reports errors; transient preview failure is not a send. */ }
       finally { pending = null; }
@@ -739,18 +758,15 @@ function confirm(w: Workspace, p: Provider, model: string, prompt: number, label
 // ---- 入力 ----
 
 function onEvent(e: EvenHubEvent) {
-  if (e.menuItemClickEvent) {
-    if (e.menuItemClickEvent.itemID === VIEW_OPTIONS_ID && current?.kind === 'list' && current.sessionList) {
-      const owner = current;
-      void sessionCursorWrites.then(() => { if (current === owner) void viewOptions(); });
-    }
-    return;
-  }
+  if (e.menuItemClickEvent) return;
   const systemType = e.sysEvent?.eventType;
   if (systemType === OsEventTypeList.SYSTEM_EXIT_EVENT || systemType === OsEventTypeList.ABNORMAL_EXIT_EVENT) {
     clearInterval(poll);
     clearInterval(statusAnimation);
-      cancelCapture?.();
+    clearInterval(menuAnimation);
+    clearInterval(menuPoll);
+    current = null;
+    cancelCapture?.();
     return;
   }
   if (e.audioEvent) {
@@ -918,7 +934,7 @@ async function main() {
     await connect();
   });
   bridge.onEvenHubEvent(onEvent);
-  window.addEventListener('pagehide', () => { clearInterval(poll); clearInterval(statusAnimation); clearInterval(menuAnimation); cancelCapture?.(); });
+  window.addEventListener('pagehide', () => { clearInterval(poll); clearInterval(statusAnimation); clearInterval(menuAnimation); clearInterval(menuPoll); cancelCapture?.(); });
   await connect();
 }
 

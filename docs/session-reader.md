@@ -1,6 +1,15 @@
 # Session reader
 Updated: 2026-11-03
 
+Version1.0.16 removes the review instruction heading and provisional Listening
+heading; captions/transcription now occupy all three native input rows. Click
+still sends and double-click cancels. Timer and input hint are native text,
+replacing the18px Arial raster that looked different; measured right padding
+matches the native column approach. Braille alone remains raster in the reader.
+Isolated simulator shows three explicit draft lines; cancel chat crop identical,
+no voice rebuild/body rewrite, one complete fake send. Native timer/hint also
+verified with demo13m32s.71 tests/build pass; G2 appearance remains pending.
+
 2026-11-03 version1.0.13 reserves six chat rows (y32,height162) and three input
 rows (y202,height81), with a28px title and divider at y198. Review displays an
 instruction row plus two transcription rows. The voice border grows to84px at

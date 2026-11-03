@@ -40,7 +40,7 @@ async function harness(count = 2, voice = false, mode = 'tap', savedView = '', s
     getLocalStorage: async key => key === 'code' ? 'demo' : key === 'recording-mode' ? mode : key === 'lang' ? 'en' : key === 'view-provider' ? savedView : '',
     setLocalStorage: async () => {},
     createStartUpPageContainer: async p => { pages.push(p); return startupResult; },
-    rebuildPageContainer: async p => { pages.push(p); return !(rejectAlignedMenu && p.menuObject && p.textObject.length > 3); },
+    rebuildPageContainer: async p => { pages.push(p); return !(rejectAlignedMenu && p.textObject.some(c => c.containerName === 'menu-right')); },
     textContainerUpgrade: async value => { upgrades.push(value); return true; },
     onEvenHubEvent: fn => { event = fn; },
     audioControl: async on => { mic.push(on); return true; },
@@ -94,19 +94,15 @@ test('every live terminal remains reachable through session-list pages', async (
   assert.equal(seen.size, 40);
 });
 
-test('native Filter by Agent belongs only to the session list and does not duplicate OS controls', async () => {
+test('Filter by Agent is in session rows and contextual menu keeps only OS controls', async () => {
   const h = await harness();
-  assert.equal(h.pages.at(-1).menuObject.menuItems.length, 1);
-  assert.equal(h.pages.at(-1).menuObject.menuItems[0].itemName, 'Filter by Agent >');
-  await h.system(4);
-  assert.equal(h.pages.length, 2);
-  await h.pick(3);
   assert.equal(h.pages.at(-1).menuObject, undefined);
   const count = h.pages.length;
-  await h.menu(1001);
-  await h.system(5);
+  await h.menu(1001); await h.system(4); await h.system(5);
   assert.equal(h.pages.length, count);
-  assert.equal(h.sends.length, 0);
+  assert.match(menuItems(h)[0], /Filter by Agent/);
+  await h.pick(0);
+  assert.equal(h.pages.at(-1).textObject[0].content, 'Filter by Agent');
 });
 
 test('Filter by Agent discovers providers, marks selection, filters and restores All Sessions', async () => {
@@ -118,37 +114,37 @@ test('Filter by Agent discovers providers, marks selection, filters and restores
   ];
   const saved = [];
   h.bridge.setLocalStorage = async (key, value) => { saved.push([key, value]); };
-  await h.menu(1001);
+  await h.pick(0);
   assert.deepEqual([...menuItems(h)],
     ['<-', 'All Sessions ✓', 'Claude', 'Codex', 'OpenCode', 'Gemini']);
   await h.pick(4);
   assert.deepEqual(saved, [['view-provider', 'opencode']]);
   let items = menuItems(h);
-  assert.equal(items.length, 4);
-  assert.match(items[3], /OpenCode worker/);
-  await h.menu(1001);
+  assert.equal(items.length, 5);
+  assert.match(items[4], /OpenCode worker/);
+  await h.pick(0);
   assert.match(menuItems(h)[4], /OpenCode ✓/);
   await h.pick(1);
   items = menuItems(h);
-  assert.equal(items.length, 6);
+  assert.equal(items.length, 7);
   assert.equal(h.sends.length, 0);
 });
 
 test('saved provider filter restores even with no matching live sessions', async () => {
   const h = await harness(2, false, 'tap', 'claude');
-  assert.equal(menuItems(h).length, 3);
-  await h.menu(1001);
+  assert.equal(menuItems(h).length, 4);
+  await h.pick(0);
   assert.equal(menuItems(h)[2], 'Claude ✓');
   assert.equal(h.sends.length, 0);
 });
 
 test('phone message requires review and cannot be sent to a newly selected session', async () => {
   const h = await harness();
-  await h.pick(3);
+  await h.pick(4);
   h.elements.get('reply-text').value = 'Please explain the change.';
   h.elements.get('reply-form').listeners.submit({ preventDefault() {} });
   await h.back();
-  await h.pick(4);
+  await h.pick(5);
   await h.elements.get('send-reply').listeners.click();
   assert.equal(h.sends.length, 0);
   h.elements.get('reply-text').value = 'A new sentence.';
@@ -160,7 +156,7 @@ test('phone message requires review and cannot be sent to a newly selected sessi
 
 test('cancelling upstream microphone flow stops capture without restarting or sending', async () => {
   const h = await harness(2, true);
-  await h.pick(3);
+  await h.pick(4);
   h.press();
   await h.flush();
   assert.deepEqual(h.mic, [true]);
@@ -171,7 +167,7 @@ test('cancelling upstream microphone flow stops capture without restarting or se
 
 test('slow polls do not overlap or overwrite a different session screen', async () => {
   const h = await harness();
-  await h.pick(3);
+  await h.pick(4);
   let finish, reads = 0;
   h.api.thread = () => { reads++; return new Promise(resolve => { finish = resolve; }); };
   const poll = [...h.timers.values()][0];
@@ -181,7 +177,7 @@ test('slow polls do not overlap or overwrite a different session screen', async 
   assert.equal(reads, 1);
   await h.back();
   h.api.thread = async () => ({ text: 'Other session' });
-  await h.pick(4);
+  await h.pick(5);
   finish({ text: 'Stale session output' });
   await pending;
   assert.equal(h.upgrades.length, 0);
@@ -191,13 +187,13 @@ test('slow polls do not overlap or overwrite a different session screen', async 
 test('working footer uses reported duration and animation never rewrites the conversation', async () => {
   const h = await harness();
   h.api.activity = async () => ({ state: 'working', elapsedSeconds: 812 });
-  await h.pick(3);
+  await h.pick(4);
   const pageCount = h.pages.length;
   const imagesBefore = h.images.length;
   await [...h.animations.values()][0]();
   assert.equal(h.pages.length, pageCount);
   assert.ok(h.images.length > imagesBefore);
-  assert.ok(h.upgrades.every(u => u.containerName === 'voice'));
+  assert.ok(h.upgrades.every(u => ['voice', 'hint'].includes(u.containerName)));
   assert.equal(hintExports.footerHint(812), '13m 32s [Tap & hold to input]');
   assert.equal(hintExports.footerHint(null), '[Tap & hold to input]');
   assert.equal(hintExports.footerHint(NaN), '[Tap & hold to input]');
@@ -214,7 +210,7 @@ test('working words last five seconds and Braille patterns are distinct', () => 
 
 test('hold release reviews text and only explicit send submits once', async () => {
   const h = await harness(2, true, 'hold');
-  await h.pick(3);
+  await h.pick(4);
   h.press();
   await h.flush();
   h.audio();
@@ -234,7 +230,7 @@ test('hold release reviews text and only explicit send submits once', async () =
 
 test('cancelling final transcription prevents late sending', async () => {
   const h = await harness(2, true, 'hold');
-  await h.pick(3);
+  await h.pick(4);
   h.press();
   await h.flush();
   h.audio();
@@ -250,7 +246,7 @@ test('cancelling final transcription prevents late sending', async () => {
 
 test('release before the recording screen is ready never leaves the microphone running', async () => {
   const h = await harness(2, true, 'hold');
-  await h.pick(3);
+  await h.pick(4);
   h.press();
   h.release();
   await h.flush();
@@ -268,7 +264,7 @@ test('firmware gets overflowing text; scroll does not replace content and pauses
   const h = await harness();
   const output = Array.from({ length: 20 }, (_, i) => `Line ${i}`).join('\n');
   h.api.thread = async () => ({ text: output });
-  await h.pick(3);
+  await h.pick(4);
   assert.equal(h.pages.at(-1).textObject[1].content, output);
   assert.equal(h.pages.at(-1).textObject[1].isEventCapture, 1);
   await h.scroll('up'); await h.scroll('down');
@@ -294,14 +290,14 @@ test('Unicode sections preserve all text within native update limit', () => {
 
 test('previews serialize requests; release waits for final text before review', async () => {
   const h = await harness(2, true, 'hold');
-  await h.pick(3); h.press(); await h.flush(); h.audio();
+  await h.pick(4); h.press(); await h.flush(); h.audio();
   let finish, requests = 0;
   h.api.transcribe = () => { requests++; return new Promise(resolve => { finish = resolve; }); };
   const preview = [...h.timers.values()][0];
   preview(); preview();
   assert.equal(requests, 1);
   finish({ text: 'First words' }); await h.flush();
-  assert.equal(h.upgrades.at(-1).content, 'Listening · provisional\nFirst words');
+  assert.equal(h.upgrades.at(-1).content, 'First words');
   assert.equal(h.sends.length, 0);
   h.audio(); preview(); h.release(); await h.flush();
   assert.equal(h.sends.length, 0);
@@ -315,7 +311,7 @@ test('previews serialize requests; release waits for final text before review', 
 
 test('cancel during preview prevents late captions and input', async () => {
   const h = await harness(2, true, 'hold');
-  await h.pick(3); h.press(); await h.flush(); h.audio();
+  await h.pick(4); h.press(); await h.flush(); h.audio();
   let finish;
   h.api.transcribe = () => new Promise(resolve => { finish = resolve; });
   [...h.timers.values()][0](); await h.back();
@@ -329,7 +325,7 @@ test('saved conversation stays intact through repeated scroll gestures and pause
   const h = await harness();
   const text = 'First conversation message '.repeat(200) + 'Newest answer';
   h.api.history = async () => ({ text, source: 'codex-transcript', messageCount: 20 });
-  await h.pick(3);
+  await h.pick(4);
   assert.equal(h.pages.at(-1).textObject[1].content, '');
   assert.equal(h.upgrades.at(-1).content, text.slice(-900));
   const count = h.upgrades.length, pages = h.pages.length;
@@ -343,7 +339,7 @@ test('saved conversation stays intact through repeated scroll gestures and pause
 
 test('hold starts directly from chat even with a saved tap preference, without menu checks', async () => {
   const h = await harness(2, true, 'tap');
-  await h.pick(3);
+  await h.pick(4);
   const before = h.pages.length;
   h.api.thread = async () => { throw new Error('No pre-record menu lookup should run'); };
   h.api.capabilities = async () => { throw new Error('No pre-record capability lookup should run'); };
@@ -366,8 +362,8 @@ test('hold starts directly from chat even with a saved tap preference, without m
 
 test('double-click discards a finished voice draft without sending', async () => {
   const h = await harness(2, true, 'hold');
-  await h.pick(3); h.press(); await h.flush(); h.audio(); h.release(); await h.flush();
-  assert.match(h.upgrades.at(-1).content, /^confirmSend/);
+  await h.pick(4); h.press(); await h.flush(); h.audio(); h.release(); await h.flush();
+  assert.equal(h.upgrades.at(-1).content, 'A voice test.');
   await h.back();
   assert.equal(h.sends.length, 0);
   assert.equal(h.pages.at(-1).textObject[1].content, 'Content terminal-0');
@@ -381,7 +377,7 @@ test('capture and bottom-panel review never rebuild or rewrite the chat on send 
   for (const send of [true, false]) {
     const h = await harness(2, true, 'hold');
     h.api.history = async () => ({ text: 'Saved history '.repeat(300), source: 'codex-transcript' });
-    await h.pick(3); await h.scroll('up');
+    await h.pick(4); await h.scroll('up');
     const page = h.pages.at(-1), count = h.pages.length, writes = h.upgrades.length;
     const panel = page.textObject.find(c => c.containerName === 'voice');
     assert.equal(panel.width, 544);
@@ -422,7 +418,7 @@ test('capture and bottom-panel review never rebuild or rewrite the chat on send 
 
 test('rejected foreground panel preserves the chat instead of rebuilding a voice page', async () => {
   const h = await harness(2, true, 'hold');
-  await h.pick(3);
+  await h.pick(4);
   const upgrade = h.bridge.textContainerUpgrade;
   const count = h.pages.length;
   h.bridge.textContainerUpgrade = value => value.containerName === 'voice' ? Promise.resolve(false) : upgrade(value);
@@ -435,7 +431,7 @@ test('rejected foreground panel preserves the chat instead of rebuilding a voice
 
 test('bottom status changes while reading is paused without rewriting the conversation', async () => {
   const h = await harness();
-  await h.pick(3);
+  await h.pick(4);
   const pages = h.pages.length;
   await h.scroll('up');
   h.api.activity = async () => ({ state: 'working' });
@@ -445,20 +441,20 @@ test('bottom status changes while reading is paused without rewriting the conver
   h.api.activity = async () => ({ state: 'waiting' });
   await [...h.timers.values()][0]();
   assert.equal(h.upgrades.at(-1).content, '/ Waiting input');
-  assert.ok(h.upgrades.every(u => u.containerName === 'voice'));
+  assert.ok(h.upgrades.every(u => ['voice', 'hint'].includes(u.containerName)));
   assert.equal(h.pages.length, pages);
 });
 
 test('initial reader status is fetched before rendering rather than waiting for phone timers', async () => {
   const h = await harness();
   h.api.activity = async () => ({ state: 'working' });
-  await h.pick(3);
+  await h.pick(4);
   assert.equal(h.pages.at(-1).textObject.find(c => c.containerName === 'voice').content, '    Processing.');
 });
 
 test('late activity cannot overwrite voice capture; cancel restores status and keeps text paused', async () => {
   const h = await harness(2, true, 'hold');
-  await h.pick(3);
+  await h.pick(4);
   h.api.activity = async () => ({ state: 'working' });
   await [...h.timers.values()][0]();
   let finish;
@@ -475,13 +471,13 @@ test('late activity cannot overwrite voice capture; cancel restores status and k
   const afterCancel = h.upgrades.length;
   await [...h.timers.values()][0]();
   assert.equal(h.upgrades.at(-1).content, '/ Waiting input');
-  assert.ok(h.upgrades.slice(afterCancel).every(u => u.containerName === 'voice'));
+  assert.ok(h.upgrades.slice(afterCancel).every(u => ['voice', 'hint'].includes(u.containerName)));
 });
 
 test('saved history losing its association falls back to live output and keeps updating', async () => {
   const h = await harness();
   h.api.history = async () => ({ text: 'Saved conversation', source: 'codex-transcript' });
-  await h.pick(3);
+  await h.pick(4);
   h.api.history = async () => ({ text: 'Raw buffer', source: 'terminal-buffer' });
   h.api.thread = async () => ({ text: 'New live reply' });
   await [...h.timers.values()][0]();
@@ -494,7 +490,7 @@ test('saved history losing its association falls back to live output and keeps u
 
 test('a rejected live text update is retried instead of marking unseen text as displayed', async () => {
   const h = await harness();
-  await h.pick(3);
+  await h.pick(4);
   h.api.thread = async () => ({ text: 'Fresh reply' });
   const original = h.bridge.textContainerUpgrade;
   let attempts = 0;
@@ -511,7 +507,7 @@ test('a rejected live text update is retried instead of marking unseen text as d
 
  test('session click does nothing, including when terminal has numbered choices', async () => {
   const h = await harness();
-  await h.pick(3);
+  await h.pick(4);
   const count = h.pages.length;
   h.api.thread = async () => { throw new Error('Click must not read or open a choice menu'); };
   await h.tap();
@@ -529,9 +525,9 @@ test('a rejected live text update is retried instead of marking unseen text as d
 
 test('voice border is precreated, appears for capture/review and clears on cancel', async () => {
   const h = await harness(2, true, 'hold');
-  await h.pick(3);
+  await h.pick(4);
   const page = h.pages.at(-1);
-  assert.equal(page.imageObject.length, 4);
+  assert.equal(page.imageObject.length, 3);
   for (const tile of page.imageObject.filter(c => c.containerName.startsWith('voice-border'))) {
     assert.ok(tile.width <= 288 && tile.height <= 144);
     assert.ok(tile.yPosition >= 198);
@@ -544,7 +540,7 @@ test('voice border is precreated, appears for capture/review and clears on cance
   await h.back();
   assert.equal(h.pages.length, count);
   assert.ok(h.images.filter(i => i.containerName.startsWith('voice-border')).slice(-2).every(i => i.imageData.every(p => p === 0)));
-  assert.ok(h.upgrades.every(u => u.containerName === 'voice'));
+  assert.ok(h.upgrades.every(u => ['voice', 'hint'].includes(u.containerName)));
 });
 
 test('compact session menu uses native text and one update per cursor move', async () => {
@@ -554,12 +550,14 @@ test('compact session menu uses native text and one update per cursor move', asy
   assert.equal(h.pages.at(-1).listObject, undefined);
   assert.equal(h.pages.at(-1).textObject.find(c => c.containerName === 'menu-input').isEventCapture, 1);
   assert.ok(h.pages.at(-1).textObject.filter(c => c.containerName !== 'menu-input').every(c => c.isEventCapture === 0));
-  assert.equal(h.images.length, 0);
+  assert.ok(h.images.every(i => i.containerName.startsWith('menu-spin')));
   assert.equal(h.animations.size, 0);
   const columns = h.pages.at(-1).textObject;
   assert.equal(columns.find(c => c.containerName === 'menu-count').xPosition, 300);
   assert.equal(columns.find(c => c.containerName === 'menu-right').xPosition, 396);
-  assert.ok(columns.find(c => c.containerName === 'body').content.startsWith('*'));
+  assert.ok(columns.find(c => c.containerName === 'body').content.trimStart().startsWith('Filter by Agent'));
+  assert.match(columns.find(c => c.containerName === 'menu-right').content.split('\n')[0], /All sessions/);
+  assert.equal(columns.find(c => c.containerName === 'menu-right').content.split('\n')[1].trim(), '');
   assert.equal(h.pages.at(-1).containerTotalNum, 8);
   const all = [...columns, ...h.pages.at(-1).imageObject];
   assert.deepEqual(all.map(c => c.zOrderIndex).sort((a, b) => a - b), [0,1,2,3,4,5,6,7]);
@@ -568,7 +566,7 @@ test('compact session menu uses native text and one update per cursor move', asy
   assert.equal(h.upgrades.length, 1);
   assert.equal(h.upgrades[0].containerName, 'menu-cursor');
   assert.equal(h.upgrades[0].content.split('\n')[1], '>');
-  await h.scroll('down'); await h.scroll('down');
+  await h.scroll('down'); await h.scroll('down'); await h.scroll('down');
   assert.equal(h.pages.length, pages);
   await h.tap();
   assert.equal(h.pages.at(-1).textObject[1].content, 'Content terminal-0');
@@ -576,7 +574,7 @@ test('compact session menu uses native text and one update per cursor move', asy
 
 test('reader reserves six native chat rows and three input rows without overlap', async () => {
   const h = await harness();
-  await h.pick(3);
+  await h.pick(4);
   const page = h.pages.at(-1);
   const body = page.textObject.find(c => c.containerName === 'body');
   const voice = page.textObject.find(c => c.containerName === 'voice');
@@ -591,11 +589,11 @@ test('rapid native-text menu swipes coalesce instead of queuing every redraw', a
   let finish;
   const original = h.bridge.textContainerUpgrade;
   h.bridge.textContainerUpgrade = value => { h.bridge.textContainerUpgrade = original; return new Promise(resolve => { finish = () => { original(value); resolve(true); }; }); };
-  await h.scroll('down'); await h.scroll('down'); await h.scroll('down'); await h.scroll('down');
+  await h.scroll('down'); await h.scroll('down'); await h.scroll('down'); await h.scroll('down'); await h.scroll('down');
   finish(); await h.flush();
   assert.equal(h.upgrades.length, 2);
-  assert.equal(h.upgrades.at(-1).content.split('\n')[4], '>');
-  assert.equal(h.images.length, 0);
+  assert.equal(h.upgrades.at(-1).content.split('\n')[5], '>');
+  assert.ok(h.images.every(i => i.containerName.startsWith('menu-spin')));
 });
 
 test('startup uses a minimal native page and recovers an already-consumed startup', async () => {
@@ -613,11 +611,44 @@ test('hardware rejecting aligned layout gets an operable compact fallback', asyn
   assert.equal(h.pages.at(-1).containerTotalNum, 3);
   assert.equal(h.pages.at(-1).imageObject, undefined);
   assert.match(h.elements.get('diag').textContent, /compact compatibility menu active/);
-  await h.scroll('down'); await h.scroll('down'); await h.scroll('down');
+  await h.scroll('down'); await h.scroll('down'); await h.scroll('down'); await h.scroll('down');
   assert.equal(h.upgrades.at(-1).containerName, 'body');
   await h.tap();
   assert.equal(h.pages.at(-1).textObject[1].content, 'Content terminal-0');
   await h.back();
   assert.equal(h.pages.at(-1).containerTotalNum, 3);
   assert.equal(h.pages.filter(p => p.containerTotalNum === 8).length, 1);
+});
+
+test('voice review uses all three native rows and hint is native text', async () => {
+  const h = await harness(2, true, 'hold');
+  await h.pick(4);
+  const page = h.pages.at(-1), count = h.pages.length;
+  assert.ok(page.textObject.some(c => c.containerName === 'hint'));
+  assert.ok(!page.imageObject.some(c => c.containerName === 'hint'));
+  h.api.transcribe = async () => ({ text: 'First line.\nSecond line.\nThird line.' });
+  h.press(); await h.flush(); h.audio(); h.release(); await h.flush();
+  assert.equal(h.upgrades.filter(u => u.containerName === 'voice').at(-1).content, 'First line.\nSecond line.\nThird line.');
+  assert.equal(h.pages.length, count);
+  await h.tap();
+  assert.equal(h.sends.length, 1);
+});
+
+test('menu activity polling starts a spinner after a session becomes busy', async () => {
+  const h = await harness();
+  h.api.threads = async () => [{ handle: 'terminal-0', title: 'Session 0', agent: 'codex', state: 'busy' }];
+  await [...h.timers.values()].at(-1)(); await h.flush();
+  const before = h.images.filter(i => i.containerName === 'menu-spin-top').at(-1).imageData.join(',');
+  await [...h.timers.values()][0](); await h.flush();
+  const after = h.images.filter(i => i.containerName === 'menu-spin-top').at(-1).imageData.join(',');
+  assert.notEqual(before, after);
+  assert.equal(h.upgrades.length, 0);
+});
+
+test('system exit stops menu activity polling and marker animation', async () => {
+  const h = await harness();
+  assert.ok(h.timers.size >= 2);
+  await h.system(7);
+  assert.equal(h.timers.size, 0);
+  assert.equal(h.animations.size, 0);
 });

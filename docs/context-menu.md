@@ -1,5 +1,12 @@
 # Native contextual menu
-Updated: 2026-11-02
+Updated: 2026-11-03
+
+## Current behavior
+
+Version1.0.16 removes Filter by Agent from contextual menu at user request.
+It is now the first sessions-list row, with the current filter aligned beside it.
+The native contextual menu contains OS-owned Display off, Brightness and Close
+only, in both session list and reader. The history below is superseded.
 
 ## Latest user confirmation and requested revision
 

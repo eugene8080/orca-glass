@@ -1,6 +1,16 @@
 # Session list
 Updated: 2026-11-03
 
+Version1.0.16: Filter by Agent is the first main-list row; its right column shows
+All sessions or selected provider. Refresh is second, followed by New Session,
+Usage and terminals. Filter is removed from contextual menu; OS controls remain.
+First page has up to4 terminals, later pages up to3 so neither page exceeds9 rows.
+Activity polls every3s independently of navigation. Marker strips render static
+icons and animated Braille above the native title gutter; title text stays native
+and stationary. Polling/animation stop on page change or system exit. Persistent
+phone label distinguishes Aligned native text from Compact compatibility mode.
+The user confirmed1.0.15 opens on both phone and G2;1.0.16 rendering pending.
+
 Version1.0.15 recovery: user still gets rejected-screen status after force-stop.
 Initial startup now uses the known small two-text shape, then attempts aligned
 menu through rebuild. If rejected, it rebuilds a three-text compact menu with a

@@ -12,6 +12,25 @@ upstream Claude code is not evidence of authorization to test it.
 
 ## Current work
 
+2026-11-03 user confirms1.0.15 on menu and both Android/G2 open; startup recovery
+is hardware-confirmed. No compatibility Status message seen does not prove mode,
+as transient status can be overwritten.1.0.16 adds persistent phone layout label.
+Filter by Agent is now first session-list row, selected filter on its right;
+Refresh second, then New/Usage/sessions. Contextual menu has OS controls only.
+First page can show4 sessions; later pages3 to leave both navigation actions.
+
+Voice review/provisional captions omit headings, giving all three81px rows to
+transcription. Click still sends; double-click cancels. Timer/input hint converted
+from raster to native text with measured right padding; status/draft font now
+matches. Braille/static marker icons remain tiny images only. Menu polls session
+activity every3s so spinners can start/stop after opening; image strips layer
+above title gutter and contain all icons so idle markers aren't erased. Native
+cursor remains independent, stale marker frames coalesced; exit clears timers.
+71 tests/build pass. Native simulator shows all three draft rows, cancel retains
+chat pixels; SDK voice check no rebuild/body writes, exactly one fake send.
+Native timer13m32s and hint verified in demo. G2 retest pending for1.0.16.
+Beta1.0.16 uploaded/promoted and channel verified (46,614 bytes).
+
 2026-11-03 force-stop clears host-load error but phone still shows our rejected
 screen update.1.0.15 starts with minimal two-text native bootstrap, then rebuilds
 the requested layout. Startup result1 can recover by rebuilding bootstrap once.
