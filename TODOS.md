@@ -8,12 +8,13 @@ This list supersedes older pending statuses in the dated history below.
 - **Plain-shell exclusion:** confirmed2026-11-03; user reports cmd.exe is gone
   from the G2 sessions list after Refresh. Header gap removal hardware-confirmed2026-11-03: user reports no blank row.
 
-- **Spinner: unresolved; aligned static fallback hardware-confirmed.** User reports
-  Menu layout: Aligned native text (Static markers) on2026-11-03 after1.0.17.
-  Full marker-image profile rejected; six-text aligned fallback accepted. Shorter
-  images alone did not resolve G2 rejection. Exact rejection constraint unknown.
-  Connected count and selected-filter right alignment confirmed2026-11-03.
-  Header gap removal confirmed2026-11-03; no blank row below the title.
+- **Session-list animation: trial held; spacing decision pending.** Native expanding
+  middle-dot trial in uncommitted1.0.18 source passes73 tests/build/doctor, but
+  native simulator shows title movement during text replacement. User rejects
+  wide spacing and requests one-pixel outward steps. Native text has no exact
+  glyph pixel-spacing control; asked tighter approximate native text versus drawn
+  exact-pixel dots. No1.0.18 beta uploaded. Keep confirmed1.0.17 available.
+  Count/filter alignment and title gap remain hardware-confirmed on1.0.17.
 - **Filter placement/alignment:** first main-list row, selected provider beside
   it; Refresh below; contextual menu has only system controls. Placement/removal
   confirmed2026-11-03. Agent tags ([Codex]/[Claude]/[Pi]) right alignment also

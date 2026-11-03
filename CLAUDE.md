@@ -34,6 +34,16 @@ workspace/worktree. This applies to every agent working here.
 
 ## Current work
 
+2026-11-03 native expanding middle-dot session-list trial is uncommitted1.0.18
+source only, not beta.73 tests/build/doctor pass but simulator screenshot diff
+shows working-session title movement during text replacement; do not ship this.
+User says animation too wide, asks exact one-pixel outward steps. Public native
+text cannot control intra-glyph pixel positions. Asked tighter approximate native
+text versus exact-pixel drawn dots; answer pending. Preserve1.0.17 beta and all
+hardware-confirmed alignment/gap behavior. Reader animation unchanged. Simulator
+currently temporary demo in Orca terminal term_32039336-fb99-43b8-bbf1-8dd00e790806;
+restore unpaired localhost5173/?code= preview when trial work finishes.
+
 2026-11-03 user confirms no blank row between Orca-glass version title and
 Filter by Agent on G2. Header gap check closed in TODOS.md. Count/filter right
 alignment and shell exclusion also confirmed. Session-list spinner remains
