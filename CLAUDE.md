@@ -12,6 +12,12 @@ upstream Claude code is not evidence of authorization to test it.
 
 ## Current work
 
+2026-11-02 further beta1.0.8 G2 confirmation: Braille spinner is visible,
+thinking/pondering labels animate, dots cycle . / .. / ..., and response timer
+is present. This verifies rendering/animation and timer visibility; exact
+five-second cadence and numerical timer accuracy were not explicitly checked.
+Documentation only; no new build needed.
+
 2026-11-02 user verifies beta1.0.8 on physical G2: session click does nothing,
 frame and divider are present, slash appears before Waiting input, and
 [Tap & hold to input] is visible. These four checks are hardware-confirmed.

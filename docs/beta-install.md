@@ -9,7 +9,9 @@ native idle slash and bright frame/divider, and renames filter to Filter by Agen
 58 tests/build pass; official simulator verifies visible decorations and identical
 reader pixels after click. User subsequently confirmed session click does nothing,
 frame/divider present, slash before Waiting input and input hint visible on G2.
-Spinner/timer/filter label and voice flow were not newly checked in that report.
+User further confirmed visible Braille spinner, animated thinking/pondering
+labels, cycling dots and response timer present on G2. Exact cadence, numerical
+timer accuracy, filter label and voice flow were not explicitly checked.
 
 2026-11-02 beta **1.0.7** uploaded/promoted and channel verified (47,887 bytes).
 Adds framed compact conversation, visible Braille spinner, five-second working

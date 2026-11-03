@@ -4,7 +4,10 @@ Updated: 2026-11-02
 Hardware confirmation: user verified on G2 that session click does nothing,
 the frame and divider are present, `/` appears before Waiting input, and
 `[Tap & hold to input]` is visible. This confirms those four beta1.0.8 checks;
-spinner animation, elapsed timer, filter label and voice flow remain separate.
+The user subsequently confirmed visible Braille spinner, animated thinking and
+pondering labels, cycling . / .. / ... dots and response timer present on G2.
+Exact five-second cadence and numerical timer accuracy were not explicitly
+checked. Filter label and voice flow remain separate checks.
 
 Version1.0.8: clicking the session reader does nothing, even if the terminal
 contains numbered choices. Resume latest output/Earlier/Later/Back controls
