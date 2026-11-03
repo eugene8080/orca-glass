@@ -42,6 +42,14 @@ it available. Automatic commit/push does not authorize beta promotion.
 
 ## Current work
 
+2026-11-03 user narrows SDK priorities to native near-field framed popups and
+native scroll-to-bottom/auto-follow of newest LLM text. Read-only Discord browser
+search finds even-hub-help is a forum with existing SDK feature-request posts;
+authentication thread cross-links official GitHub issue25 for tracking. Related
+Oct31 SDK scroll/selection discussion found, no exact popup/auto-follow duplicate
+identified in bounded inspected results. Submission guidance and links recorded in
+ docs/sdk-feature-requests.md. No Discord message or GitHub issue submitted.
+
 2026-11-03 user marks Compact native-text session menu trial done and asks TODO
 cleanup. TODOS.md rewritten as current open work, optional verification/limitations,
 confirmed completions and deferred scope. Full previous log preserved in
