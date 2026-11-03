@@ -42,6 +42,11 @@ it available. Automatic commit/push does not authorize beta promotion.
 
 ## Current work
 
+2026-11-03 user explicitly marks "Menu compatibility diagnosis and smaller
+markers" done. Corresponding TODOS.md history row closed. This confirmation is
+scoped to that task; unrelated G2 checks and scrollbar request remain unchanged.
+Documentation only, no beta/code change.
+
 2026-11-03 user explicitly requests beta upload.1.0.21 uploaded/promoted and
 channel verified (46,512 bytes): contextual Refresh/New Session/Usage, denser list,
 selected-marker wrap fix.75 tests/build passed before release; ordinary prototype
