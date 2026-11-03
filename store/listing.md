@@ -8,12 +8,21 @@ Updated: 2026-11-03
 - Tagline: **Read your coding sessions. Speak your next step.**
 - Description: [exact portal text](description.txt), under 2,000 characters.
 - Windows source/setup: https://github.com/eugene8080/orca-glass/tree/windows-android-codex
-- Suggested creator: eugene8080 (portal developer information is still blank).
+- Chosen creator: Quiet Signal (portal developer information is not yet saved).
 - Language: English.
 - Attribution: based on 2ero20ne's MIT-licensed Orca Glass. The upstream developer name, privacy URL and Mac-only instructions do not describe this fork.
 - Chosen public developer: Quiet Signal; support: quietsignal.apps@gmail.com.
   Entered in contact wizard but not saved: portal requires contact telephone.
   Phone visibility/address requirement unknown; no phone/address entered.
+
+Phone visibility check, 2026-11-03: the portal requires telephone but explicitly
+labels only email as public. [Developer terms, section 3.1](https://support.evenrealities.com/hc/en-us/articles/15606676690703-Even-Hub-Developer-Platform-Terms-of-Service)
+allow display of developer contact details without identifying individual fields.
+The inspected [OcuClaw public web listing](https://hub.evenrealities.com/catalogue/com.akelu.ocuclaw)
+shows developer name but no phone/contact section. This does not establish what
+the mobile app shows or whether the phone remains private. No definitive phone
+visibility rule found. Keep phone blank pending Even clarification or a chosen
+dedicated support number; no support message sent.
 
 Name, tagline and description saved through the authenticated Even Hub CLI on 2026-11-03. Five primary screenshots and the portal's Office environment cover were saved through the browser; the sixth contextual-menu image remains supplemental/local. User requests preview before Publish: do not submit for review or publish without approval. Beta remains 1.0.21; no build uploaded or submitted for public review.
 

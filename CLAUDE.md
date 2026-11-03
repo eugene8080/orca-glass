@@ -49,6 +49,12 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-03 phone-publicity check: official Developer Terms3.1 allow display of
+developer contact details but do not specify telephone. OcuClaw web catalogue
+listing shows name, no contact section; mobile visibility not verified. Cannot
+confirm phone stays private. Findings/sources in store/listing.md. No phone
+entered or support message sent; contact wizard still unsaved.
+
 2026-11-03 user chooses Quiet Signal and creates quietsignal.apps@gmail.com
 for public support. Entered both in portal contact wizard, leaving phone/address
 blank. Next returns Contact telephone is required; form NOT saved. Phone public
