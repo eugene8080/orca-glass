@@ -49,6 +49,17 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-03 privacy generator completed and auto-attached PDF (no separate save),
+all checklist items complete. Download/read shows misleading developer collection/
+retention/sharing, reverse-engineering prohibition, and embedded phone/address.
+CDN document retrieved without auth; no raw personal details/URL committed. User
+corrects scope: own PC/Tailscale/LLM accounts, no Quiet Signal app-data collection
+or sharing. Prepared store/Orca-Glass-Privacy-and-Terms.pdf plus Markdown/source
+renderer: two pages visually checked, text/PII exclusions verified, MIT retained.
+Portal replacement pending: inspected Edit offers fixed generator only; custom
+upload not found. Existing generated attachment remains; do not submit it. No
+review/publication/support message. User review PDF available via store/gallery.html.
+
 2026-11-03 physical G2 confirmation: user confirms full-width session text and
 marks remaining native-menu/moving-dot/selected-row slash checks done. Includes
 retained OS controls and the already-confirmed Refresh/New Session/Usage actions.

@@ -17,9 +17,11 @@ Completed/superseded release notes: [history](docs/todo-history.md).
   Original-author credit added; production build now carries original MIT license
   and attribution (not yet uploaded). User requires preview before Publish.
   User completed contact details; Quiet Signal and Personal Information now shown
-  complete. Privacy wizard partly filled (mic/network, AI, voice/session-data purposes),
-  blocked by open Chrome extension UI before next step/final save. Await user closing
-  panel. AI category saved; description checklist
+  complete. Portal generated/attached policy and all checklist items complete, but
+  template misstates developer collection/sharing and includes phone/address in
+  publicly retrievable PDF. Corrected store/Orca-Glass-Privacy-and-Terms.pdf ready;
+  portal replacement pending (only generator exposed). Do not submit old document.
+  AI category saved; description checklist
   complete. User selected earlier orca-glass-icon-preview.png;
   matching24x24 orca-glass-icon.png saved and verified in portal. Preview in
   store/gallery.html. No review/publication.

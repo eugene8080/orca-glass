@@ -13,13 +13,23 @@ Updated: 2026-11-03
 - Attribution: based on 2ero20ne's MIT-licensed Orca Glass. The upstream developer name, privacy URL and Mac-only instructions do not describe this fork.
 - Chosen public developer: Quiet Signal; support: quietsignal.apps@gmail.com.
   User entered phone/address directly; do not copy those values into this repository.
-  Public phone visibility remains unverified.
+  The generated policy PDF includes those details and is accessible by its CDN URL
+  without signing in. Do not commit that original PDF or its URL to the repository.
 
-Privacy wizard progress, 2026-11-03: microphone/local network selected, location,
-push, Bluetooth and background services left unchecked. Data collection: AI used,
-location not tracked; voice/transcript/session data and local transcription plus
-confirmed-reply purpose entered. Chrome blocks Next while an extension UI is open.
-Await user dismissing that UI; no final privacy save, review or publication.
+Privacy status, 2026-11-03: portal generator completed and auto-attached a PDF;
+all six checklist items now show complete. Its template incorrectly describes
+developer collection/retention/sharing and embeds the entered phone/address.
+User clarifies app traffic stays with their own PC bridge and service accounts;
+Quiet Signal does not receive or share normal app data.
+
+Corrected [two-page PDF](Orca-Glass-Privacy-and-Terms.pdf) and
+[editable text](privacy-and-terms.md) prepared and visually/text verified.
+It distinguishes user-controlled processing from developer collection, covers
+voluntary support emails separately, preserves MIT rights, and omits phone/address.
+Rebuild with `python scripts/render-store-policy.py` (requires reportlab).
+**Portal replacement remains pending:** the inspected Edit workflow only offers
+the same generator, not custom upload. Do not submit the currently attached
+generated document. No review/publication performed; no support message sent.
 
 Phone visibility check, 2026-11-03: the portal requires telephone but explicitly
 labels only email as public. [Developer terms, section 3.1](https://support.evenrealities.com/hc/en-us/articles/15606676690703-Even-Hub-Developer-Platform-Terms-of-Service)
@@ -27,8 +37,8 @@ allow display of developer contact details without identifying individual fields
 The inspected [OcuClaw public web listing](https://hub.evenrealities.com/catalogue/com.akelu.ocuclaw)
 shows developer name but no phone/contact section. This does not establish what
 the mobile app shows or whether the phone remains private. No definitive phone
-visibility rule found. Keep phone blank pending Even clarification or a chosen
-dedicated support number; no support message sent.
+visibility rule was found at that stage. The later generated PDF confirms that
+the generator embeds both phone and address in a publicly retrievable document.
 
 Name, tagline and description saved through the authenticated Even Hub CLI on 2026-11-03. Five primary screenshots and the portal's Office environment cover were saved through the browser; the sixth contextual-menu image remains supplemental/local. User requests preview before Publish: do not submit for review or publish without approval. Beta remains 1.0.21; no build uploaded or submitted for public review.
 
@@ -74,8 +84,8 @@ The Python step requires Pillow. Verify each image visually. The fixture replace
 ## Public release preparation
 
 - **General-user connection:** `scripts/build-beta.mjs` pins the build to the single PC origin allowed by `app/app.json`. Arbitrary users cannot pair their PCs with this installed build. Resolve public connection/setup before advertising a self-service install.
-- **Privacy:** complete a fork-specific policy covering microphone audio, network routes, local transcription and confirmed replies to desktop agents. Do not reuse the upstream policy as this developer's policy.
-- **Developer information:** Quiet Signal and quietsignal.apps@gmail.com selected by user and entered, but not saved. Next is blocked by required contact telephone. Email explicitly public; phone visibility and address requiredness unknown. User wants to avoid spam; no personal phone/address entered. Await dedicated support number or Even clarification. The user selected the earlier [GIMP icon](icon/orca-glass-icon.png); it passes the 24×24/2×2-block requirements and is saved and visually verified in the portal. Icon preparation is complete.
+- **Privacy:** corrected policy prepared above; replace inaccurate generated attachment before submission. Portal custom upload method not found. The original generated attachment includes phone/address and remains retrievable; replacing it must not be assumed to remove old CDN copies.
+- **Developer information:** Quiet Signal/contact setup complete after user entered phone/address. The user-selected [GIMP icon](icon/orca-glass-icon.png) is saved and visually verified in the portal. Icon preparation is complete.
 - **Description checklist:** completed by setting the missing category to AI. Existing description text retained.
 - **Name consistency:** manifest/portal say `Orca Glass`; on-glasses header says `Orca-glass`. Align in a later build before submission.
 - **Hardware:** retain open 1.0.21 checks in [TODOS.md](../TODOS.md). Final-only assistant filtering is not implemented; do not promise it.
