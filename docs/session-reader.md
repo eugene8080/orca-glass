@@ -1,6 +1,16 @@
 # Session reader
 Updated: 2026-11-02
 
+User subsequently cancelled the six-row overlay. Keep1.0.9 layout; the layout
+choice below is closed, with no new build required.
+
+Filtering clarification: structured Codex history excludes tool records and
+internal analysis, but currently retains assistant commentary, final_answer and
+unphased messages. Progress updates therefore still appear; it is not a strict
+final-response-only view. Terminal fallback uses marker heuristics and cannot
+reliably identify all progress messages. User reported remaining verbosity; no
+filter implementation changed in response to the informational question.
+
 Six-row trial, not released: user requested a larger review box while preserving
 background scroll. Official native simulator showed that enlarging the foreground
 image over chat masks it and clearing those tiles leaves black regions. Moving

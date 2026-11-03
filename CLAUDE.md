@@ -12,6 +12,15 @@ upstream Claude code is not evidence of authorization to test it.
 
 ## Current work
 
+2026-11-02 user cancels six-row voice overlay; retain existing1.0.9 layout.
+No layout choice remains pending. User asks whether verbose tool/thinking text
+is already filtered to main response. Inspection: visibleMessage excludes tool
+records/internal analysis but explicitly retains assistant commentary alongside
+final_answer, plus unphased assistant messages. Terminal fallback uses heuristic
+role/tool markers and cannot reliably distinguish progress commentary from final
+answers. Thus current reader is not final-response-only. No filter code changed
+for this question; do not claim full main-response filtering already exists.
+
 2026-11-02 user leaves menu unchanged and explicitly declines app-managed Click
 page advance; Click stays no-op. Six-row voice overlay trial failed native checks:
 enlarged foreground image tiles cover chat but clearing leaves black regions;
