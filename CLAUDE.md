@@ -42,6 +42,13 @@ it available. Automatic commit/push does not authorize beta promotion.
 
 ## Current work
 
+2026-11-03 user explicitly requests beta upload.1.0.21 uploaded/promoted and
+channel verified (46,512 bytes): contextual Refresh/New Session/Usage, denser list,
+selected-marker wrap fix.75 tests/build passed before release; ordinary prototype
+dist restored. Simulator remains OPEN for review; G2 verification pending.
+User asks for prior Even SDK feature requests for Discord; see
+ docs/sdk-feature-requests.md. No message/ticket sent by agent.
+
 2026-11-03 user requests move Refresh sessions/New Session/Usage to contextual
 menu. Implemented session-list-only first-level actions1001/1002/1003; Filter by
 Agent stays first list row. Native reader contextual menu remains OS-only. List

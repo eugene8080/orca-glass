@@ -1,5 +1,13 @@
 # Personal beta installation
 
+2026-11-03 user explicitly requests beta upload.1.0.21 uploaded/promoted and
+channel verified (46,512 bytes): contextual Refresh/New Session/Usage, denser list,
+selected-marker wrap fix.75 tests/build passed before release; ordinary prototype
+dist restored. Simulator remains OPEN for review; G2 verification pending.
+User asks for prior Even SDK feature requests for Discord; see
+ docs/sdk-feature-requests.md. No message/ticket sent by agent.
+
+
 2026-11-03 user approves simulator: "looks good all aligned". Beta1.0.20
 uploaded/promoted and channel verified (46,434 bytes),74 tests/build previously
 passed. Native dot/title alignment G2 check pending. Simulator intentionally left

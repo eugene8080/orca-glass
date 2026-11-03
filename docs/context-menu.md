@@ -3,10 +3,12 @@ Updated: 2026-11-03
 
 ## Current behavior
 
-Version1.0.16 removes Filter by Agent from contextual menu at user request.
-It is now the first sessions-list row, with the current filter aligned beside it.
-The native contextual menu contains OS-owned Display off, Brightness and Close
-only, in both session list and reader. The history below is superseded.
+Beta1.0.21 adds Refresh sessions, New Session and Usage as native first-level
+contextual actions on the sessions list only. Filter by Agent stays first in the
+list. Reader/other pages omit custom actions. OS owns Display off, Brightness and
+Close; simulator omits those slots, so G2 retention still needs confirmation.
+75 tests/build pass; native simulator routes all three actions without agent launch.
+User explicitly requested beta upload2026-11-03; beta channel1.0.21 verified.
 
 ## Latest user confirmation and requested revision
 

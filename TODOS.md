@@ -8,16 +8,15 @@ This list supersedes older pending statuses in the dated history below.
 - **Plain-shell exclusion:** confirmed2026-11-03; user reports cmd.exe is gone
   from the G2 sessions list after Refresh. Header gap removal hardware-confirmed2026-11-03: user reports no blank row.
 
-- **Move list actions into contextual menu:** implemented; simulator review pending.
+- **Move list actions into contextual menu:** beta1.0.21 uploaded; G2 check pending.
   Refresh sessions, New Session, Usage are first-level contextual actions only on
   session list. Filter by Agent remains in list.7 first-page/6 later session rows.
   75 tests/build pass; native simulator routes all three, no agent launched. Popup
-  left open; beta upload held until user approval. OS entries need G2 check.
-- **Marker wrap when working row selected:** fixed in desktop preview; user review
-  pending. Arrow/separator plus dot caused native wrap and displaced later slashes.
+  left open; user requested upload2026-11-03, beta channel1.0.21 verified. OS entries need G2 check.
+- **Marker wrap when working row selected:** beta1.0.21 uploaded; G2 check pending. Arrow/separator plus dot caused native wrap and displaced later slashes.
   Separator removed, gutter32px, titles unchanged. Simulator checks all three dot
   frames: following idle row stationary.74 tests/build pass. Preview left open;
-  current beta1.0.20 unchanged, next approved release will be1.0.21.
+  beta1.0.21 includes fix after explicit user upload request.
 - **Unified title alignment1.0.20:** simulator approved; G2 check pending. Working
   names gain one space; action rows lose two so all match idle names.74 tests/build
   pass, native simulator labels stationary. User approved simulator2026-11-03; beta1.0.20 uploaded/promoted
