@@ -14,7 +14,9 @@ export function sessionRow(title: string, handle: string, agent: string, state: 
 export type SessionColumns = { marker: string; title: string; right: string; busy?: boolean; handle?: string };
 export const sessionHeading = () => `Orca-glass ${__APP_VERSION__}`;
 export const MENU_LEFT = { containerID: 2, containerName: 'body', xPosition: 28, yPosition: 28, width: 364, height: 260 };
-export const MENU_CURSOR = { containerID: 4, containerName: 'menu-cursor', xPosition: 0, yPosition: 28, width: 28, height: 260 };
+export const MENU_CURSOR = { containerID: 4, containerName: 'menu-cursor', xPosition: 0, yPosition: 28, width: 32, height: 260 };
+// Keep arrow plus three marker cells inside the gutter, including selected rows.
+// An extra separator can wrap one row and displace every later marker.
 // The dot moves in the existing cursor gutter. Session titles never get rewritten
 // during animation, and there is no trailing text padding before the title column.
 export const MENU_DOTS = ['·  ', ' · ', '  ·'];
@@ -22,7 +24,7 @@ export function menuNativeText(rows: SessionColumns[]): string {
   return rows.map(row => ' ' + menuTitle(row.title)).join('\n');
 }
 export function menuCursorText(rows: SessionColumns[], selected: number, frame = 0): string {
-  return rows.map((row, i) => `${i === selected ? '>' : ' '} ${row.busy ? MENU_DOTS[frame % MENU_DOTS.length] : row.marker || ' '}`).join('\n');
+  return rows.map((row, i) => `${i === selected ? '>' : ' '}${row.busy ? MENU_DOTS[frame % MENU_DOTS.length] : row.marker || ' '}`).join('\n');
 }
 // Native text has no alignment flag. Pad a dedicated right column using measured
 // proportional text widths; no labels are rasterized or transferred as images.

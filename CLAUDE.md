@@ -42,6 +42,16 @@ it available. Automatic commit/push does not authorize beta promotion.
 
 ## Current work
 
+2026-11-03 user screenshot shows trailing idle slash displaced below row when
+working session selected. Reproduced native marker-column wrap: arrow+separator+
+three dot cells exceed narrow gutter. Unreleased preview fix removes separator,
+uses32px gutter (title starts unchanged), at most four characters/selected busy
+row.74 tests/build pass; simulator selected Fix flaky across all three dot frames:
+changes confined to marker pixels, following idle row crop identical. Left simulator
+OPEN with working row selected for review. Label still1.0.20, beta1.0.20 unchanged;
+this fix is NOT uploaded. Bump next release to1.0.21 only after user preview approval.
+Preview terminal term_f3709459-44be-4b71-b9a5-9ac192a45f0d remains running.
+
 2026-11-03 user approves simulator: "looks good all aligned". Beta1.0.20
 uploaded/promoted and channel verified (46,434 bytes),74 tests/build previously
 passed. Native dot/title alignment G2 check pending. Simulator intentionally left

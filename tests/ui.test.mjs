@@ -571,7 +571,7 @@ test('compact session menu uses native text and one update per cursor move', asy
   await h.scroll('down');
   assert.equal(h.upgrades.length, 1);
   assert.equal(h.upgrades[0].containerName, 'menu-cursor');
-  assert.equal(h.upgrades[0].content.split('\n')[1].trimStart(), '> *');
+  assert.equal(h.upgrades[0].content.split('\n')[1].trimStart(), '>*');
   await h.scroll('down'); await h.scroll('down'); await h.scroll('down');
   assert.equal(h.pages.length, pages);
   await h.tap();
@@ -598,7 +598,7 @@ test('rapid native-text menu swipes coalesce instead of queuing every redraw', a
   await h.scroll('down'); await h.scroll('down'); await h.scroll('down'); await h.scroll('down'); await h.scroll('down');
   finish(); await h.flush();
   assert.equal(h.upgrades.length, 2);
-  assert.equal(h.upgrades.at(-1).content.split('\n')[5].trimStart(), '> ?');
+  assert.equal(h.upgrades.at(-1).content.split('\n')[5].trimStart(), '>?');
   assert.ok(h.images.every(i => i.containerName.startsWith('menu-spin')));
 });
 
@@ -651,7 +651,7 @@ test('menu activity polling starts a spinner after a session becomes busy', asyn
   assert.equal(h.images.length, 0);
   const bodyWrites = h.upgrades.filter(u => u.containerName === 'body');
   assert.equal(bodyWrites.length, 0);
-  assert.match(after.split('\n')[4], /^[ >] [ ·]{3}$/);
+  assert.match(after.split('\n')[4], /^[ >][ ·]{3}$/);
 });
 
 test('system exit stops menu activity polling and marker animation', async () => {
@@ -681,4 +681,10 @@ test('action, idle and working titles share one fixed leading space', () => {
     { title: 'Working', marker: '', handle: 'busy', busy: true },
   ];
   assert.equal(listExports.menuNativeText(rows), ' Filter by Agent\n Usage\n Idle\n Working');
+  for (let frame = 0; frame < 3; frame++) {
+    const markers = listExports.menuCursorText(rows, 3, frame).split('\n');
+    assert.equal(markers.length, rows.length);
+    assert.equal(markers[3].length, 4);
+    assert.equal(markers[3][0], '>');
+  }
 });
