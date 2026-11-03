@@ -1,4 +1,4 @@
-// Read-only adapter for Orca's recorded pane -> Codex transcript association.
+// Read-only adapter for Orca's recorded pane -> provider transcript association.
 // Never infer identity from a working directory or choose the newest transcript.
 import { DatabaseSync } from 'node:sqlite';
 import { open, realpath, stat } from 'node:fs/promises';
@@ -17,14 +17,14 @@ const normalize = value => String(value || '').replace(/^\\\\\?\\/, '').replaceA
 export function transcriptBinding(session, terminal) {
   const key = `${terminal.tabId}:${terminal.leafId}`;
   const record = session.sleepingAgentSessionsByPaneKey?.[key];
-  if (terminal.agentIdentity !== 'codex' || !terminal.connected || terminal.orphaned ||
+  if (!['codex', 'claude'].includes(terminal.agentIdentity) || !terminal.connected || terminal.orphaned ||
       (terminal.executionHostId && terminal.executionHostId !== 'local') ||
       session.terminalPtyIncarnationsByPaneKey?.[key] !== terminal.incarnationId ||
-      record?.agent !== 'codex' || record.origin !== 'live' || record.worktreeId !== terminal.worktreeId ||
+      record?.agent !== terminal.agentIdentity || record.origin !== 'live' || record.worktreeId !== terminal.worktreeId ||
       record.paneKey !== key || normalize(record.providerSession?.cwd) !== normalize(terminal.worktreePath)) return null;
   const provider = record.providerSession;
   if (!/^[a-f0-9-]{36}$/i.test(provider?.id || '') || !provider.transcriptPath) return null;
-  return { id: provider.id, path: provider.transcriptPath, cwd: provider.cwd };
+  return { id: provider.id, path: provider.transcriptPath, cwd: provider.cwd, provider: terminal.agentIdentity };
 }
 
 export function visibleMessage(record) {
@@ -36,8 +36,21 @@ export function visibleMessage(record) {
   return { role: p.role, text, id: p.id || null };
 }
 
+// Claude JSONL contains tools and reasoning alongside visible chat. Only text
+// blocks from the main conversation are eligible; never render tool_result.
+export function visibleClaudeMessage(record) {
+  if (!['user', 'assistant'].includes(record.type) || record.isSidechain || record.isMeta || record.isCompactSummary) return null;
+  const message = record.message;
+  if (message?.role !== record.type) return null;
+  const content = message.content;
+  const text = (typeof content === 'string' ? content : Array.isArray(content)
+    ? content.filter(b => b.type === 'text' && typeof b.text === 'string').map(b => b.text).join('\n') : '').trim();
+  if (!text || (record.type === 'user' && /^(?:<local-command|<command-name>|<system-reminder>|<task-notification>|This session is being continued from a previous conversation)/.test(text))) return null;
+  return { role: record.type, text, id: record.uuid || null };
+}
+
 export function readTranscript(file, binding) {
-  const key = `${file}:${binding.id}`;
+  const key = `${file}:${binding.id}:${binding.provider || 'codex'}`;
   const previous = reads.get(key) || Promise.resolve();
   const task = previous.catch(() => {}).then(() => parseTranscript(file, binding));
   reads.set(key, task);
@@ -47,7 +60,7 @@ export function readTranscript(file, binding) {
 
 async function parseTranscript(file, binding) {
   const info = await stat(file);
-  const key = `${file}:${binding.id}`;
+  const key = `${file}:${binding.id}:${binding.provider || 'codex'}`;
   let state = cache.get(key);
   if (!state || info.size < state.offset || (info.size === state.size && info.mtimeMs !== state.mtime)) {
     state = { offset: 0, size: 0, mtime: 0, messages: [], chars: 0, limited: false, meta: null, ids: new Set() };
@@ -75,8 +88,13 @@ async function parseTranscript(file, binding) {
       if (!line.trim()) continue;
       let record;
       try { record = JSON.parse(line); } catch { continue; }
-      if (record.type === 'session_meta') state.meta = record.payload;
-      const message = visibleMessage(record);
+      if (binding.provider === 'claude' && ['user', 'assistant'].includes(record.type) && !record.isSidechain) {
+        // Claude records the current shell directory per message; cd during a
+        // session must not invalidate its original workspace association.
+        if (record.sessionId !== binding.id) throw new Error('Transcript identity does not match the selected terminal');
+        state.meta ??= { id: record.sessionId, cwd: record.cwd };
+      } else if (record.type === 'session_meta') state.meta = record.payload;
+      const message = binding.provider === 'claude' ? visibleClaudeMessage(record) : visibleMessage(record);
       if (!message || (message.id && state.ids.has(message.id))) continue;
       if (message.id) state.ids.add(message.id);
       state.messages.push(message);
@@ -92,7 +110,7 @@ async function parseTranscript(file, binding) {
   state.mtime = info.mtimeMs;
   if ((state.meta?.id || state.meta?.session_id) !== binding.id || normalize(state.meta?.cwd) !== normalize(binding.cwd)) throw new Error('Transcript identity does not match the selected terminal');
   return { text: formatMessages(state.messages),
-    source: 'codex-transcript', limited: state.limited, messageCount: state.messages.length };
+    source: binding.provider === 'claude' ? 'claude-transcript' : 'codex-transcript', limited: state.limited, messageCount: state.messages.length };
 }
 
 export async function readConversation(terminal) {
@@ -104,13 +122,13 @@ export async function readConversation(terminal) {
   } finally { db.close(); }
   if (!binding) return null;
   const file = await realpath(binding.path);
-  const roots = [join(homedir(), '.codex'), join(orcaHome, 'codex-runtime-home')];
+  const roots = binding.provider === 'claude' ? [join(homedir(), '.claude', 'projects')] : [join(homedir(), '.codex'), join(orcaHome, 'codex-runtime-home')];
   const allowed = await Promise.all(roots.map(async root => {
     const actual = await realpath(root).catch(() => null);
     if (!actual) return false;
     const rel = relative(resolve(actual), resolve(file));
     return rel && !rel.startsWith('..') && !/^[A-Za-z]:/.test(rel);
   }));
-  if (!allowed.some(Boolean) || !basename(file).endsWith(`${binding.id}.jsonl`)) throw new Error('Transcript path is outside the configured Codex storage');
+  if (!allowed.some(Boolean) || !basename(file).endsWith(`${binding.id}.jsonl`)) throw new Error('Transcript path is outside the configured provider storage');
   return readTranscript(file, binding);
 }

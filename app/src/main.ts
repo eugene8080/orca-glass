@@ -378,8 +378,8 @@ function thread(t: Thread, note = '') {
     const title = () => `${t.title}${note ? `  ${note}` : ''}`;
     const snapshot = await api.thread(t.handle);
     const saved = !snapshot.menu ? await api.history(t.handle).catch(() => null) : null;
-    const useSaved = saved?.source === 'codex-transcript';
-    const text = useSaved ? saved.text : snapshot.text;
+    const useSaved = ['codex-transcript', 'claude-transcript'].includes(saved?.source || '');
+    const text = useSaved ? saved!.text : snapshot.text;
     const state = await api.activity(t.handle).catch(e => {
       diag(`Activity request failed: ${(e as Error).message}`);
       return { state: 'unknown', elapsedSeconds: null };
@@ -435,7 +435,7 @@ function startReaderUpdates(screen: Screen | null) {
     }
     if (current !== screen || screen.reading) { reading = false; return; }
     let r = await (screen.savedHistory ? api.history(t.handle) : api.thread(t.handle)).catch(() => null);
-    if (screen.savedHistory && (!r || !('source' in r) || r.source !== 'codex-transcript')) {
+    if (screen.savedHistory && (!r || !('source' in r) || !['codex-transcript', 'claude-transcript'].includes(r.source || ''))) {
       r = await api.thread(t.handle).catch(() => null);
       // Stay on live output after losing the verified saved-history association.
       if (r && current === screen) screen.savedHistory = false;
@@ -455,7 +455,7 @@ function history(t: Thread) {
   return guard(t.title, async () => {
     const r = await api.history(t.handle);
     if (current !== previous) return;
-    await show({ kind: 'text', title: r.source === 'codex-transcript' ? 'Conversation history' : 'Terminal buffer only',
+    await show({ kind: 'text', title: ['codex-transcript', 'claude-transcript'].includes(r.source || '') ? 'Conversation history' : 'Terminal buffer only',
       text: r.text || r.reason || 'No older terminal output is retained.', tail: true, reader: t,
       onBack: () => thread(t),
       onHold: () => { void record(t, true); } });

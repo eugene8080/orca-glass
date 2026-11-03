@@ -728,3 +728,15 @@ test('Usage renders Claude windows and Cursor monthly allowance without mislabel
   assert.match(text, /Cursor\n  Monthly 2% \(Nov 5\)/);
   assert.ok(!text.includes('2.020596'));
 });
+
+
+test('Claude verified saved chat opens and polls even when the live tool screen is empty', async () => {
+  const h = await harness();
+  h.api.thread = async () => ({ text: '' });
+  h.api.history = async () => ({ text: '/ Question\n> Earlier answer', source: 'claude-transcript' });
+  await h.pick(1);
+  assert.ok(h.pages.at(-1).textObject.some(c => c.content.includes('Earlier answer')));
+  h.api.history = async () => ({ text: '/ Question\n> Earlier answer\n> Latest answer', source: 'claude-transcript' });
+  for (const fn of h.timers.values()) await fn();
+  assert.ok(h.upgrades.some(u => u.content.includes('Latest answer')));
+});

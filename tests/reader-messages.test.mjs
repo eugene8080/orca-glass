@@ -36,3 +36,9 @@ test('synthetic Claude tool blocks and unsupported formats never expose raw tool
   assert.equal(terminalConversation(['❯ Question', '⏺ Bash(secret)', '  output', '⏺ Answer', '✻ Thinking'], 'claude'), '/ Question\n> Answer');
   assert.equal(terminalConversation(['unrecognized tool output'], 'unknown'), '');
 });
+
+
+test('Claude solid-circle replies are recognized while tool-only screens stay filtered', () => {
+  assert.equal(terminalConversation(['❯ Question', '● Update(file.txt)', '  hidden diff', '● Visible answer', '  continuation', '❯ ', '? for shortcuts'], 'claude'), '/ Question\n> Visible answer\n  continuation');
+  assert.equal(terminalConversation(['● Update(file.txt)', '  hidden diff', '⎿ Allowed by auto', '✻ Thinking'], 'claude'), '');
+});

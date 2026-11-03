@@ -24,7 +24,7 @@ export function stripTerminalChrome(lines) {
     if (empty || (placeholder && (tail.some(hint) || /^› Ask Codex to do anything$/.test(line)))) return lines.slice(0, i);
     if (hint(line)) {
       for (let p = i - 1; p >= Math.max(start, i - 5); p--) {
-        if (/^[•⏺]\s/.test(lines[p].trim())) break;
+        if (/^[•⏺●]\s/.test(lines[p].trim())) break;
         if (/^[›❯>]\s/.test(lines[p].trim()) || /^[›❯>]$/.test(lines[p].trim())) return lines.slice(0, p);
       }
       // Some harnesses render the footer without a visible input marker.
@@ -40,7 +40,7 @@ export function terminalConversation(lines, provider) {
   const messages = [];
   let current = null;
   const user = provider === 'claude' ? '❯' : '›';
-  const reply = provider === 'claude' ? '⏺' : '•';
+  const replies = provider === 'claude' ? ['⏺', '●'] : ['•'];
   const tool = provider === 'claude' ? CLAUDE_TOOL : CODEX_TOOL;
   // Unknown terminal formats cannot safely distinguish tools from actual replies.
   if (!['codex', 'claude'].includes(provider)) return '';
@@ -50,7 +50,7 @@ export function terminalConversation(lines, provider) {
       const text = line.slice(1).trim();
       current = text ? { role: 'user', text } : null;
       if (current) messages.push(current);
-    } else if (line.startsWith(reply + ' ')) {
+    } else if (replies.some(reply => line.startsWith(reply + ' '))) {
       const text = line.slice(1).trim();
       current = tool.test(text) ? null : { role: 'assistant', text };
       if (current) messages.push(current);

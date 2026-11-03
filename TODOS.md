@@ -7,6 +7,12 @@ Completed/superseded release notes: [history](docs/todo-history.md).
 
 ## Open work
 
+- [ ] **Claude saved conversation / blank reader:** fix prepared; preview approval
+  pending before beta. Exact live pane binding now loads saved Claude chat while
+  the terminal is filled with tools; current solid-circle reply marker supported.
+  Read-only target check returned654 messages;83 synthetic tests/build/doctor pass.
+  Simulator left open on synthetic conversation. Production bridge and beta1.0.23
+  unchanged. No Claude prompts/launches. See [reader details](docs/session-reader.md).
 - [ ] **Claude/Cursor usage:** beta1.0.23 live; G2 confirmation pending. Shows
   Claude five-hour/weekly and Cursor monthly allowance alongside Codex. User
   approved simulator2026-11-03; beta channel verified, bridge restarted and

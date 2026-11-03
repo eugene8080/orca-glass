@@ -49,6 +49,19 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-03 Claude blank-reader diagnosis: user-directed read-only inspection of
+LGT archive Retrieval in porttracker found terminal buffer occupied by filtered
+tools and current Claude reply marker U+25CF unsupported by the old parser.
+Exact Orca pane/incarnation/provider-session binding identifies saved Claude
+JSONL; adapter now reads main user/assistant text blocks, excludes tools,
+reasoning, sidechains and metadata, validates session/workspace/storage identity.
+Current shell cwd may change after the transcript's initial workspace record.
+App opens/polls verified claude-transcript alongside codex-transcript. Read-only
+check returned654 messages/378501 characters; no private content committed.
+83 synthetic tests/build/doctor pass; native simulator shows synthetic saved
+reply while Working. Simulator LEFT OPEN. No Claude prompts/launches, production
+bridge restart or beta upload; installed1.0.23 unchanged, preview approval pending.
+
 2026-11-03 user approves usage preview and requests beta upload.1.0.23 uploaded/
 promoted; channel verified (47,519 bytes).79 tests/build/doctor passed before
 release. Production bridge restarted after verifying listener/parent process;

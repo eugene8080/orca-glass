@@ -1,5 +1,18 @@
 # Session reader
 
+2026-11-03 Claude blank-reader diagnosis: user-directed read-only inspection of
+LGT archive Retrieval in porttracker found terminal buffer occupied by filtered
+tools and current Claude reply marker U+25CF unsupported by the old parser.
+Exact Orca pane/incarnation/provider-session binding identifies saved Claude
+JSONL; adapter now reads main user/assistant text blocks, excludes tools,
+reasoning, sidechains and metadata, validates session/workspace/storage identity.
+Current shell cwd may change after the transcript's initial workspace record.
+App opens/polls verified claude-transcript alongside codex-transcript. Read-only
+check returned654 messages/378501 characters; no private content committed.
+83 synthetic tests/build/doctor pass; native simulator shows synthetic saved
+reply while Working. Simulator LEFT OPEN. No Claude prompts/launches, production
+bridge restart or beta upload; installed1.0.23 unchanged, preview approval pending.
+
 2026-11-03 physical G2 confirmation: user confirms full-width session text and
 marks remaining native-menu/moving-dot/selected-row slash checks done. Includes
 retained OS controls and the already-confirmed Refresh/New Session/Usage actions.
