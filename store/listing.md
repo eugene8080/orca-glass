@@ -43,6 +43,15 @@ is still attached. Current beta1.0.22 manifest/build still pins the private PC
 origin. Submission remains held for these two concrete blockers; PDF approval
 does not need to be requested again.
 
+Regenerated-PDF check, 2026-11-03: user supplied a new three-page generated file
+for review. Clearing optional data/service rows removes the specific collection
+categories and sharing paragraph, but unchecked AI produces literal `AI Used: No`.
+Fixed template still claims developer retention, deletion from our servers and
+uninstall stopping collection, and includes phone/address plus a blanket reverse-
+engineering prohibition. Not suitable as a substitute for the approved custom
+policy. All three pages visually reviewed; source kept outside Git. Portal
+attachment state was not rechecked during this local-file review.
+
 Phone visibility check, 2026-11-03: the portal requires telephone but explicitly
 labels only email as public. [Developer terms, section 3.1](https://support.evenrealities.com/hc/en-us/articles/15606676690703-Even-Hub-Developer-Platform-Terms-of-Service)
 allow display of developer contact details without identifying individual fields.

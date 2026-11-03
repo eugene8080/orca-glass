@@ -49,6 +49,12 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-03 user supplies regenerated three-page policy PDF. Read/render confirms
+blank optional rows remove specific sharing/categories, but AI unchecked yields
+literal AI Used No (not no AI collection). Fixed retention/server/uninstall claims,
+phone/address and reverse-engineering prohibition persist. Custom approved PDF
+remains recommended; no new portal action or submission. Details store/listing.md.
+
 2026-11-03 user requests Cursor/Claude usage from existing Orca sessions. Orca
 account list reports Claude session3%/weekly2%, Cursor monthly~2.02%, Codex weekly
 ~64%. Bridge usage previously returned only Codex. New collectUsage retains all
