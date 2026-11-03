@@ -1,6 +1,15 @@
 # Session reader
 Updated: 2026-11-02
 
+Version1.0.8: clicking the session reader does nothing, even if the terminal
+contains numbered choices. Resume latest output/Earlier/Later/Back controls
+are removed. Existing voice-review click-to-send and double-click navigation
+remain. The idle slash is native text. Borders use level15 (white in the
+simulator's documented firmware palette), width2; prior level1 was too dim on
+G2. Filter menu/page label is now Filter by Agent.58 tests/build pass;
+native simulator shows all three decorations and reader screenshots are pixel
+identical before/after click. G2 retest pending.
+
 The reader has a solid outer frame and a divider above the reserved status/voice
 area. User messages begin with `/`, assistant messages with `>`, with hanging
 indentation and no spacer row between turns. Verified Codex transcripts supply

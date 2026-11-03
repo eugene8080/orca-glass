@@ -29,7 +29,7 @@ const BODY = { containerID: 2, containerName: 'body', xPosition: 0, yPosition: 4
 // area so showing/hiding it needs no reader rebuild or overlapping text.
 const VOICE = { containerID: 3, containerName: 'voice', xPosition: 16, yPosition: 224, width: 544, height: 56 };
 const FRAME = { containerID: 4, containerName: 'frame', xPosition: 0, yPosition: 0, width: 576, height: 288 };
-const DIVIDER = { containerID: 5, containerName: 'divider', xPosition: 16, yPosition: 216, width: 544, height: 1 };
+const DIVIDER = { containerID: 5, containerName: 'divider', xPosition: 16, yPosition: 216, width: 544, height: 2 };
 const HINT = { containerID: 6, containerName: 'hint', xPosition: 280, yPosition: 224, width: 280, height: 28 };
 const STATUS_ICON = { containerID: 7, containerName: 'status-icon', xPosition: 16, yPosition: 224, width: 20, height: 28 };
 const READER_HEIGHT = 168;
@@ -52,7 +52,6 @@ let selectedThread: Thread | null = null;
 let sending = false;
 let holding = false;
 let releaseCapture: (() => void) | null = null;
-let movingReader = false;
 const VIEW_OPTIONS_ID = 1001;
 let viewProvider = 'all';
 const providerName = (id: string) => ({ claude: 'Claude', codex: 'Codex', opencode: 'OpenCode', gemini: 'Gemini' }[id] || id);
@@ -75,46 +74,6 @@ function bodyText(s: { text: string; tail?: boolean; offset?: number }) {
   return sections[s.offset];
 }
 
-function readerStep(screen: Extract<Screen, { kind: 'text' }>, direction: number) {
-  const sections = textSections(screen.text);
-  const offset = screen.offset ?? 0;
-  const next = offset + direction;
-  if (next < 0 || next >= sections.length) return null;
-  return { offset: next };
-}
-
-async function openReaderControls(t: Thread, screen: Extract<Screen, { kind: 'text' }>) {
-  await guard(t.title, async () => {
-    const snapshot = await api.thread(t.handle);
-    if (current !== screen) return;
-    if (snapshot.menu) { await replies(t); return; }
-    await readerActions(t, screen);
-  }, () => { void thread(t); });
-}
-
-function readerActions(t: Thread, screen: Extract<Screen, { kind: 'text' }>) {
-  const actions = [
-    { label: 'Resume latest output', run: () => thread(t) },
-    ...(readerStep(screen, -1) ? [{ label: 'Earlier text', run: () => moveReader(screen, -1) }] : []),
-    ...(readerStep(screen, 1) ? [{ label: 'Later text', run: () => moveReader(screen, 1) }] : []),
-    { label: 'Back to conversation', run: () => show(screen, true) },
-  ];
-  return show({ kind: 'list', title: t.title, items: actions.map(a => a.label),
-    onPick: i => { void guard(t.title, async () => { await actions[i]?.run(); }, () => { void readerActions(t, screen); }); },
-    onBack: () => { void guard(t.title, () => show(screen, true), () => { void thread(t); }); } });
-}
-
-async function moveReader(screen: Extract<Screen, { kind: 'text' }>, direction: number) {
-  if (movingReader || !screen.reader) return;
-  screen.reading = true;
-  const step = readerStep(screen, direction);
-  if (!step) return;
-  movingReader = true;
-  try {
-    await guard(screen.title, () => show({ ...screen, ...step }, true), () => { void thread(screen.reader!); });
-  } finally { movingReader = false; }
-}
-
 function screenTitle(s: Screen) {
   return s.title;
 }
@@ -129,10 +88,10 @@ function writePanel(content: string, active: () => boolean = () => true, statusM
     const status = statusMode ?? (current?.kind === 'text' && !!current.reader);
     // The four-space gutter reserves the icon's 20px without changing voice
     // panel geometry when capture/review temporarily takes ownership.
-    let visible = status && content.length > 2 ? '    ' + content.slice(2) : content;
+    let visible = status && content[0] !== '/' && content.length > 2 ? '    ' + content.slice(2) : content;
     try {
       await bridge.updateImageRawData(new ImageRawDataUpdate({ containerID: STATUS_ICON.containerID, containerName: STATUS_ICON.containerName,
-        imageData: statusPixels(status ? content[0] : '') }));
+        imageData: statusPixels(status && content[0] !== '/' ? content[0] : '') }));
     } catch (e) {
       // A missing image renderer must not prevent voice review or status text.
       diag((e as Error).message);
@@ -167,9 +126,9 @@ async function show(s: Screen, reloadText = false) {
   const uploadText = reloadText || (s.kind === 'text' && !!s.reader && s.text.length > 900) || new TextEncoder().encode(content).length > 999;
   const head = new TextContainerProperty({ ...HEAD, ...(s.kind === 'text' && s.reader ? { xPosition: 16, yPosition: 4, width: 544, height: 32, zOrderIndex: 1 } : {}), content: clipBytes(screenTitle(s), TEXT_BYTES), isEventCapture: 0 });
   // Display off, Brightness and Close are OS-owned. Declare only our action;
-  // omitting menuObject on other pages removes Filter Agents but keeps system rows.
+  // omitting menuObject on other pages removes Filter by Agent but keeps system rows.
   const menu = s.kind === 'list' && s.sessionList ? {
-    menuObject: new MenuContainerProperty({ menuItems: [new MenuItemProperty({ itemID: VIEW_OPTIONS_ID, itemName: 'Filter Agents >' })] }),
+    menuObject: new MenuContainerProperty({ menuItems: [new MenuItemProperty({ itemID: VIEW_OPTIONS_ID, itemName: 'Filter by Agent >' })] }),
   } : {};
   const page =
     s.kind === 'list'
@@ -192,9 +151,9 @@ async function show(s: Screen, reloadText = false) {
           containerTotalNum: s.reader ? 7 : 2,
           textObject: [head, new TextContainerProperty({ ...BODY, ...(s.reader ? { xPosition: 16, width: 544, zOrderIndex: 2, height: READER_HEIGHT } : {}), content: uploadText ? '' : content, isEventCapture: 1 }),
             ...(s.reader ? [
-              new TextContainerProperty({ ...VOICE, content: '    ' + s.activityLabel!.slice(2), textColor: 4, isEventCapture: 0, zOrderIndex: 5 }),
-              new TextContainerProperty({ ...FRAME, content: ' ', textColor: 0, borderWidth: 1, borderColor: 1, borderRadius: 0, isEventCapture: 0, zOrderIndex: 0 }),
-              new TextContainerProperty({ ...DIVIDER, content: ' ', textColor: 0, borderWidth: 1, borderColor: 1, isEventCapture: 0, zOrderIndex: 3 }),
+              new TextContainerProperty({ ...VOICE, content: s.activityLabel![0] === '/' ? s.activityLabel : '    ' + s.activityLabel!.slice(2), textColor: 4, isEventCapture: 0, zOrderIndex: 5 }),
+              new TextContainerProperty({ ...FRAME, content: ' ', textColor: 4, borderWidth: 2, borderColor: 15, borderRadius: 0, isEventCapture: 0, zOrderIndex: 0 }),
+              new TextContainerProperty({ ...DIVIDER, content: ' ', textColor: 4, borderWidth: 2, borderColor: 15, isEventCapture: 0, zOrderIndex: 3 }),
             ] : [])],
           ...(s.reader ? { imageObject: [new ImageContainerProperty({ ...STATUS_ICON, zOrderIndex: 4 }), new ImageContainerProperty({ ...HINT, zOrderIndex: 6 })] } : {}),
         };
@@ -212,7 +171,7 @@ async function show(s: Screen, reloadText = false) {
       if (!accepted) throw new Error('Glasses could not load the selected text. Click to retry.');
     }
     if (s.kind === 'text' && s.reader) {
-      await bridge.updateImageRawData(new ImageRawDataUpdate({ containerID: STATUS_ICON.containerID, containerName: STATUS_ICON.containerName, imageData: statusPixels(s.activityLabel![0]) })).catch(e => diag((e as Error).message));
+      await bridge.updateImageRawData(new ImageRawDataUpdate({ containerID: STATUS_ICON.containerID, containerName: STATUS_ICON.containerName, imageData: statusPixels(s.activityLabel![0] === '/' ? '' : s.activityLabel![0]) })).catch(e => diag((e as Error).message));
       await inputHint(true).catch(e => diag((e as Error).message));
       startReaderUpdates(s);
     }
@@ -278,7 +237,7 @@ function home(page = 0) {
 }
 
 function viewOptions(page = 0) {
-  return guard('Filter Agents', async () => {
+  return guard('Filter by Agent', async () => {
     const threads = await api.threads();
     const providers = ['all', 'claude', 'codex', ...new Set(threads.map(t => t.agent).filter(Boolean))]
       .filter((id, index, ids) => ids.indexOf(id) === index);
@@ -295,7 +254,7 @@ function viewOptions(page = 0) {
     }
     if (page > 0) actions.push({ label: 'Previous page', run: () => viewOptions(page - 1) });
     if ((page + 1) * size < providers.length) actions.push({ label: 'Next page', run: () => viewOptions(page + 1) });
-    await show({ kind: 'list', title: 'Filter Agents', items: actions.map(a => a.label),
+    await show({ kind: 'list', title: 'Filter by Agent', items: actions.map(a => a.label),
       onPick: i => { void actions[i]?.run(); }, onBack: home });
   }, home);
 }
@@ -312,7 +271,7 @@ function thread(t: Thread, note = '') {
       diag(`Activity request failed: ${(e as Error).message}`);
       return { state: 'unknown', elapsedSeconds: null };
     });
-    await show({ kind: 'text', title: title(), text, tail: true, activityState: state.state, reportedSeconds: state.elapsedSeconds, activityLabel: activityLabel(state.state), savedHistory: useSaved, reader: t, onClick: () => { if (current?.kind === 'text') void openReaderControls(t, current); }, onBack: home,
+    await show({ kind: 'text', title: title(), text, tail: true, activityState: state.state, reportedSeconds: state.elapsedSeconds, activityLabel: activityLabel(state.state), savedHistory: useSaved, reader: t, onBack: home,
       onHold: () => { void record(t, true); } });
     startReaderUpdates(current);
   }, home);
@@ -386,7 +345,6 @@ function history(t: Thread) {
     await show({ kind: 'text', title: r.source === 'codex-transcript' ? 'Conversation history' : 'Terminal buffer only',
       text: r.text || r.reason || 'No older terminal output is retained.', tail: true, reader: t,
       onBack: () => thread(t),
-      onClick: () => { if (current?.kind === 'text') void openReaderControls(t, current); },
       onHold: () => { void record(t, true); } });
   }, () => thread(t));
 }
@@ -702,7 +660,7 @@ function onEvent(e: EvenHubEvent) {
     // Pause polling so incoming output cannot reset the reader's scroll position.
     s.reading = true;
     // These events also report gestures, not reliably just boundaries. Never
-    // replace the block on a swipe; explicit Earlier/Later controls change it.
+    // replace the block on a swipe.
     return;
   }
   if (type === OsEventTypeList.LONG_PRESS_EVENT) {

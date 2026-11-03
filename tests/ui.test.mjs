@@ -84,10 +84,10 @@ test('every live terminal remains reachable beyond the 20-item display limit', a
   assert.ok(h.pages.at(-1).listObject[0].itemContainer.itemName.some(s => s.includes('Session 39')));
 });
 
-test('native Filter Agents belongs only to the session list and does not duplicate OS controls', async () => {
+test('native Filter by Agent belongs only to the session list and does not duplicate OS controls', async () => {
   const h = await harness();
   assert.equal(h.pages.at(-1).menuObject.menuItems.length, 1);
-  assert.equal(h.pages.at(-1).menuObject.menuItems[0].itemName, 'Filter Agents >');
+  assert.equal(h.pages.at(-1).menuObject.menuItems[0].itemName, 'Filter by Agent >');
   await h.system(4);
   assert.equal(h.pages.length, 1);
   await h.pick(3);
@@ -99,7 +99,7 @@ test('native Filter Agents belongs only to the session list and does not duplica
   assert.equal(h.sends.length, 0);
 });
 
-test('Filter Agents discovers providers, marks selection, filters and restores All Sessions', async () => {
+test('Filter by Agent discovers providers, marks selection, filters and restores All Sessions', async () => {
   const h = await harness();
   h.api.threads = async () => [
     { handle: 'codex', title: 'Codex conversation', agent: 'codex' },
@@ -265,10 +265,10 @@ test('firmware gets overflowing text; scroll does not replace content and pauses
   h.api.thread = async () => ({ text: 'Updated output' });
   await [...h.timers.values()][0]();
   assert.equal(h.upgrades.length, 0);
+  const count = h.pages.length;
   await h.tap();
-  assert.deepEqual([...h.pages.at(-1).listObject[0].itemContainer.itemName], ['Resume latest output', 'Back to conversation']);
-  await h.pick(1);
-  assert.equal(h.upgrades.at(-1).content, output);
+  assert.equal(h.pages.length, count);
+  assert.equal(h.upgrades.length, 0);
 });
 
 test('Unicode sections preserve all text within native update limit', () => {
@@ -278,38 +278,9 @@ test('Unicode sections preserve all text within native update limit', () => {
   assert.ok(sections.every(s => new TextEncoder().encode(s).length <= 900 && !/[\uD800-\uDBFF]$/.test(s)));
 });
 
-test('Earlier and Later text send the selected section after rebuilding the reader', async () => {
-  const h = await harness();
-  const output = 'Earlier — '.repeat(400) + 'Latest text';
-  const sections = textExports.textSections(output);
-  h.api.thread = async () => ({ text: output });
-  await h.pick(3);
-  assert.equal(h.upgrades.at(-1).content, sections.at(-1));
-  await h.tap();
-  const labels = h.pages.at(-1).listObject[0].itemContainer.itemName;
-  await h.pick(labels.indexOf('Earlier text'));
-  assert.equal(h.pages.at(-1).textObject[1].content, '');
-  assert.equal(h.upgrades.at(-1).content, sections.at(-2));
-  await h.tap();
-  await h.pick(h.pages.at(-1).listObject[0].itemContainer.itemName.indexOf('Later text'));
-  assert.equal(h.upgrades.at(-1).content, sections.at(-1));
-  assert.equal(h.sends.length, 0);
-});
 
-test('a rejected reader update is reported instead of silently changing section', async () => {
-  const h = await harness();
-  h.api.thread = async () => ({ text: 'Older text '.repeat(400) });
-  await h.pick(3); await h.tap();
-  const rebuild = h.bridge.rebuildPageContainer;
-  h.bridge.rebuildPageContainer = async p => {
-    h.bridge.rebuildPageContainer = rebuild;
-    return false;
-  };
-  await h.pick(1);
-  assert.match(h.elements.get('diag').textContent, /rejected/);
-  assert.equal(h.upgrades.length, 1);
-  assert.equal(h.sends.length, 0);
-});
+
+
 
 test('previews serialize requests; release waits for final text before review', async () => {
   const h = await harness(2, true, 'hold');
@@ -339,7 +310,7 @@ test('cancel during preview prevents late captions and input', async () => {
   h.api.transcribe = () => new Promise(resolve => { finish = resolve; });
   [...h.timers.values()][0](); await h.back();
   finish({ text: 'Late caption' }); await h.flush();
-  assert.equal(h.upgrades.findLast(u => u.containerName === 'voice').content, '    Status unavailable');
+  assert.equal(h.upgrades.findLast(u => u.containerName === 'voice').content, '/ Status unavailable');
   assert.ok(h.upgrades.every(u => !u.content.includes('Late caption')));
   assert.equal(h.sends.length, 0);
 });
@@ -375,49 +346,12 @@ test('hold starts directly from chat even with a saved tap preference, without m
   assert.equal(h.sends.length, 0);
 });
 
-test('single click opens actual numbered choices instead of reading controls', async () => {
-  const h = await harness();
-  await h.pick(3);
-  h.api.thread = async () => ({ text: 'Choose', menu: { id: 'menu', question: 'Choose', options: [{ value: '1', label: 'Proceed' }, { value: '2', label: 'Cancel' }] } });
-  await h.tap();
-  assert.deepEqual([...h.pages.at(-1).listObject[0].itemContainer.itemName], ['1. Proceed', '2. Cancel']);
-  assert.equal(h.mic.length, 0);
-  assert.equal(h.sends.length, 0);
-});
-
-test('explicit earlier controls traverse complete blocks without losing text', async () => {
-  const h = await harness();
-  const text = Array.from({ length: 280 }, (_, i) => `Line ${i}: distinct text.\n`).join('');
-  const sections = textExports.textSections(text);
-  h.api.history = async () => ({ text, source: 'codex-transcript' });
-  await h.pick(3);
-  assert.equal(h.upgrades.at(-1).content, sections.at(-1));
-  for (let section = sections.length - 2; section >= 0; section--) {
-    await h.tap();
-    await h.pick(h.pages.at(-1).listObject[0].itemContainer.itemName.indexOf('Earlier text'));
-    assert.equal(h.upgrades.at(-1).content, sections[section]);
-  }
-  await h.tap();
-  assert.ok(!h.pages.at(-1).listObject[0].itemContainer.itemName.includes('Earlier text'));
-  assert.equal(sections.join(''), text);
-});
 
 
-test('reader stays within the working hardware budget on opening and navigation', async () => {
-  const h = await harness();
-  const accepted = h.bridge.textContainerUpgrade;
-  h.bridge.textContainerUpgrade = async value => {
-    assert.ok(new TextEncoder().encode(value.content).length <= 900);
-    return accepted(value);
-  };
-  h.api.history = async () => ({ text: 'Unicode 🙂 conversation. '.repeat(400), source: 'codex-transcript' });
-  await h.pick(3);
-  assert.ok(h.upgrades.at(-1).content.length > 300);
-  await h.tap();
-  await h.pick(h.pages.at(-1).listObject[0].itemContainer.itemName.indexOf('Earlier text'));
-  assert.ok(h.upgrades.at(-1).content.length > 300);
-  assert.equal(h.elements.get('diag').textContent.includes('could not load'), false);
-});
+
+
+
+
 
 
 test('double-click discards a finished voice draft without sending', async () => {
@@ -445,7 +379,7 @@ test('capture and bottom-panel review never rebuild or rewrite the chat on send 
     const reader = page.textObject.find(c => c.containerName === 'body');
     assert.ok(reader.yPosition + reader.height <= panel.yPosition);
     assert.ok(panel.yPosition + panel.height <= 288);
-    assert.equal(panel.content, '    Status unavailable');
+    assert.equal(panel.content, '/ Status unavailable');
     assert.equal(panel.textColor, 4);
     assert.ok(panel.zOrderIndex > page.textObject[1].zOrderIndex);
     h.press(); await h.flush();
@@ -458,7 +392,7 @@ test('capture and bottom-panel review never rebuild or rewrite the chat on send 
     if (send) await h.tap(); else await h.back();
     const restoredPages = h.pages.length;
     assert.equal(restoredPages, count);
-    assert.equal(h.pages.at(-1).textObject.find(c => c.containerName === 'voice').content, '    Status unavailable');
+    assert.equal(h.pages.at(-1).textObject.find(c => c.containerName === 'voice').content, '/ Status unavailable');
     assert.equal(h.sends.length, send ? 1 : 0);
     assert.equal(h.timers.size, 1);
     if (send) {
@@ -500,7 +434,7 @@ test('bottom status changes while reading is paused without rewriting the conver
   assert.deepEqual(Object.keys(h.upgrades.at(-1)).sort(), ['containerID', 'containerName', 'content', 'textColor'].sort());
   h.api.activity = async () => ({ state: 'waiting' });
   await [...h.timers.values()][0]();
-  assert.equal(h.upgrades.at(-1).content, '    Waiting input');
+  assert.equal(h.upgrades.at(-1).content, '/ Waiting input');
   assert.ok(h.upgrades.every(u => u.containerName === 'voice'));
   assert.equal(h.pages.length, pages);
 });
@@ -530,7 +464,7 @@ test('late activity cannot overwrite voice capture; cancel restores status and k
   h.api.activity = async () => ({ state: 'waiting' });
   const afterCancel = h.upgrades.length;
   await [...h.timers.values()][0]();
-  assert.equal(h.upgrades.at(-1).content, '    Waiting input');
+  assert.equal(h.upgrades.at(-1).content, '/ Waiting input');
   assert.ok(h.upgrades.slice(afterCancel).every(u => u.containerName === 'voice'));
 });
 
@@ -563,4 +497,22 @@ test('a rejected live text update is retried instead of marking unseen text as d
   await [...h.timers.values()][0]();
   assert.equal(attempts, 2);
   assert.equal(h.upgrades.at(-1).content, 'Fresh reply');
+});
+
+ test('session click does nothing, including when terminal has numbered choices', async () => {
+  const h = await harness();
+  await h.pick(3);
+  const count = h.pages.length;
+  h.api.thread = async () => { throw new Error('Click must not read or open a choice menu'); };
+  await h.tap();
+  assert.equal(h.pages.length, count);
+  assert.equal(h.upgrades.length, 0);
+  assert.equal(h.sends.length, 0);
+  const frame = h.pages.at(-1).textObject.find(c => c.containerName === 'frame');
+  const divider = h.pages.at(-1).textObject.find(c => c.containerName === 'divider');
+  assert.equal(frame.borderColor, 15);
+  assert.equal(divider.borderColor, 15);
+  assert.equal(frame.borderWidth, 2);
+  assert.equal(divider.height, 2);
+  assert.equal(h.pages.at(-1).textObject.find(c => c.containerName === 'voice').content, '/ Status unavailable');
 });

@@ -3,6 +3,12 @@ Updated: 2026-11-02
 
 ## Current state
 
+2026-11-02 beta **1.0.8** uploaded/promoted and channel verified (47,455 bytes).
+Session click now does nothing; voice review click-to-send remains. Restores
+native idle slash and bright frame/divider, and renames filter to Filter by Agent.
+58 tests/build pass; official simulator verifies visible decorations and identical
+reader pixels after click. G2 retest pending.
+
 2026-11-02 beta **1.0.7** uploaded/promoted and channel verified (47,887 bytes).
 Adds framed compact conversation, visible Braille spinner, five-second working
 words/animated dots, and a right-aligned provider-reported elapsed duration before

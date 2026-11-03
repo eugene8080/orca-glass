@@ -12,6 +12,15 @@ upstream Claude code is not evidence of authorization to test it.
 
 ## Current work
 
+2026-11-02 reader1.0.8 supersedes click controls: session click does nothing,
+including numbered terminal choices; removed Resume/Earlier/Later/Back menu.
+Voice review click-to-send remains. Idle slash is native text rather than an
+image. Frame/divider now borderColor15 (SDK white), width2; previous level1
+was too dim on G2. Menu/page renamed Filter by Agent.58 tests/build pass;
+native simulator shows slash/bright frame/divider and click leaves identical
+pixels. Beta1.0.8 uploaded/promoted and channel verified (47,455 bytes).
+G2 check pending. See docs/session-reader.md.
+
 2026-11-02 reader1.0.7: solid frame/divider, compact / user and > assistant
 turns, tools/reasoning excluded. Bottom status has Gray8 Braille spinner (native
 simulator font omits Braille), five-second word rotation and 500ms dots. Hint is
