@@ -1,5 +1,16 @@
 # Native simulator interaction gate
-Updated: 2026-11-02
+Updated: 2026-11-03
+
+## Current launch rule
+
+Agents must launch interactive/development processes in named Orca worktree
+terminals; see CLAUDE.md, Terminal policy. The standalone scheduled simulator
+and old cmd tab were stopped at user request. Current pwsh tabs are
+`Orca Glass Dev Server` (Vite5173) and `G2 Simulator` (localhost5173,
+automation9899). One simulator verified in desktop session1; HTTP/automation
+healthy. The live preview currently needs its pairing code in its local settings.
+Legacy Start-Process/scheduled-task instructions below are historical and do not
+override this rule. Existing automatic Windows bridge startup remains unchanged.
 
 ## Current facts
 

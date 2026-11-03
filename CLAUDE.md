@@ -10,7 +10,40 @@ Codex only. Do not launch, test, or interact with Claude until Eugene explicitly
 authorizes it. Keep server-side provider restrictions in place. Historical
 upstream Claude code is not evidence of authorization to test it.
 
+## Terminal policy
+
+Eugene's explicit rule, 2026-11-03: run terminals inside this repo's Orca
+workspace/worktree. This applies to every agent working here.
+
+- Use the `orca-cli` skill and Orca-managed terminal tabs for interactive shells
+  and long-running development processes: Vite, simulator, test fixtures and
+  development helpers. Resolve the current worktree through Orca and target it
+  explicitly; do not create a new checkout merely to run a process.
+- Use named PowerShell (`pwsh.exe`) tabs, such as `Orca Glass Dev Server` and
+  `G2 Simulator`. Reuse an appropriate existing tab or close its confirmed old
+  process before replacing it; avoid duplicate servers/simulator instances.
+- Do not launch separate cmd/PowerShell windows, ad hoc background shells or
+  scheduled-task simulator instances. Do not use the legacy external-window
+  simulator launcher as an agent without first adapting it to this policy.
+- Verify terminal ownership, process startup and the relevant HTTP/automation
+  endpoint before reporting success. Keep process output available in its tab.
+- Short-lived reads, builds and tests may use execution tools without opening
+  a persistent terminal. The already-authorized Windows bridge sign-in service
+  remains a scheduled task; this rule does not remove automatic bridge startup.
+- A specific later user request for another launch surface overrides this rule.
+
 ## Current work
+
+2026-11-03 user confirms1.0.16 runs on G2 again after phone Chrome healthz showed
+ok:true. Earlier Failed to fetch report recovered; exact transient cause unknown.
+Two old simulator instances stopped (standalone scheduled task and old cmd tab).
+New named pwsh Orca terminals in this worktree: Dev Server
+term_12e62966-65a9-47c3-bf80-00b73998961f (Vite5173 HTTP200), G2 Simulator
+term_93ef9e42-e649-4968-85cf-b95d10f323c5 (desktop session1, automation9899 pong).
+One simulator process remains; scheduled simulator task stopped. Preview uses
+localhost5173 and currently needs its local pairing code; no demo substitution.
+User explicitly requests repo terminal policy above. No beta upload; list spinner
+still awaits phone layout-mode diagnosis.1.0.17 gap/shell source remains unreleased.
 
 2026-11-03 user confirms current Filter row/contextual removal, native footer,
 terminal UI chrome removal and voice send/cancel/chat retention. Count/provider

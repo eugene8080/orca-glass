@@ -25,6 +25,8 @@ tests of cancelled six-row overlay, Click paging or old review-page designs.
 
 | Task | Status | Evidence / remaining work |
 | --- | --- | --- |
+| Orca-workspace terminal policy and simulator move | Completed | 2026-11-03: repo rule added to CLAUDE.md/AGENTS.md. Standalone simulator task and old cmd tab stopped; named pwsh Vite/Simulator tabs created in current Orca worktree. HTTP5173/automation9899 healthy; one desktop-session simulator. Preview pairing pending; no demo substituted. |
+| Phone Failed to fetch follow-up | Recovered; user confirmed | 2026-11-03: PC local/tailnet HTTP200 with4 agent sessions, Android online, phone Chrome healthz ok:true. User confirms1.0.16 runs on G2 again. Exact transient cause not proven. |
 | Plain shell exclusion and title gap | Bridge live; frontend source prepared | 2026-11-03: user sees cmd.exe and unnecessary header gap. Exclude panes without detected agent identity/type, preserving all provider names. Actual4 agents remain; shell excluded. Menu starts y28, simulator verified.72 tests/build.1.0.17 not uploaded pending spinner mode diagnosis. |
 | Startup recovery1.0.15 | Hardware confirmed | 2026-11-03: user confirms version1.0.15 appears and both Android/G2 open. Compatibility mode remains unconfirmed;1.0.16 adds persistent layout indicator. |
 | Filter list row, full transcription area and native footer text | Simulator verified; G2 pending | 2026-11-03: Filter first row with selected provider, Refresh second; OS-only contextual menu. Draft/provisional captions use all three rows; native timer/hint replace raster text. Live menu activity polling and marker layering corrected.71 tests/build; three-row review, no body reset and native timer verified in simulator. |

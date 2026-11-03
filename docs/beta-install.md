@@ -5,6 +5,10 @@ Updated: 2026-11-03
 
 ## Current state
 
+2026-11-03 user confirms1.0.16 runs on G2 again. Phone Chrome healthz returned
+ok:true; earlier app Failed to fetch has recovered. Exact transient cause unknown.
+No connection-related beta change or new pairing was needed.
+
 2026-11-03 user confirms1.0.15 opens on Android and G2. Beta **1.0.16** now
 uploaded/promoted and channel verified (46,614 bytes). Filter moves from native
 contextual menu to first list row with current provider beside it. All three
