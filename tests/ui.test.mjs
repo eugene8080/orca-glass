@@ -12,7 +12,7 @@ const hintExports = {};
 vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../app/src/footer-hint.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, { exports: hintExports, document: { createElement: () => ({ getContext: () => ({ fillRect() {}, fillText() {}, getImageData: () => ({ data: new Uint8ClampedArray(280 * 28 * 4) }) }) }) } });
 
 const listExports = {};
-vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../app/src/session-list.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, { exports: listExports, __APP_VERSION__: '1.0.10', require: () => statusExports, document: { createElement: () => ({ getContext: () => ({ fillRect() {}, fillText() {}, measureText: text => ({ width: text.length * 9 }), getImageData: () => ({ data: new Uint8ClampedArray(288 * 144 * 4) }) }) }) } });
+vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../app/src/session-list.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, { exports: listExports, __APP_VERSION__: '1.0.11', require: () => textExports, TextEncoder });
 
 // Exercise the real controller with a simulated Even bridge: no agent input,
 // microphone access, network, or hardware claims.
@@ -84,7 +84,7 @@ test('every live terminal remains reachable through session-list pages', async (
   const seen = new Set();
   for (let page = 0; page < 20; page++) {
     const labels = h.pages.at(-1).listObject[0].itemContainer.itemName;
-    labels.filter(s => s.startsWith('Session ')).forEach(s => seen.add(s));
+    labels.filter(s => s.includes('Session ')).forEach(s => seen.add(s));
     const next = labels.indexOf('Next page');
     if (next < 0) break;
     await h.pick(next);
@@ -545,14 +545,13 @@ test('voice border is precreated, appears for capture/review and clears on cance
   assert.ok(h.upgrades.every(u => u.containerName === 'voice'));
 });
 
-test('session list navigates image rows without rebuilding during spinner animation', async () => {
+test('session list uses native text/list with no image uploads or animation timer', async () => {
   const h = await harness();
-  const count = h.pages.length;
-  assert.equal(h.pages.at(-1).imageObject.length, 4);
-  assert.equal(h.pages.at(-1).textObject[0].isEventCapture, 1);
-  await h.scroll('down'); await h.scroll('down'); await h.scroll('down');
-  await [...h.animations.values()][0]();
-  assert.equal(h.pages.length, count);
-  await h.tap();
+  assert.equal(h.pages.at(-1).imageObject, undefined);
+  assert.equal(h.pages.at(-1).listObject[0].isEventCapture, 1);
+  assert.equal(h.images.length, 0);
+  assert.equal(h.animations.size, 0);
+  assert.match(h.pages.at(-1).textObject[0].content, /Orca-glass 1.0.11/);
+  await h.pick(3);
   assert.equal(h.pages.at(-1).textObject[1].content, 'Content terminal-0');
 });

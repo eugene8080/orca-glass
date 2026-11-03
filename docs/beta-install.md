@@ -3,6 +3,12 @@ Updated: 2026-11-02
 
 ## Current state
 
+2026-11-02 beta **1.0.11** uploaded/promoted and channel verified (44,992 bytes).
+User requested native text after1.0.10 image list felt slow. Restored native
+header/list/selection/scroll, with no session-list images or animation timers.
+Version/count/filter/provider labels inline; idle/active snapshot markers.
+62 tests/build pass; official simulator navigation verified. G2 speed check pending.
+
 2026-11-02 beta **1.0.10** uploaded/promoted and channel verified (45,860 bytes).
 Session list now has manifest version/count header, right-aligned filter and
 provider tags, idle slash and animated active-session Braille. The list uses

@@ -12,6 +12,14 @@ upstream Claude code is not evidence of authorization to test it.
 
 ## Current work
 
+2026-11-02 user rejects1.0.10 custom session-list rendering as too slow and
+requests native text.1.0.11 restores native header/ListContainerProperty,
+removes all session-list images and animation timers. Version/count/filter/
+providers inline; / idle, * active, ? unknown snapshots. Native selection/scroll,
+15 terminals/page.62 tests/build pass; native simulator selects reader correctly.
+Reader/voice unchanged; English-only and /images ignore retained. G2 check pending.
+Beta1.0.11 uploaded/promoted and channel verified (44,992 bytes).
+
 2026-11-02 beta1.0.10 session-list redesign: version from app manifest, right
 aligned total connected count/filter/provider labels, * Refresh, / idle and
 raster Braille for active rows. Session list alone uses four image tiles plus

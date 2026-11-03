@@ -3,6 +3,7 @@ Updated: 2026-11-02
 
 | Task | Status | Evidence / remaining work |
 | --- | --- | --- |
+| Restore native session list speed | Simulator verified; G2 pending | 2026-11-02: user rejects image list as slow.1.0.11 restores native header/list/capture/scroll, no list images or animation timer. Version/count/filter/providers inline; / idle, * active, ? unknown snapshots.15 terminals/page.62 tests/build pass; native simulator selection works. Reader/voice unchanged. |
 | Session list layout and activity markers | Simulator verified; G2 pending | 2026-11-02: manifest version/count header, * Refresh and right-aligned current filter, / idle, animated Braille busy, right-aligned provider tags. Four terminals/page with highlight/up/down/click and explicit paging. Animates image tiles without native rebuild. Activity uses exact Orca pane, not titles.62 tests/build/doctor; simulator navigation/filter/spinner diff verified. |
 | English-only fork and reference-image ignore | Implemented | 2026-11-02: /images/ ignored; English-only app manifest/UI/demo/templates/server/STT; legacy Japanese/auto preferences resolve English and controls removed. README/store/voice docs updated; historical Japanese README marked upstream-only. Existing app screenshot left untracked. |
 | Six-row voice overlay | Cancelled by user | 2026-11-02: user says never mind, do not implement six-row overlay. Failed trial reverted; retain1.0.9 layout, existing menu and no-op Click. No layout decision remains pending. |
