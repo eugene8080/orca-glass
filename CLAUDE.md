@@ -12,6 +12,19 @@ upstream Claude code is not evidence of authorization to test it.
 
 ## Current work
 
+2026-11-02 reader1.0.7: solid frame/divider, compact / user and > assistant
+turns, tools/reasoning excluded. Bottom status has Gray8 Braille spinner (native
+simulator font omits Braille), five-second word rotation and 500ms dots. Hint is
+rasterized right-aligned; elapsed duration immediately precedes it, sourced only
+from Codex's actual Working status line via activity.elapsedSeconds, never a UI
+clock. Missing/unsupported duration stays hidden; cleared when not working.
+62 tests/build/doctor pass; official native simulator screenshots show spinner,
+word changes and stable13m32s fixture timer with unchanged chat pixels. Live
+selected session activity returned working/1282 seconds. Bottom review/native
+scroll preserved; no agent input or Claude tests. See docs/session-reader.md.
+Beta1.0.7 uploaded/promoted and channel verified (47,887 bytes). Physical G2
+validation remains pending. Filter submenu depth remains unresolved.
+
 2026-11-02 G2 confirms beta1.0.6 Display off/View options/Brightness/Close all
 present; simulator-only missing system rows is not a G2 regression. User asks
 rename Filter Agents and native near-field filter submenu. Rename prepared in

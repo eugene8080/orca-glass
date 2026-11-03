@@ -4,6 +4,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { open, realpath, stat } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { basename, join, relative, resolve } from 'node:path';
+import { formatMessages } from './reader-text.mjs';
 
 const appData = process.env.APPDATA || join(homedir(), 'AppData', 'Roaming');
 const orcaHome = join(appData, 'orca');
@@ -90,7 +91,7 @@ async function parseTranscript(file, binding) {
   state.size = info.size;
   state.mtime = info.mtimeMs;
   if ((state.meta?.id || state.meta?.session_id) !== binding.id || normalize(state.meta?.cwd) !== normalize(binding.cwd)) throw new Error('Transcript identity does not match the selected terminal');
-  return { text: state.messages.map(m => `${m.role === 'user' ? 'You' : 'Codex'}\n${m.text}`).join('\n\n'),
+  return { text: formatMessages(state.messages),
     source: 'codex-transcript', limited: state.limited, messageCount: state.messages.length };
 }
 

@@ -3,6 +3,8 @@ import {
   CreateStartUpPageContainer,
   ListContainerProperty,
   ListItemContainerProperty,
+  ImageContainerProperty,
+  ImageRawDataUpdate,
   MenuContainerProperty,
   MenuItemProperty,
   OsEventTypeList,
@@ -17,13 +19,19 @@ import { api, currentBase, setApiLang, setConnection, setDemo, type Provider, ty
 import { parseCode, resolveBase } from './pairing';
 import { applyPage, detectLang, setLang, t as tr } from './i18n';
 import { clipBytes, textSections } from './text';
+import { readerStatus, statusPixels } from './reader-status';
+import { footerHint, hintPixels } from './footer-hint';
 
 // 画面 576x288。上に見出し(テキスト)、下に本文(リスト or テキスト)の2段構成で統一する。
 const HEAD = { containerID: 1, containerName: 'head', xPosition: 0, yPosition: 0, width: 576, height: 36 };
 const BODY = { containerID: 2, containerName: 'body', xPosition: 0, yPosition: 40, width: 576, height: 248 };
 // Text layers are transparent on G2. Reserve a separate quarter-screen input
 // area so showing/hiding it needs no reader rebuild or overlapping text.
-const VOICE = { containerID: 3, containerName: 'voice', xPosition: 0, yPosition: 216, width: 576, height: 72 };
+const VOICE = { containerID: 3, containerName: 'voice', xPosition: 16, yPosition: 224, width: 544, height: 56 };
+const FRAME = { containerID: 4, containerName: 'frame', xPosition: 0, yPosition: 0, width: 576, height: 288 };
+const DIVIDER = { containerID: 5, containerName: 'divider', xPosition: 16, yPosition: 216, width: 544, height: 1 };
+const HINT = { containerID: 6, containerName: 'hint', xPosition: 280, yPosition: 224, width: 280, height: 28 };
+const STATUS_ICON = { containerID: 7, containerName: 'status-icon', xPosition: 16, yPosition: 224, width: 20, height: 28 };
 const READER_HEIGHT = 168;
 const LIST_ITEM_BYTES = 63;
 const LIST_MAX = 20;
@@ -32,12 +40,14 @@ const POLL_MS = 1000;
 
 type Screen =
   | { kind: 'list'; title: string; items: string[]; sessionList?: boolean; onPick: (i: number) => void; onBack?: () => void }
-  | { kind: 'text'; title: string; text: string; tail?: boolean; offset?: number; reading?: boolean; activityLabel?: string; savedHistory?: boolean; reader?: Thread; onClick?: () => void; onBack?: () => void; onHold?: () => void; };
+  | { kind: 'text'; title: string; text: string; tail?: boolean; offset?: number; reading?: boolean; activityLabel?: string; activityState?: string; reportedSeconds?: number | null; statusFrame?: number; statusStartedAt?: number; savedHistory?: boolean; reader?: Thread; onClick?: () => void; onBack?: () => void; onHold?: () => void; };
 
 let bridge: EvenAppBridge;
 let current: Screen | null = null;
 let started = false;
 let poll: ReturnType<typeof setInterval> | undefined;
+let statusAnimation: ReturnType<typeof setInterval> | undefined;
+let panelWrites: Promise<void> = Promise.resolve();
 let selectedThread: Thread | null = null;
 let sending = false;
 let holding = false;
@@ -110,18 +120,52 @@ function screenTitle(s: Screen) {
 }
 
 function activityLabel(state: string) {
-  return state === 'working' ? 'Working…' : state === 'waiting' ? 'Waiting for input'
-    : state === 'attention' ? 'Needs attention' : 'Status unavailable';
+  return readerStatus(state);
+}
+
+function writePanel(content: string, active: () => boolean = () => true, statusMode?: boolean) {
+  const write = panelWrites.then(async () => {
+    if (!active()) return false;
+    const status = statusMode ?? (current?.kind === 'text' && !!current.reader);
+    // The four-space gutter reserves the icon's 20px without changing voice
+    // panel geometry when capture/review temporarily takes ownership.
+    let visible = status && content.length > 2 ? '    ' + content.slice(2) : content;
+    try {
+      await bridge.updateImageRawData(new ImageRawDataUpdate({ containerID: STATUS_ICON.containerID, containerName: STATUS_ICON.containerName,
+        imageData: statusPixels(status ? content[0] : '') }));
+    } catch (e) {
+      // A missing image renderer must not prevent voice review or status text.
+      diag((e as Error).message);
+      visible = content;
+    }
+    if (!active()) return false;
+    return bridge.textContainerUpgrade(new TextContainerUpgrade({ containerID: VOICE.containerID, containerName: VOICE.containerName, content: visible || ' ', textColor: content ? 4 : 0 }));
+  });
+  panelWrites = write.then(() => {}, () => {});
+  return write;
+}
+
+async function inputHint(visible: boolean) {
+  const owner = current;
+  const seconds = current?.kind === 'text' ? current.reportedSeconds : null;
+  const write = panelWrites.then(async () => {
+    if (visible && current !== owner) return;
+    await bridge.updateImageRawData(new ImageRawDataUpdate({ containerID: HINT.containerID, containerName: HINT.containerName,
+      imageData: hintPixels(visible ? footerHint(seconds) : '') }));
+  });
+  panelWrites = write.then(() => {}, () => {});
+  await write;
 }
 
 async function show(s: Screen, reloadText = false) {
   clearInterval(poll);
-  if (s.kind === 'text' && s.reader) s.activityLabel ??= 'Status unavailable';
+  clearInterval(statusAnimation);
+  if (s.kind === 'text' && s.reader) s.activityLabel ??= readerStatus('unknown');
   const previous = current;
   current = s;
   const content = s.kind === 'text' ? bodyText(s) : '';
   const uploadText = reloadText || (s.kind === 'text' && !!s.reader && s.text.length > 900) || new TextEncoder().encode(content).length > 999;
-  const head = new TextContainerProperty({ ...HEAD, ...(s.kind === 'text' && s.reader ? { zOrderIndex: 0 } : {}), content: clipBytes(screenTitle(s), TEXT_BYTES), isEventCapture: 0 });
+  const head = new TextContainerProperty({ ...HEAD, ...(s.kind === 'text' && s.reader ? { xPosition: 16, yPosition: 4, width: 544, height: 32, zOrderIndex: 1 } : {}), content: clipBytes(screenTitle(s), TEXT_BYTES), isEventCapture: 0 });
   // Display off, Brightness and Close are OS-owned. Declare only our action;
   // omitting menuObject on other pages removes Filter Agents but keeps system rows.
   const menu = s.kind === 'list' && s.sessionList ? {
@@ -145,9 +189,14 @@ async function show(s: Screen, reloadText = false) {
           ],
         }
       : {
-          containerTotalNum: s.reader ? 3 : 2,
-          textObject: [head, new TextContainerProperty({ ...BODY, ...(s.reader ? { zOrderIndex: 1, height: READER_HEIGHT } : {}), content: uploadText ? '' : content, isEventCapture: 1 }),
-            ...(s.reader ? [new TextContainerProperty({ ...VOICE, content: s.activityLabel || 'Checking status…', textColor: 4, isEventCapture: 0, zOrderIndex: 2 })] : [])],
+          containerTotalNum: s.reader ? 7 : 2,
+          textObject: [head, new TextContainerProperty({ ...BODY, ...(s.reader ? { xPosition: 16, width: 544, zOrderIndex: 2, height: READER_HEIGHT } : {}), content: uploadText ? '' : content, isEventCapture: 1 }),
+            ...(s.reader ? [
+              new TextContainerProperty({ ...VOICE, content: '    ' + s.activityLabel!.slice(2), textColor: 4, isEventCapture: 0, zOrderIndex: 5 }),
+              new TextContainerProperty({ ...FRAME, content: ' ', textColor: 0, borderWidth: 1, borderColor: 1, borderRadius: 0, isEventCapture: 0, zOrderIndex: 0 }),
+              new TextContainerProperty({ ...DIVIDER, content: ' ', textColor: 0, borderWidth: 1, borderColor: 1, isEventCapture: 0, zOrderIndex: 3 }),
+            ] : [])],
+          ...(s.reader ? { imageObject: [new ImageContainerProperty({ ...STATUS_ICON, zOrderIndex: 4 }), new ImageContainerProperty({ ...HINT, zOrderIndex: 6 })] } : {}),
         };
   try {
     if (!started) {
@@ -162,7 +211,11 @@ async function show(s: Screen, reloadText = false) {
       const accepted = await bridge.textContainerUpgrade(new TextContainerUpgrade({ containerID: BODY.containerID, containerName: BODY.containerName, content }));
       if (!accepted) throw new Error('Glasses could not load the selected text. Click to retry.');
     }
-    if (s.kind === 'text' && s.reader) startReaderUpdates(s);
+    if (s.kind === 'text' && s.reader) {
+      await bridge.updateImageRawData(new ImageRawDataUpdate({ containerID: STATUS_ICON.containerID, containerName: STATUS_ICON.containerName, imageData: statusPixels(s.activityLabel![0]) })).catch(e => diag((e as Error).message));
+      await inputHint(true).catch(e => diag((e as Error).message));
+      startReaderUpdates(s);
+    }
   } catch (e) {
     if (current === s) current = previous;
     diag((e as Error).message);
@@ -257,9 +310,9 @@ function thread(t: Thread, note = '') {
     const text = useSaved ? saved.text : snapshot.text;
     const state = await api.activity(t.handle).catch(e => {
       diag(`Activity request failed: ${(e as Error).message}`);
-      return { state: 'unknown' };
+      return { state: 'unknown', elapsedSeconds: null };
     });
-    await show({ kind: 'text', title: title(), text, tail: true, activityLabel: activityLabel(state.state), savedHistory: useSaved, reader: t, onClick: () => { if (current?.kind === 'text') void openReaderControls(t, current); }, onBack: home,
+    await show({ kind: 'text', title: title(), text, tail: true, activityState: state.state, reportedSeconds: state.elapsedSeconds, activityLabel: activityLabel(state.state), savedHistory: useSaved, reader: t, onClick: () => { if (current?.kind === 'text') void openReaderControls(t, current); }, onBack: home,
       onHold: () => { void record(t, true); } });
     startReaderUpdates(current);
   }, home);
@@ -269,21 +322,42 @@ function thread(t: Thread, note = '') {
 // Restart live updates without rebuilding the mounted chat after a successful send.
 function startReaderUpdates(screen: Screen | null) {
   clearInterval(poll);
+  clearInterval(statusAnimation);
   if (screen?.kind !== 'text' || !screen.reader) return;
   const t = screen.reader;
+  screen.statusStartedAt ??= Date.now();
+  let animating = false;
+  statusAnimation = setInterval(async () => {
+    if (animating || current !== screen || screen.activityState !== 'working') return;
+    animating = true;
+    const label = readerStatus('working', screen.statusFrame = (screen.statusFrame || 0) + 1, Date.now() - screen.statusStartedAt!);
+    try {
+      const accepted = await writePanel(label, () => current === screen && screen.activityState === 'working');
+      if (accepted && current === screen) screen.activityLabel = label;
+    } catch (e) { diag((e as Error).message); }
+    finally { animating = false; }
+  }, 200);
   let reading = false;
   poll = setInterval(async () => {
     if (reading || current !== screen) return;
     reading = true;
     const activity = await api.activity(t.handle).catch(e => {
       diag(`Activity request failed: ${(e as Error).message}`);
-      return { state: 'unknown' };
+      return { state: 'unknown', elapsedSeconds: null };
     });
     if (current !== screen) { reading = false; return; }
-    const label = activityLabel(activity.state);
+    if (screen.activityState !== activity.state) { screen.statusFrame = 0; screen.statusStartedAt = Date.now(); }
+    screen.activityState = activity.state;
+    const seconds = activity.state === 'working' ? activity.elapsedSeconds : null;
+    if (screen.reportedSeconds !== seconds) {
+      screen.reportedSeconds = seconds;
+      try { await inputHint(true); } catch (e) { diag((e as Error).message); }
+      if (current !== screen) { reading = false; return; }
+    }
+    const label = readerStatus(activity.state, screen.statusFrame || 0, Date.now() - screen.statusStartedAt!);
     if (screen.activityLabel !== label) {
       try {
-        const accepted = await bridge.textContainerUpgrade(new TextContainerUpgrade({ containerID: VOICE.containerID, containerName: VOICE.containerName, content: label, textColor: 4 }));
+        const accepted = await writePanel(label, () => current === screen);
         if (accepted && current === screen) screen.activityLabel = label;
       } catch (e) { diag((e as Error).message); }
     }
@@ -295,7 +369,7 @@ function startReaderUpdates(screen: Screen | null) {
       if (r && current === screen) screen.savedHistory = false;
     }
     // A pending old-session read must never overwrite another screen or draft.
-    if (r && current === screen && r.text !== screen.text && !screen.reading) {
+    if (r && r.text.trim() && current === screen && r.text !== screen.text && !screen.reading) {
       screen.offset = undefined;
       try { await updateText(screen.title, r.text); }
       catch (e) { diag((e as Error).message); }
@@ -364,11 +438,12 @@ async function record(t: Thread, hold = false) {
   // capture, transcription and review. Only a successful Send resumes updates.
   background.reading = true;
   clearInterval(poll);
+  clearInterval(statusAnimation);
   let overlayActive = true;
   let overlayWrites: Promise<void> = Promise.resolve();
-  const writeOverlay = (content: string) => {
+  const writeOverlay = (content: string, status = false) => {
     const write = overlayWrites.then(async () => {
-      const accepted = await bridge.textContainerUpgrade(new TextContainerUpgrade({ containerID: VOICE.containerID, containerName: VOICE.containerName, content: content || ' ', textColor: content ? 4 : 0 }));
+      const accepted = await writePanel(content, () => true, status);
       if (!accepted) throw new Error('Glasses rejected the voice panel update.');
     });
     overlayWrites = write.catch(() => {});
@@ -386,9 +461,9 @@ async function record(t: Thread, hold = false) {
   const closeVoice = async () => {
     if (!overlayActive) return;
     overlayActive = false;
-    try { await writeOverlay(background.activityLabel || 'Checking status…'); }
+    try { await writeOverlay(background.activityLabel || readerStatus('unknown'), true); }
     catch (e) { diag((e as Error).message); }
-    finally { current = background; startReaderUpdates(background); }
+    finally { current = background; await inputHint(true).catch(e => diag((e as Error).message)); startReaderUpdates(background); }
   };
   recording = [];
   const chunks = recording;
@@ -466,11 +541,14 @@ async function record(t: Thread, hold = false) {
   if (hold) releaseCapture = () => { void stop(true); };
   const hint = hold ? 'Speak. Release to review. Double-click to cancel.' : tr('recordingHint');
   try {
+    await inputHint(false);
     await voiceShow({ kind: 'text', title: tr('recording', 0), text: hint,
       onClick: hold ? undefined : () => { void stop(true); }, onBack: () => { void stop(false); } });
   } catch (e) {
     cancel();
     current = background;
+    void inputHint(true).catch(() => {});
+    startReaderUpdates(background);
     diag((e as Error).message);
     return;
   }
@@ -602,6 +680,7 @@ function onEvent(e: EvenHubEvent) {
   const systemType = e.sysEvent?.eventType;
   if (systemType === OsEventTypeList.SYSTEM_EXIT_EVENT || systemType === OsEventTypeList.ABNORMAL_EXIT_EVENT) {
     clearInterval(poll);
+    clearInterval(statusAnimation);
     cancelCapture?.();
     return;
   }
@@ -759,7 +838,7 @@ async function main() {
     await connect();
   });
   bridge.onEvenHubEvent(onEvent);
-  window.addEventListener('pagehide', () => { clearInterval(poll); cancelCapture?.(); });
+  window.addEventListener('pagehide', () => { clearInterval(poll); clearInterval(statusAnimation); cancelCapture?.(); });
   await connect();
 }
 

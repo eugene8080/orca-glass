@@ -35,7 +35,7 @@ test('saved history survives compaction, incremental partial writes and concurre
     await writeFile(path, records.map(r => JSON.stringify(r)).join('\n') + '\n');
     const initial = await readTranscript(path, binding);
     assert.equal(initial.messageCount, 2);
-    assert.equal(initial.text, 'You\nOld question\n\nCodex\nOld answer');
+    assert.equal(initial.text, '/ Old question\n> Old answer');
     const next = JSON.stringify(message('user', 'New question'));
     await appendFile(path, next.slice(0, 30));
     assert.equal((await readTranscript(path, binding)).messageCount, 2);

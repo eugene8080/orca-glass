@@ -3,6 +3,13 @@ Updated: 2026-11-02
 
 ## Current state
 
+2026-11-02 beta **1.0.7** uploaded/promoted and channel verified (47,887 bytes).
+Adds framed compact conversation, visible Braille spinner, five-second working
+words/animated dots, and a right-aligned provider-reported elapsed duration before
+the input hint. Includes Filter Agents rename.62 tests/build/doctor pass; native
+simulator verifies visuals and live Codex activity returns its actual duration.
+G2 validation pending. See docs/session-reader.md for provider/source limitations.
+
 2026-11-02 update availability report: user cannot see the1.0.6 update and has
 not checked the new menu on G2. CLI recheck confirms version1.0.6 assigned beta,
 signed account eugene8080@gmail.com, tester roster still Invited. Earlier user

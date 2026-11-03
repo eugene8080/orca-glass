@@ -54,9 +54,9 @@ export function demoCall(lang: Lang, method: string, path: string, body: unknown
       return c.threads.map(([handle, title, agent, state]) => ({ handle, title, agent, state }) as Thread);
     case 'GET /api/thread':
     case 'GET /api/history':
-      return { text: c.texts[searchParams.get('handle') as keyof typeof c.texts] ?? '' };
+      return { text: '/ Please review this session.\n> ' + (c.texts[searchParams.get('handle') as keyof typeof c.texts] ?? '').replaceAll('\n', '\n  ') };
     case 'GET /api/activity':
-      return { state: searchParams.get('handle') === 'demo-2' ? 'working' : 'waiting' };
+      return { state: searchParams.get('handle') === 'demo-2' ? 'working' : 'waiting', elapsedSeconds: searchParams.get('handle') === 'demo-2' ? 812 : null };
     case 'GET /api/replies':
       return c.replies;
     case 'POST /api/reply':

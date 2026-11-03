@@ -4,7 +4,8 @@ import { promisify } from 'node:util';
 import { orcaExecutable } from './platform.mjs';
 import { parseChoices, validateChoice } from './choices.mjs';
 import { sessionTitles, sessionTitle } from './session-titles.mjs';
-import { activityState } from './activity.mjs';
+import { activityState, reportedElapsed } from './activity.mjs';
+import { terminalConversation } from './reader-text.mjs';
 
 const run = promisify(execFile);
 const ORCA = orcaExecutable();
@@ -150,14 +151,13 @@ export async function readThread(handle) {
   const lines = terminal.tail || [];
   const menu = parseChoices(lines);
   const agent = await agentOf(handle);
-  const pick = agent === 'claude' ? answersOnly : agent === 'codex' ? codexAnswersOnly : null;
-  const answer = pick && cleanScreen(pick(lines));
+  const answer = terminalConversation(lines, agent);
   // Orca's agentIdentity can survive after Codex exits back to PowerShell.
   // Native voice must see a current Codex input row, never type into that shell.
   const bottom = lines.slice(-12);
   const inputReady = bottom.some(l => /^\s*›(?:\s|$)/.test(l)) &&
     !bottom.slice(-4).some(l => /^\s*(?:PS\s+.+>|[A-Za-z]:\\[^>]*>)/.test(l));
-  return { text: menu ? lines.join('\n') : answer || cleanScreen(lines), menu, inputReady };
+  return { text: menu ? lines.join('\n') : answer || (['codex', 'claude'].includes(agent) ? '' : '> Conversation-only text is unavailable for this terminal format.'), menu, inputReady };
 }
 
 export async function readHistory(handle) {
@@ -176,7 +176,7 @@ export async function readHistory(handle) {
   if (fallback.incarnationId !== live.incarnationId) throw new Error('Terminal changed while loading history');
   const { terminal } = await orca(['terminal', 'read', '--terminal', handle, '--limit', '1000']);
   // This is bounded Orca scrollback, not an invented or inferred conversation.
-  return { text: (terminal.tail || []).join('\n'), limited: true, source: 'terminal-buffer', reason };
+  return { text: terminalConversation(terminal.tail || [], fallback.agentIdentity) || (['codex', 'claude'].includes(fallback.agentIdentity) ? '' : '> Conversation-only text is unavailable for this terminal format.'), limited: true, source: 'terminal-buffer', reason };
 }
 
 export async function requireLiveTerminal(handle) {
@@ -190,10 +190,14 @@ export async function requireLiveTerminal(handle) {
 
 export async function activity(handle) {
   const terminal = await requireLiveTerminal(handle);
-  const { worktrees } = await orca(['worktree', 'ps']);
+  const [{ worktrees }, screen] = await Promise.all([
+    orca(['worktree', 'ps']),
+    orca(['terminal', 'read', '--terminal', handle, '--screen']).catch(() => null),
+  ]);
   const workspace = worktrees.find(w => w.worktreeId === terminal.worktreeId);
   const agent = workspace?.agents?.find(a => a.paneKey === `${terminal.tabId}:${terminal.leafId}`);
-  return { state: activityState(agent) };
+  const state = activityState(agent);
+  return { state, elapsedSeconds: state === 'working' ? reportedElapsed(screen?.terminal?.tail || [], terminal.agentIdentity) : null };
 }
 
 export async function choose(handle, id, value) {

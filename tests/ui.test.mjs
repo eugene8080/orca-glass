@@ -6,6 +6,10 @@ import ts from '../app/node_modules/typescript/lib/typescript.js';
 
 const textExports = {};
 vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../app/src/text.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, { exports: textExports, TextEncoder });
+const statusExports = {};
+vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../app/src/reader-status.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, { exports: statusExports });
+const hintExports = {};
+vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../app/src/footer-hint.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, { exports: hintExports, document: { createElement: () => ({ getContext: () => ({ fillRect() {}, fillText() {}, getImageData: () => ({ data: new Uint8ClampedArray(280 * 28 * 4) }) }) }) } });
 
 // Exercise the real controller with a simulated Even bridge: no agent input,
 // microphone access, network, or hardware claims.
@@ -16,7 +20,8 @@ async function harness(count = 2, voice = false, mode = 'tap', savedView = '') {
     return elements.get(id);
   };
   const threads = Array.from({ length: count }, (_, i) => ({ handle: `terminal-${i}`, title: `Session ${i}`, agent: 'codex', state: 'unknown' }));
-  const pages = [], sends = [], timers = new Map(), mic = [], upgrades = [], transcriptions = [];
+  const pages = [], sends = [], timers = new Map(), mic = [], upgrades = [], transcriptions = [], images = [];
+  const animations = new Map();
   let timerId = 0, event;
   const api = {
     activity: async () => ({ state: 'unknown' }),
@@ -28,6 +33,7 @@ async function harness(count = 2, voice = false, mode = 'tap', savedView = '') {
     say: async (handle, text) => { sends.push({ handle, text }); return { sent: text }; },
   };
   const bridge = {
+    updateImageRawData: async value => { images.push(value); return 0; },
     getLocalStorage: async key => key === 'code' ? 'demo' : key === 'recording-mode' ? mode : key === 'lang' ? 'en' : key === 'view-provider' ? savedView : '',
     setLocalStorage: async () => {},
     createStartUpPageContainer: async p => { pages.push(p); return 0; },
@@ -44,17 +50,19 @@ async function harness(count = 2, voice = false, mode = 'tap', savedView = '') {
     './pairing': { parseCode: () => null },
     './i18n': { applyPage() {}, detectLang: () => 'en', setLang() {}, t: key => key },
     './text': textExports,
+    './reader-status': statusExports,
+    './footer-hint': hintExports,
   };
   const source = ts.transpileModule(readFileSync(new URL('../app/src/main.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
   vm.runInNewContext(source, {
     exports: {}, require: name => imports[name], document: { getElementById: element },
     location: { search: '' }, window: { addEventListener() {} }, URLSearchParams, Uint8Array, TextEncoder,
-    setInterval: fn => { timers.set(++timerId, fn); return timerId; },
-    clearInterval: id => timers.delete(id),
+    setInterval: (fn, delay) => { (delay === 200 ? animations : timers).set(++timerId, fn); return timerId; },
+    clearInterval: id => { timers.delete(id); animations.delete(id); },
   });
   const flush = () => new Promise(resolve => setImmediate(resolve));
   await flush();
-  return { api, bridge, elements, pages, sends, timers, mic, upgrades, transcriptions, flush,
+  return { api, bridge, elements, pages, sends, timers, animations, mic, upgrades, images, transcriptions, flush,
     menu: async id => { event({ menuItemClickEvent: { itemID: id } }); await flush(); },
     system: async type => { event({ sysEvent: { eventType: type } }); await flush(); },
     press: () => { event({ sysEvent: { eventType: 9 } }); },
@@ -158,6 +166,7 @@ test('slow polls do not overlap or overwrite a different session screen', async 
   h.api.thread = () => { reads++; return new Promise(resolve => { finish = resolve; }); };
   const poll = [...h.timers.values()][0];
   const pending = poll();
+  await h.flush();
   await poll();
   assert.equal(reads, 1);
   await h.back();
@@ -167,6 +176,30 @@ test('slow polls do not overlap or overwrite a different session screen', async 
   await pending;
   assert.equal(h.upgrades.length, 0);
   assert.equal(h.pages.at(-1).textObject[1].content, 'Other session');
+});
+
+test('working footer uses reported duration and animation never rewrites the conversation', async () => {
+  const h = await harness();
+  h.api.activity = async () => ({ state: 'working', elapsedSeconds: 812 });
+  await h.pick(3);
+  const pageCount = h.pages.length;
+  const imagesBefore = h.images.length;
+  await [...h.animations.values()][0]();
+  assert.equal(h.pages.length, pageCount);
+  assert.ok(h.images.length > imagesBefore);
+  assert.ok(h.upgrades.every(u => u.containerName === 'voice'));
+  assert.equal(hintExports.footerHint(812), '13m 32s [Tap & hold to input]');
+  assert.equal(hintExports.footerHint(null), '[Tap & hold to input]');
+  assert.equal(hintExports.footerHint(NaN), '[Tap & hold to input]');
+});
+
+test('working words last five seconds and Braille patterns are distinct', () => {
+  assert.match(statusExports.readerStatus('working', 0, 0), /Processing\.$/);
+  assert.match(statusExports.readerStatus('working', 1, 500), /Processing\.\.$/);
+  assert.match(statusExports.readerStatus('working', 2, 1000), /Processing\.\.\.$/);
+  assert.match(statusExports.readerStatus('working', 0, 4999), /Processing/);
+  assert.match(statusExports.readerStatus('working', 0, 5000), /Thinking\.$/);
+  assert.equal(new Set(statusExports.SPINNER.map(s => JSON.stringify(statusExports.statusPixels(s)))).size, 10);
 });
 
 test('hold release reviews text and only explicit send submits once', async () => {
@@ -306,7 +339,7 @@ test('cancel during preview prevents late captions and input', async () => {
   h.api.transcribe = () => new Promise(resolve => { finish = resolve; });
   [...h.timers.values()][0](); await h.back();
   finish({ text: 'Late caption' }); await h.flush();
-  assert.equal(h.upgrades.at(-1).content, 'Status unavailable');
+  assert.equal(h.upgrades.findLast(u => u.containerName === 'voice').content, '    Status unavailable');
   assert.ok(h.upgrades.every(u => !u.content.includes('Late caption')));
   assert.equal(h.sends.length, 0);
 });
@@ -407,16 +440,17 @@ test('capture and bottom-panel review never rebuild or rewrite the chat on send 
     await h.pick(3); await h.scroll('up');
     const page = h.pages.at(-1), count = h.pages.length, writes = h.upgrades.length;
     const panel = page.textObject.find(c => c.containerName === 'voice');
-    assert.equal(panel.width * panel.height, 576 * 288 / 4);
+    assert.equal(panel.width, 544);
+    assert.ok(panel.height <= 72);
     const reader = page.textObject.find(c => c.containerName === 'body');
     assert.ok(reader.yPosition + reader.height <= panel.yPosition);
     assert.ok(panel.yPosition + panel.height <= 288);
-    assert.equal(panel.content, 'Status unavailable');
+    assert.equal(panel.content, '    Status unavailable');
     assert.equal(panel.textColor, 4);
     assert.ok(panel.zOrderIndex > page.textObject[1].zOrderIndex);
     h.press(); await h.flush();
     assert.equal(h.pages.length, count);
-    assert.ok(h.upgrades.slice(writes).every(u => u.containerName === 'voice'));
+    assert.ok(h.upgrades.slice(writes).every(u => ['voice', 'hint'].includes(u.containerName)));
     h.audio(); h.release(); await h.flush();
     assert.equal(h.pages.length, count);
     assert.equal(h.upgrades.at(-1).containerName, 'voice');
@@ -424,7 +458,7 @@ test('capture and bottom-panel review never rebuild or rewrite the chat on send 
     if (send) await h.tap(); else await h.back();
     const restoredPages = h.pages.length;
     assert.equal(restoredPages, count);
-    assert.equal(h.pages.at(-1).textObject.find(c => c.containerName === 'voice').content, 'Status unavailable');
+    assert.equal(h.pages.at(-1).textObject.find(c => c.containerName === 'voice').content, '    Status unavailable');
     assert.equal(h.sends.length, send ? 1 : 0);
     assert.equal(h.timers.size, 1);
     if (send) {
@@ -462,11 +496,11 @@ test('bottom status changes while reading is paused without rewriting the conver
   await h.scroll('up');
   h.api.activity = async () => ({ state: 'working' });
   await [...h.timers.values()][0]();
-  assert.equal(h.upgrades.at(-1).content, 'Working…');
+  assert.equal(h.upgrades.at(-1).content, '    Processing.');
   assert.deepEqual(Object.keys(h.upgrades.at(-1)).sort(), ['containerID', 'containerName', 'content', 'textColor'].sort());
   h.api.activity = async () => ({ state: 'waiting' });
   await [...h.timers.values()][0]();
-  assert.equal(h.upgrades.at(-1).content, 'Waiting for input');
+  assert.equal(h.upgrades.at(-1).content, '    Waiting input');
   assert.ok(h.upgrades.every(u => u.containerName === 'voice'));
   assert.equal(h.pages.length, pages);
 });
@@ -475,7 +509,7 @@ test('initial reader status is fetched before rendering rather than waiting for 
   const h = await harness();
   h.api.activity = async () => ({ state: 'working' });
   await h.pick(3);
-  assert.equal(h.pages.at(-1).textObject.find(c => c.containerName === 'voice').content, 'Working…');
+  assert.equal(h.pages.at(-1).textObject.find(c => c.containerName === 'voice').content, '    Processing.');
 });
 
 test('late activity cannot overwrite voice capture; cancel restores status and keeps text paused', async () => {
@@ -492,11 +526,11 @@ test('late activity cannot overwrite voice capture; cancel restores status and k
   await pending;
   assert.equal(h.upgrades.length, writes);
   await h.back();
-  assert.equal(h.upgrades.at(-1).content, 'Working…');
+  assert.equal(h.upgrades.findLast(u => u.containerName === 'voice').content, '    Processing.');
   h.api.activity = async () => ({ state: 'waiting' });
   const afterCancel = h.upgrades.length;
   await [...h.timers.values()][0]();
-  assert.equal(h.upgrades.at(-1).content, 'Waiting for input');
+  assert.equal(h.upgrades.at(-1).content, '    Waiting input');
   assert.ok(h.upgrades.slice(afterCancel).every(u => u.containerName === 'voice'));
 });
 
