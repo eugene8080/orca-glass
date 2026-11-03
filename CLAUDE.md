@@ -12,6 +12,15 @@ upstream Claude code is not evidence of authorization to test it.
 
 ## Current work
 
+2026-11-03 session-list Braille still not spinning per user. Asked phone Menu
+layout label and exact marker (blank/slash/asterisk/static Braille); response
+pending. Local exact-pane bridge reports orca-glass beta busy, so upstream state
+is currently correct; rendering/mode not established. No new code/beta yet.
+User asks remaining TODO confirmations: added current hardware-check list above
+historical rows. Only spinner diagnosis, filter placement/alignment, native footer,
+chrome filtering and voice completion need current checks; do not re-test
+superseded/cancelled historical designs.
+
 2026-11-03 user explicitly confirms on G2: host shutdown/load failure and screen
 rejection recovered; input can fill all three transcription rows; session-menu
 text no longer shifts during up/down swipes. These checks are hardware-confirmed.

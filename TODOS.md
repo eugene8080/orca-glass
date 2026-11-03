@@ -1,6 +1,31 @@
 # Orca Glass work
 Updated: 2026-11-03
 
+## Current hardware checks
+
+This list supersedes older pending statuses in the dated history below.
+
+- **Spinner: known failing on G2.** Await phone version, persistent Menu layout
+  label and whether working-row marker is blank, slash, asterisk or static Braille.
+  Local bridge correctly reports this Codex session busy; no fix inferred yet.
+- **Filter placement/alignment:** first main-list row, selected provider beside
+  it; Refresh below; contextual menu has only system controls. Check count and
+  provider tags align/read clearly.
+- **Native footer text:** timer and Tap & hold to input match chat/status font,
+  remain readable on one row and timer still updates.
+- **Terminal UI chrome:** composer placeholder, model/path/session footer and
+  shortcut hints no longer appear in conversation. Public progress commentary
+  remains by design of current filter; final-only filtering is separate work.
+- **Voice completion:** Click sends once; double-click cancels; either retains
+  chat position, and successful Send resumes incoming reply updates.
+
+Already confirmed: Android/G2 startup recovery, menu speed, stationary menu text
+on swipes, full three-row transcription, terminal spacing fix, earlier filtering/
+provider discovery and reader status/spinner visibility. Do not request repeat
+tests of cancelled six-row overlay, Click paging or old review-page designs.
+
+## Implementation and verification history
+
 | Task | Status | Evidence / remaining work |
 | --- | --- | --- |
 | Startup recovery1.0.15 | Hardware confirmed | 2026-11-03: user confirms version1.0.15 appears and both Android/G2 open. Compatibility mode remains unconfirmed;1.0.16 adds persistent layout indicator. |
