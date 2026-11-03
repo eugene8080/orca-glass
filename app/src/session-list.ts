@@ -13,12 +13,17 @@ export function sessionRow(title: string, handle: string, agent: string, state: 
 
 export type SessionColumns = { marker: string; title: string; right: string; busy?: boolean; handle?: string };
 export const sessionHeading = () => `Orca-glass ${__APP_VERSION__}`;
-export const MENU_LEFT = { containerID: 2, containerName: 'body', xPosition: 16, yPosition: 28, width: 376, height: 260 };
-export const MENU_CURSOR = { containerID: 4, containerName: 'menu-cursor', xPosition: 0, yPosition: 28, width: 24, height: 260 };
-export const MENU_STRIPS = [
-  { containerID: 7, containerName: 'menu-spin-top', xPosition: 16, yPosition: 136, width: 20, height: 84 },
-  { containerID: 8, containerName: 'menu-spin-bottom', xPosition: 16, yPosition: 220, width: 20, height: 28 },
-];
+export const MENU_LEFT = { containerID: 2, containerName: 'body', xPosition: 28, yPosition: 28, width: 364, height: 260 };
+export const MENU_CURSOR = { containerID: 4, containerName: 'menu-cursor', xPosition: 0, yPosition: 28, width: 28, height: 260 };
+// The dot moves in the existing cursor gutter. Session titles never get rewritten
+// during animation, and there is no trailing text padding before the title column.
+export const MENU_DOTS = ['·  ', ' · ', '  ·'];
+export function menuNativeText(rows: SessionColumns[]): string {
+  return rows.map(row => (row.handle ? (row.busy ? '' : ' ') : '   ') + menuTitle(row.title)).join('\n');
+}
+export function menuCursorText(rows: SessionColumns[], selected: number, frame = 0): string {
+  return rows.map((row, i) => `${i === selected ? '>' : ' '} ${row.busy ? MENU_DOTS[frame % MENU_DOTS.length] : row.marker || ' '}`).join('\n');
+}
 // Native text has no alignment flag. Pad a dedicated right column using measured
 // proportional text widths; no labels are rasterized or transferred as images.
 export function nativeRight(text: string, width: number): string {

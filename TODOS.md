@@ -8,12 +8,13 @@ This list supersedes older pending statuses in the dated history below.
 - **Plain-shell exclusion:** confirmed2026-11-03; user reports cmd.exe is gone
   from the G2 sessions list after Refresh. Header gap removal hardware-confirmed2026-11-03: user reports no blank row.
 
-- **Session-list animation: trial held; spacing decision pending.** Native expanding
-  middle-dot trial in uncommitted1.0.18 source passes73 tests/build/doctor, but
-  native simulator shows title movement during text replacement. User rejects
-  wide spacing and requests one-pixel outward steps. Native text has no exact
-  glyph pixel-spacing control; asked tighter approximate native text versus drawn
-  exact-pixel dots. No1.0.18 beta uploaded. Keep confirmed1.0.17 available.
+- **Session-list animation: native dot implemented; G2 check pending.** Beta1.0.19
+  uses one middle-height native dot moving across three positions, with no list
+  images. Marker/cursor updates leave title/right columns unchanged. All session
+  names move two spaces left; working rows omit one extra space. Smaller ◊ Usage
+  icon sits in its own marker column; Usage title aligns with other actions.
+  74 tests/build/doctor pass; native simulator labels stationary during animation
+  and swipe, navigation verified. G2 visual confirmation remains pending.
   Count/filter alignment and title gap remain hardware-confirmed on1.0.17.
 - **Filter placement/alignment:** first main-list row, selected provider beside
   it; Refresh below; contextual menu has only system controls. Placement/removal

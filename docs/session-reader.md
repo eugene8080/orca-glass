@@ -1,5 +1,22 @@
 # Session reader
 
+2026-11-03 beta1.0.19 replaces session-list raster markers with native text
+in six containers. Working marker is one middle-height dot in three positions
+('·  ', ' · ', '  ·'),500ms frames. Marker shares cursor gutter and serial/coalesced
+updates; session titles/right labels never change on animation frames. Activity
+poll updates title spacing only on busy transitions; Click waits for pending
+spacing/cursor writes. All session names moved two spaces (~12px) left; working
+session alone omits one additional space. Action titles retain their column.
+Usage uses native smaller lozenge ◊ in marker gutter; ⋄ was missing in simulator
+font and was rejected. Usage title aligns with other actions. Reader/voice unchanged.
+74 tests/build/doctor pass. Native simulator frame diff confined to marker gutter,
+label crop identical during swipe; navigation opens correct reader.1.0.19 beta
+uploaded/promoted and channel verified (46,534 bytes);1.0.18 superseded by final
+spacing/diamond/navigation guard changes. G2 animation/spacing check pending.
+Simulator restored to unpaired localhost5173/?code= preview in Orca pwsh terminal
+term_efcd8848-4201-42ff-9d4c-79257493a567. Ordinary prototype dist restored.
+
+
 2026-11-03 user confirms phone Menu Layout: Compact compatibility. This profile
 intentionally disables marker images/animation and uses inline count/filter labels,
 explaining reported symptoms without proving why G2 rejects the aligned profile.

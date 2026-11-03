@@ -20,7 +20,7 @@ import { applyPage, detectLang, setLang, t as tr } from './i18n';
 import { clipBytes, textSections } from './text';
 import { readerStatus, statusPixels, voiceBorderPixels, SPINNER } from './reader-status';
 import { footerHint } from './footer-hint';
-import { agentLabel, sessionRow, sessionListTitle, sessionHeading, MENU_LEFT, MENU_CURSOR, MENU_STRIPS, nativeRight, menuTitle, compactSessionTitle, cursorText, type SessionColumns } from './session-list';
+import { agentLabel, sessionRow, sessionListTitle, sessionHeading, MENU_LEFT, MENU_CURSOR, menuNativeText, menuCursorText, nativeRight, compactSessionTitle, type SessionColumns } from './session-list';
 
 // 画面 576x288。上に見出し(テキスト)、下に本文(リスト or テキスト)の2段構成で統一する。
 const HEAD = { containerID: 1, containerName: 'head', xPosition: 0, yPosition: 0, width: 576, height: 36 };
@@ -41,13 +41,13 @@ const TEXT_BYTES = 999;
 const POLL_MS = 1000;
 
 type Screen =
-  | { kind: 'list'; title: string; items: string[]; sessionList?: boolean; compat?: boolean; textOnly?: boolean; columns?: SessionColumns[]; connectedCount?: number; selected?: number; paintedSelection?: number; cursorWriting?: boolean; onPick: (i: number) => void; onBack?: () => void }
+  | { kind: 'list'; title: string; items: string[]; sessionList?: boolean; compat?: boolean; columns?: SessionColumns[]; connectedCount?: number; selected?: number; paintedSelection?: number; menuFrame?: number; paintedCursor?: string; cursorWriting?: boolean; titleWriting?: boolean; onPick: (i: number) => void; onBack?: () => void }
   | { kind: 'text'; title: string; text: string; tail?: boolean; offset?: number; reading?: boolean; activityLabel?: string; activityState?: string; reportedSeconds?: number | null; statusFrame?: number; statusStartedAt?: number; savedHistory?: boolean; reader?: Thread; onClick?: () => void; onBack?: () => void; onHold?: () => void; };
 
 let bridge: EvenAppBridge;
 let current: Screen | null = null;
 let started = false;
-let preferredMenu: 'full' | 'text' | 'compact' = 'full';
+let compactMenuOnly = false;
 let poll: ReturnType<typeof setInterval> | undefined;
 let menuPoll: ReturnType<typeof setInterval> | undefined;
 let menuAnimation: ReturnType<typeof setInterval> | undefined;
@@ -150,15 +150,14 @@ async function show(s: Screen, reloadText = false) {
   let page =
     s.kind === 'list'
       ? {
-          containerTotalNum: s.sessionList ? 8 : 2,
-          ...(s.sessionList ? { imageObject: MENU_STRIPS.map((tile, i) => new ImageContainerProperty({ ...tile, zOrderIndex: 7 - i })) } : {}),
+          containerTotalNum: s.sessionList ? 6 : 2,
           ...menu,
           textObject: s.sessionList ? [
             new TextContainerProperty({ ...HEAD, width: 300, height: 28, content: sessionHeading(), isEventCapture: 0, paddingLength: 0, zOrderIndex: 1 }),
             new TextContainerProperty({ containerID: 3, containerName: 'menu-count', xPosition: 300, yPosition: 0, width: 276, height: 28, content: nativeRight(`${s.connectedCount} connected terminals`, 276), isEventCapture: 0, paddingLength: 0, zOrderIndex: 2 }),
             new TextContainerProperty({ containerID: 5, containerName: 'menu-input', xPosition: 0, yPosition: 0, width: 576, height: 288, content: ' ', isEventCapture: 1, paddingLength: 0, zOrderIndex: 0 }),
-            new TextContainerProperty({ ...MENU_CURSOR, content: cursorText(s.items.length, s.selected || 0), isEventCapture: 0, paddingLength: 0, zOrderIndex: 3 }),
-            new TextContainerProperty({ ...MENU_LEFT, content: s.columns!.map(r => `${r.handle ? '     ' : (r.marker || ' ') + '    '}${menuTitle(r.title)}`).join('\n'), isEventCapture: 0, paddingLength: 0, zOrderIndex: 4 }),
+            new TextContainerProperty({ ...MENU_CURSOR, content: menuCursorText(s.columns!, s.selected || 0), isEventCapture: 0, paddingLength: 0, zOrderIndex: 3 }),
+            new TextContainerProperty({ ...MENU_LEFT, content: menuNativeText(s.columns!), isEventCapture: 0, paddingLength: 0, zOrderIndex: 4 }),
             new TextContainerProperty({ containerID: 6, containerName: 'menu-right', xPosition: 396, yPosition: 28, width: 180, height: 260, content: s.columns!.map(r => nativeRight(r.right, 180)).join('\n'), isEventCapture: 0, paddingLength: 0, zOrderIndex: 5 }),
           ] : [head],
           ...(s.sessionList ? {} : { listObject: [
@@ -201,29 +200,23 @@ async function show(s: Screen, reloadText = false) {
         throw new Error(`${sessionHeading()}: native startup failed (${result}); bootstrap recovery rejected.`);
       }
     }
-    if (s.kind === 'list' && s.sessionList) {
-      if (preferredMenu === 'compact') { s.compat = true; page = compatibilityMenu(s, menu) as typeof page; }
-      else if (preferredMenu === 'text') { s.textOnly = true; page = textOnlyMenu(s, page) as typeof page; }
+    if (s.kind === 'list' && s.sessionList && compactMenuOnly) {
+      s.compat = true; page = compatibilityMenu(s, menu) as typeof page;
     }
     let accepted = await bridge.rebuildPageContainer(new RebuildPageContainer(page));
-    if (!accepted && s.kind === 'list' && s.sessionList && !s.compat && !s.textOnly) {
-      s.textOnly = true;
-      accepted = await bridge.rebuildPageContainer(new RebuildPageContainer(textOnlyMenu(s, page)));
-      if (accepted) { preferredMenu = 'text'; diag(`${sessionHeading()}: marker-image layout rejected; native aligned text active.`); }
-    }
     if (!accepted && s.kind === 'list' && s.sessionList && !s.compat) {
       s.compat = true;
       accepted = await bridge.rebuildPageContainer(new RebuildPageContainer(compatibilityMenu(s, menu)));
-      if (accepted) { preferredMenu = 'compact'; diag(`${sessionHeading()}: aligned layouts rejected; compact compatibility menu active.`); }
+      if (accepted) { compactMenuOnly = true; diag(`${sessionHeading()}: aligned layout rejected; compact compatibility menu active.`); }
     }
     if (!accepted) throw new Error(`${sessionHeading()}: ${s.kind === 'list' && s.sessionList ? 'both aligned and compact menus rejected' : 'glasses rejected the screen update'}.`);
     if (s.kind === 'list' && s.sessionList) document.getElementById('menu-layout')!.textContent = s.compat
-      ? 'Menu layout: Compact compatibility' : s.textOnly ? 'Menu layout: Aligned native text (static markers)' : 'Menu layout: Aligned native text';
+      ? 'Menu layout: Compact compatibility' : 'Menu layout: Aligned native text (animated dots)';
     if (uploadText && s.kind === 'text') {
       const accepted = await bridge.textContainerUpgrade(new TextContainerUpgrade({ containerID: BODY.containerID, containerName: BODY.containerName, content }));
       if (!accepted) throw new Error('Glasses could not load the selected text. Click to retry.');
     }
-    if (s.kind === 'list' && s.sessionList && !s.compat && !s.textOnly) startMenuSpinner(s);
+    if (s.kind === 'list' && s.sessionList && !s.compat) startMenuSpinner(s);
     if (s.kind === 'text' && s.reader) {
       await bridge.updateImageRawData(new ImageRawDataUpdate({ containerID: STATUS_ICON.containerID, containerName: STATUS_ICON.containerName, imageData: statusPixels(s.activityLabel![0] === '/' ? '' : s.activityLabel![0]) })).catch(e => diag((e as Error).message));
       startReaderUpdates(s);
@@ -271,44 +264,19 @@ function compatibilityMenu(screen: SessionMenuScreen, menu: object) {
       width: 576, height: 288, content: ' ', isEventCapture: 1 }),
   ] };
 }
-function textOnlyMenu(screen: SessionMenuScreen, fullPage: { textObject: TextContainerProperty[] }) {
-  return { containerTotalNum: 6, textObject: fullPage.textObject.map(container => container.containerName === 'body'
-    ? new TextContainerProperty({ ...container, content: screen.columns!.map(row => `${row.busy ? '*    ' : (row.marker || ' ') + '    '}${menuTitle(row.title)}`).join('\n') })
-    : container) };
-}
 function compatibilityText(screen: SessionMenuScreen, selected = screen.selected || 0) {
   return screen.items.map((item, i) => `${i === selected ? '>' : ' '} ${clipBytes(item, 48)}`).join('\n');
 }
 function startMenuSpinner(screen: SessionMenuScreen) {
-  let frame = 0, busy = false, polling = false;
-  const previous: number[][] = [];
-  const draw = async () => {
-    if (busy || current !== screen) return;
-    busy = true;
-    try {
-      const glyph = SPINNER[frame++ % SPINNER.length];
-      for (let tileIndex = 0; tileIndex < MENU_STRIPS.length; tileIndex++) {
-        const tile = MENU_STRIPS[tileIndex];
-        if (current !== screen) return;
-        const pixels = Array(tile.width * tile.height).fill(0);
-        screen.columns!.forEach((row, i) => {
-          const icon = statusPixels(row.busy ? glyph : row.marker);
-          for (let y = 0; y < 27; y++) {
-            const target = MENU_LEFT.yPosition + i * 27 + y - tile.yPosition;
-            if (target < 0 || target >= tile.height) continue;
-            for (let x = 0; x < 20; x++) pixels[target * 20 + x] = icon[y * 20 + x];
-          }
-        });
-        if (previous[tileIndex]?.every((p, i) => p === pixels[i])) continue;
-        const result = await bridge.updateImageRawData(new ImageRawDataUpdate({ containerID: tile.containerID, containerName: tile.containerName, imageData: pixels }));
-        if (result !== ImageRawDataUpdateResult.success) throw new Error('Session marker image transfer rejected.');
-        previous[tileIndex] = pixels;
-      }
-    } catch (e) { diag((e as Error).message); }
-    finally { busy = false; }
-  };
-  void draw();
-  menuAnimation = setInterval(() => { void draw(); }, 500);
+  let polling = false;
+  let paintedTitles = menuNativeText(screen.columns!);
+  screen.menuFrame = 0;
+  screen.paintedCursor = menuCursorText(screen.columns!, screen.selected || 0);
+  menuAnimation = setInterval(() => {
+    if (current !== screen) return;
+    screen.menuFrame = ((screen.menuFrame || 0) + 1) % 3;
+    if (!screen.cursorWriting && !screen.titleWriting) sessionCursorWrites = updateSessionCursor(screen);
+  }, 500);
   menuPoll = setInterval(async () => {
     if (polling || current !== screen) return;
     polling = true;
@@ -320,7 +288,25 @@ function startMenuSpinner(screen: SessionMenuScreen) {
         const state = latest.find(t => t.handle === row.handle)?.state || 'unknown';
         row.busy = state === 'busy'; row.marker = state === 'idle' ? '/' : state === 'busy' ? '' : '?';
       }
-      void draw();
+      const titles = menuNativeText(screen.columns!);
+      if (titles !== paintedTitles) {
+        // Spacing changes only when activity changes, never on animation frames.
+        // Navigation waits for this write before reusing the reader body ID.
+        const pending = sessionCursorWrites;
+        screen.titleWriting = true;
+        sessionCursorWrites = pending.then(async () => {
+          try {
+            if (current !== screen) return;
+            const accepted = await bridge.textContainerUpgrade(new TextContainerUpgrade({
+              containerID: MENU_LEFT.containerID, containerName: MENU_LEFT.containerName, content: titles,
+            }));
+            if (!accepted) throw new Error('Session title text update rejected.');
+            paintedTitles = titles;
+          } finally { screen.titleWriting = false; }
+          await updateSessionCursor(screen);
+        }).catch(e => { diag((e as Error).message); });
+        await sessionCursorWrites;
+      } else if (!screen.cursorWriting && !screen.titleWriting) sessionCursorWrites = updateSessionCursor(screen);
     } catch (e) { diag((e as Error).message); }
     finally { polling = false; }
   }, 3000);
@@ -330,13 +316,16 @@ async function updateSessionCursor(screen: SessionMenuScreen) {
   screen.cursorWriting = true;
   try {
     // Coalesce rapid swipes to the newest position instead of queuing redraws.
-    while (current === screen && screen.paintedSelection !== screen.selected) {
+    while (current === screen) {
+      const content = screen.compat ? compatibilityText(screen) : menuCursorText(screen.columns!, screen.selected || 0, screen.menuFrame || 0);
+      if (screen.compat ? screen.paintedSelection === screen.selected : screen.paintedCursor === content) break;
       const selected = screen.selected || 0;
       const accepted = await bridge.textContainerUpgrade(new TextContainerUpgrade(screen.compat
         ? { containerID: BODY.containerID, containerName: BODY.containerName, content: compatibilityText(screen, selected) }
-        : { containerID: MENU_CURSOR.containerID, containerName: MENU_CURSOR.containerName, content: cursorText(screen.items.length, selected) }));
+        : { containerID: MENU_CURSOR.containerID, containerName: MENU_CURSOR.containerName, content }));
       if (!accepted) throw new Error('Session menu text update rejected');
       screen.paintedSelection = selected;
+      screen.paintedCursor = content;
     }
   } catch (e) { diag((e as Error).message); }
   finally { screen.cursorWriting = false; }
@@ -356,7 +345,7 @@ function home(page = 0) {
       { label: `* Filter by Agent [${viewProvider === 'all' ? 'All sessions' : agentLabel(viewProvider)}]`, run: () => viewOptions() },
       { label: '* Refresh sessions', run: () => home(page) },
       { label: '+ New Session', run: newSession },
-      { label: '◇ Usage', run: usage },
+      { label: '◊ Usage', run: usage },
       ...visible.map(t => ({ label: sessionRow(t.title, t.handle, t.agent, t.state), run: () => thread(t) })),
     ];
     if (page > 0) actions.push({ label: 'Previous page', run: () => home(page - 1) });
@@ -365,7 +354,7 @@ function home(page = 0) {
       const t = i >= 4 ? visible[i - 4] : undefined;
       if (t) return { marker: t.state === 'idle' ? '/' : t.state === 'busy' ? '' : '?', title: compactSessionTitle(t.title, t.handle), right: `[${agentLabel(t.agent)}]`, busy: t.state === 'busy', handle: t.handle };
       return i === 0 ? { marker: '*', title: 'Filter by Agent', right: `[${viewProvider === 'all' ? 'All sessions' : agentLabel(viewProvider)}]` }
-        : { marker: i === 1 ? '*' : i === 2 ? '+' : i === 3 ? '◇' : '', title: i === 1 ? 'Refresh sessions' : i === 2 ? 'New Session' : i === 3 ? 'Usage' : a.label, right: '' };
+        : { marker: i === 1 ? '*' : i === 2 ? '+' : i === 3 ? '◊' : '', title: i === 1 ? 'Refresh sessions' : i === 2 ? 'New Session' : i === 3 ? 'Usage' : a.label, right: '' };
     });
     await show({ kind: 'list', title: sessionListTitle(allThreads.length), sessionList: true, columns, connectedCount: allThreads.length, selected: 0, paintedSelection: 0,
       items: actions.map(a => a.label),
@@ -794,7 +783,7 @@ function onEvent(e: EvenHubEvent) {
   const type = ev.eventType ?? OsEventTypeList.CLICK_EVENT;
   if (s.kind === 'list' && s.sessionList && (type === OsEventTypeList.SCROLL_TOP_EVENT || type === OsEventTypeList.SCROLL_BOTTOM_EVENT)) {
     s.selected = Math.max(0, Math.min(s.items.length - 1, (s.selected || 0) + (type === OsEventTypeList.SCROLL_TOP_EVENT ? -1 : 1)));
-    if (!s.cursorWriting) sessionCursorWrites = updateSessionCursor(s);
+    if (!s.cursorWriting && !s.titleWriting) sessionCursorWrites = updateSessionCursor(s);
     return;
   }
   if (s.kind === 'text' && (type === OsEventTypeList.SCROLL_TOP_EVENT || type === OsEventTypeList.SCROLL_BOTTOM_EVENT)) {

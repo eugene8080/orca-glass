@@ -546,7 +546,7 @@ test('voice border is precreated, appears for capture/review and clears on cance
 test('compact session menu uses native text and one update per cursor move', async () => {
   const h = await harness();
   const pages = h.pages.length;
-  assert.ok(h.pages.at(-1).imageObject.every(c => c.width === 20));
+  assert.equal(h.pages.at(-1).imageObject, undefined);
   assert.equal(h.pages.at(-1).listObject, undefined);
   assert.equal(h.pages.at(-1).textObject.find(c => c.containerName === 'menu-input').isEventCapture, 1);
   assert.ok(h.pages.at(-1).textObject.filter(c => c.containerName !== 'menu-input').every(c => c.isEventCapture === 0));
@@ -557,18 +557,21 @@ test('compact session menu uses native text and one update per cursor move', asy
   assert.equal(columns.find(c => c.containerName === 'head').height, 28);
   assert.equal(columns.find(c => c.containerName === 'body').yPosition, 28);
   assert.equal(columns.find(c => c.containerName === 'menu-right').xPosition, 396);
-  assert.match(columns.find(c => c.containerName === 'body').content.trimStart(), /^\*\s+Filter by Agent/);
-  assert.ok(h.pages.at(-1).imageObject.every(c => c.height <= 84));
+  assert.equal(columns.find(c => c.containerName === 'body').content.split('\n')[0], '   Filter by Agent');
+  assert.equal(columns.find(c => c.containerName === 'body').xPosition, 28);
+  const actionRows = columns.find(c => c.containerName === 'body').content.split('\n').slice(0, 4);
+  assert.ok(actionRows.every(row => /^ {3}\S/.test(row)));
+  assert.ok(!actionRows[3].includes('◊'));
   assert.match(columns.find(c => c.containerName === 'menu-right').content.split('\n')[0], /All sessions/);
   assert.equal(columns.find(c => c.containerName === 'menu-right').content.split('\n')[1].trim(), '');
-  assert.equal(h.pages.at(-1).containerTotalNum, 8);
-  const all = [...columns, ...h.pages.at(-1).imageObject];
-  assert.deepEqual(all.map(c => c.zOrderIndex).sort((a, b) => a - b), [0,1,2,3,4,5,6,7]);
-  assert.deepEqual(all.map(c => c.containerID).sort((a, b) => a - b), [1,2,3,4,5,6,7,8]);
+  assert.equal(h.pages.at(-1).containerTotalNum, 6);
+  const all = [...columns];
+  assert.deepEqual(all.map(c => c.zOrderIndex).sort((a, b) => a - b), [0,1,2,3,4,5]);
+  assert.deepEqual(all.map(c => c.containerID).sort((a, b) => a - b), [1,2,3,4,5,6]);
   await h.scroll('down');
   assert.equal(h.upgrades.length, 1);
   assert.equal(h.upgrades[0].containerName, 'menu-cursor');
-  assert.equal(h.upgrades[0].content.split('\n')[1], '>');
+  assert.equal(h.upgrades[0].content.split('\n')[1].trimStart(), '> *');
   await h.scroll('down'); await h.scroll('down'); await h.scroll('down');
   assert.equal(h.pages.length, pages);
   await h.tap();
@@ -595,7 +598,7 @@ test('rapid native-text menu swipes coalesce instead of queuing every redraw', a
   await h.scroll('down'); await h.scroll('down'); await h.scroll('down'); await h.scroll('down'); await h.scroll('down');
   finish(); await h.flush();
   assert.equal(h.upgrades.length, 2);
-  assert.equal(h.upgrades.at(-1).content.split('\n')[5], '>');
+  assert.equal(h.upgrades.at(-1).content.split('\n')[5].trimStart(), '> ?');
   assert.ok(h.images.every(i => i.containerName.startsWith('menu-spin')));
 });
 
@@ -604,13 +607,13 @@ test('startup uses a minimal native page and recovers an already-consumed startu
   assert.equal(h.pages.length, 3);
   assert.equal(h.pages[0].containerTotalNum, 2);
   assert.equal(h.pages[1].containerTotalNum, 2);
-  assert.equal(h.pages[2].containerTotalNum, 8);
+  assert.equal(h.pages[2].containerTotalNum, 6);
 });
 
 test('hardware rejecting aligned layout gets an operable compact fallback', async () => {
   const h = await harness(2, false, 'tap', '', 0, true);
   assert.equal(h.pages[0].containerTotalNum, 2);
-  assert.equal(h.pages[1].containerTotalNum, 8);
+  assert.equal(h.pages[1].containerTotalNum, 6);
   assert.equal(h.pages.at(-1).containerTotalNum, 3);
   assert.equal(h.pages.at(-1).imageObject, undefined);
   assert.match(h.elements.get('diag').textContent, /compact compatibility menu active/);
@@ -620,7 +623,7 @@ test('hardware rejecting aligned layout gets an operable compact fallback', asyn
   assert.equal(h.pages.at(-1).textObject[1].content, 'Content terminal-0');
   await h.back();
   assert.equal(h.pages.at(-1).containerTotalNum, 3);
-  assert.equal(h.pages.filter(p => p.containerTotalNum === 8).length, 1);
+  assert.equal(h.pages.filter(p => p.containerTotalNum === 6).length, 1);
 });
 
 test('voice review uses all three native rows and hint is native text', async () => {
@@ -641,11 +644,16 @@ test('menu activity polling starts a spinner after a session becomes busy', asyn
   const h = await harness();
   h.api.threads = async () => [{ handle: 'terminal-0', title: 'Session 0', agent: 'codex', state: 'busy' }];
   await [...h.timers.values()].at(-1)(); await h.flush();
-  const before = h.images.filter(i => i.containerName === 'menu-spin-top').at(-1).imageData.join(',');
+  const before = h.upgrades.filter(i => i.containerName === 'menu-cursor').at(-1).content;
   await [...h.timers.values()][0](); await h.flush();
-  const after = h.images.filter(i => i.containerName === 'menu-spin-top').at(-1).imageData.join(',');
+  const after = h.upgrades.filter(i => i.containerName === 'menu-cursor').at(-1).content;
   assert.notEqual(before, after);
-  assert.equal(h.upgrades.length, 0);
+  assert.equal(h.images.length, 0);
+  const bodyWrites = h.upgrades.filter(u => u.containerName === 'body');
+  assert.equal(bodyWrites.length, 1);
+  assert.ok(bodyWrites[0].content.split('\n')[4].startsWith('Session'));
+  assert.ok(bodyWrites[0].content.split('\n')[5].startsWith(' Session'));
+  assert.match(after.split('\n')[4], /^[ >] [ ·]{3}$/);
 });
 
 test('system exit stops menu activity polling and marker animation', async () => {
@@ -656,12 +664,32 @@ test('system exit stops menu activity polling and marker animation', async () =>
   assert.equal(h.animations.size, 0);
 });
 
-test('rejecting marker images retains aligned native columns before compact fallback', async () => {
+test('session menu never requests marker images', async () => {
   const h = await harness(2, false, 'tap', '', 0, 'images');
   assert.equal(h.pages.at(-1).containerTotalNum, 6);
   assert.equal(h.pages.at(-1).imageObject, undefined);
   assert.ok(h.pages.at(-1).textObject.some(c => c.containerName === 'menu-right'));
-  assert.match(h.elements.get('menu-layout').textContent, /static markers/);
+  assert.match(h.elements.get('menu-layout').textContent, /animated dots/);
   await h.scroll('down');
   assert.equal(h.upgrades.at(-1).containerName, 'menu-cursor');
+});
+
+
+test('click waits for an activity-spacing write even while animation and swipes arrive', async () => {
+  const h = await harness();
+  for (let i = 0; i < 4; i++) await h.scroll('down');
+  const pageCount = h.pages.length;
+  let finish;
+  const original = h.bridge.textContainerUpgrade;
+  h.bridge.textContainerUpgrade = value => value.containerName === 'body'
+    ? new Promise(resolve => { finish = () => { original(value); resolve(true); }; })
+    : original(value);
+  h.api.threads = async () => [{ handle: 'terminal-0', title: 'Session 0', agent: 'codex', state: 'busy' }];
+  const poll = [...h.timers.values()].at(-1)();
+  await h.flush();
+  await [...h.timers.values()][0]();
+  await h.scroll('down'); await h.scroll('up'); await h.tap();
+  assert.equal(h.pages.length, pageCount);
+  finish(); await poll; await h.flush();
+  assert.equal(h.pages.at(-1).textObject[1].content, 'Content terminal-0');
 });
