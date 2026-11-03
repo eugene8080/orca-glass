@@ -37,6 +37,12 @@ No permanent deletion, agent prompt, Claude interaction or service restart.
 Other similarly short or test-looking names were not assumed safe to archive.
 Exact IDs and recovery record are in ignored .local/native-test-session-archive.json.
 
+2026-11-03 additional explicit user cleanup: archived even-terminal-codes test,
+Run Get-Date, and Verify whether it worked. All three were idle; CLI confirmed
+archive, state database reports archived=1, and native session list omits all
+three IDs. No permanent deletion or other-session change. Exact IDs retained in
+ignored .local/requested-native-test-archives.json for recovery.
+
 ## Reconnected at Eugene's request, 2026-11-01
 
 The host was stopped and ports 3456/8765 were free. Used the existing
