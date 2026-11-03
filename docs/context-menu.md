@@ -1,6 +1,26 @@
 # Native contextual menu
 Updated: 2026-11-02
 
+## Latest user confirmation and requested revision
+
+2026-11-02 user explicitly confirmed beta1.0.6 on physical G2 has Display off,
+View options, Brightness and Close. The reported missing system rows below were
+a Windows simulator difference, not a confirmed hardware regression. This also
+confirms the user obtained1.0.6 despite the earlier phone-update/roster mismatch.
+
+User requested renaming View options to Filter Agents and keeping the choices
+inside the native bordered near-field popup. Display labels are renamed in
+source/tests;56 tests/build pass. No new beta uploaded yet. Rechecked installed
+and registry-latest SDK0.0.16 and official contextual-menu docs: MenuItemProperty
+supports only itemName/itemID; selecting an action closes the popup. No nested
+submenu, programmatic menu-open or optical-depth field exists. A solid border
+on an ordinary app list would not make it a native near-field popup.
+
+Asked user to choose supported alternatives: put each agent choice directly in
+the native Menu, or retain Filter Agents > with the normal-distance filter page.
+Do not silently change the requested menu layout or claim a simulated border
+provides optical depth. Pending that choice, the installed beta remains1.0.6.
+
 ## Open regression report
 
 2026-11-02 user supplied Windows simulator screenshots showing only View options

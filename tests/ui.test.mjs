@@ -76,10 +76,10 @@ test('every live terminal remains reachable beyond the 20-item display limit', a
   assert.ok(h.pages.at(-1).listObject[0].itemContainer.itemName.some(s => s.includes('Session 39')));
 });
 
-test('native View options belongs only to the session list and does not duplicate OS controls', async () => {
+test('native Filter Agents belongs only to the session list and does not duplicate OS controls', async () => {
   const h = await harness();
   assert.equal(h.pages.at(-1).menuObject.menuItems.length, 1);
-  assert.equal(h.pages.at(-1).menuObject.menuItems[0].itemName, 'View options >');
+  assert.equal(h.pages.at(-1).menuObject.menuItems[0].itemName, 'Filter Agents >');
   await h.system(4);
   assert.equal(h.pages.length, 1);
   await h.pick(3);
@@ -91,7 +91,7 @@ test('native View options belongs only to the session list and does not duplicat
   assert.equal(h.sends.length, 0);
 });
 
-test('View options discovers providers, marks selection, filters and restores All Sessions', async () => {
+test('Filter Agents discovers providers, marks selection, filters and restores All Sessions', async () => {
   const h = await harness();
   h.api.threads = async () => [
     { handle: 'codex', title: 'Codex conversation', agent: 'codex' },

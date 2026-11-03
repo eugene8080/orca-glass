@@ -12,6 +12,14 @@ upstream Claude code is not evidence of authorization to test it.
 
 ## Current work
 
+2026-11-02 G2 confirms beta1.0.6 Display off/View options/Brightness/Close all
+present; simulator-only missing system rows is not a G2 regression. User asks
+rename Filter Agents and native near-field filter submenu. Rename prepared in
+source/tests;56 tests/build pass. Latest SDK0.0.16 has first-level actions only,
+closes popup on selection, no submenu/open-menu/optical-depth API. Asked choice:
+put agent choices directly in native Menu, or retain renamed normal-distance
+filter page. No new beta uploaded while that design choice is pending.
+
 2026-11-02 beta1.0.6: sessions-list contextual menu adds View options >;
 session reader has system-only menu. Provider filter persists (All Sessions,
 Claude, Codex plus providers in current local sessions); selected label has ✓.

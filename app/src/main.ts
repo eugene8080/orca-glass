@@ -123,9 +123,9 @@ async function show(s: Screen, reloadText = false) {
   const uploadText = reloadText || (s.kind === 'text' && !!s.reader && s.text.length > 900) || new TextEncoder().encode(content).length > 999;
   const head = new TextContainerProperty({ ...HEAD, ...(s.kind === 'text' && s.reader ? { zOrderIndex: 0 } : {}), content: clipBytes(screenTitle(s), TEXT_BYTES), isEventCapture: 0 });
   // Display off, Brightness and Close are OS-owned. Declare only our action;
-  // omitting menuObject on other pages removes View options but keeps system rows.
+  // omitting menuObject on other pages removes Filter Agents but keeps system rows.
   const menu = s.kind === 'list' && s.sessionList ? {
-    menuObject: new MenuContainerProperty({ menuItems: [new MenuItemProperty({ itemID: VIEW_OPTIONS_ID, itemName: 'View options >' })] }),
+    menuObject: new MenuContainerProperty({ menuItems: [new MenuItemProperty({ itemID: VIEW_OPTIONS_ID, itemName: 'Filter Agents >' })] }),
   } : {};
   const page =
     s.kind === 'list'
@@ -225,7 +225,7 @@ function home(page = 0) {
 }
 
 function viewOptions(page = 0) {
-  return guard('View options', async () => {
+  return guard('Filter Agents', async () => {
     const threads = await api.threads();
     const providers = ['all', 'claude', 'codex', ...new Set(threads.map(t => t.agent).filter(Boolean))]
       .filter((id, index, ids) => ids.indexOf(id) === index);
@@ -242,7 +242,7 @@ function viewOptions(page = 0) {
     }
     if (page > 0) actions.push({ label: 'Previous page', run: () => viewOptions(page - 1) });
     if ((page + 1) * size < providers.length) actions.push({ label: 'Next page', run: () => viewOptions(page + 1) });
-    await show({ kind: 'list', title: 'View options', items: actions.map(a => a.label),
+    await show({ kind: 'list', title: 'Filter Agents', items: actions.map(a => a.label),
       onPick: i => { void actions[i]?.run(); }, onBack: home });
   }, home);
 }
