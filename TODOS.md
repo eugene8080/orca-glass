@@ -3,6 +3,7 @@ Updated: 2026-11-03
 
 | Task | Status | Evidence / remaining work |
 | --- | --- | --- |
+| G2 startup invalid1 regression | Compatibility fix prepared; G2 retest pending | 2026-11-03:1.0.13 rejected on G2.1.0.14 reduces menu9→8 containers, contiguous IDs1..8/layers0..7, merges marker/title columns. Startup consumed latch now set before call to avoid repeated invalid create.67 tests/build pass; simulator menu/reader open. Exact hardware rejection cause unconfirmed. |
 | Stabilize menu and restore aligned columns/status markers | Simulator verified; G2 pending | 2026-11-03: user confirms1.0.12 speed.1.0.13 blank capture owns swipes; only cursor text changes, titles/right columns stay pixel-identical. Native version/count/filter/provider columns, idle / and Refresh *, 20px-wide raster Braille strips only. No full menu images. G2 check pending. |
 | Three-row native input area | Simulator verified; G2 pending | 2026-11-03: retains six chat rows/title, reserves81px input at y202; instruction plus two draft rows. Native fake review/cancel/send no rebuild/body write; chat pixels identical after cancel.66 tests/build/doctor pass. |
 | Filter agent terminal UI chrome | Implemented; hardware check pending | 2026-11-03: trailing composer/status/shortcut chrome stripped for Codex and recognized Claude/generic patterns. Actual Codex pattern read, synthetic Claude tests only. Genuine quoted messages preserved. Unknown conversation parser formats remain unavailable; commentary filtering unchanged. |

@@ -16,7 +16,7 @@ vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../app/src/session-l
 
 // Exercise the real controller with a simulated Even bridge: no agent input,
 // microphone access, network, or hardware claims.
-async function harness(count = 2, voice = false, mode = 'tap', savedView = '') {
+async function harness(count = 2, voice = false, mode = 'tap', savedView = '', startupResult = 0) {
   const elements = new Map();
   const element = id => {
     if (!elements.has(id)) elements.set(id, { value: '', hidden: false, textContent: '', listeners: {}, addEventListener(name, fn) { this.listeners[name] = fn; } });
@@ -39,7 +39,7 @@ async function harness(count = 2, voice = false, mode = 'tap', savedView = '') {
     updateImageRawData: async value => { images.push(value); return 'success'; },
     getLocalStorage: async key => key === 'code' ? 'demo' : key === 'recording-mode' ? mode : key === 'lang' ? 'en' : key === 'view-provider' ? savedView : '',
     setLocalStorage: async () => {},
-    createStartUpPageContainer: async p => { pages.push(p); return 0; },
+    createStartUpPageContainer: async p => { pages.push(p); return startupResult; },
     rebuildPageContainer: async p => { pages.push(p); return true; },
     textContainerUpgrade: async value => { upgrades.push(value); return true; },
     onEvenHubEvent: fn => { event = fn; },
@@ -79,7 +79,7 @@ async function harness(count = 2, voice = false, mode = 'tap', savedView = '') {
   };
 }
 
-const menuItems = h => h.pages.at(-1).listObject?.[0].itemContainer.itemName || h.pages.at(-1).textObject.find(c => c.containerName === 'body').content.split('\n');
+const menuItems = h => h.pages.at(-1).listObject?.[0].itemContainer.itemName || h.pages.at(-1).textObject.find(c => c.containerName === 'body').content.split('\n').map(row => row.trim().replace(/^[*/?+◇]\s+/, ''));
 
 test('every live terminal remains reachable through session-list pages', async () => {
   const h = await harness(40);
@@ -559,7 +559,11 @@ test('compact session menu uses native text and one update per cursor move', asy
   const columns = h.pages.at(-1).textObject;
   assert.equal(columns.find(c => c.containerName === 'menu-count').xPosition, 300);
   assert.equal(columns.find(c => c.containerName === 'menu-right').xPosition, 396);
-  assert.ok(columns.find(c => c.containerName === 'menu-markers').content.startsWith('*'));
+  assert.ok(columns.find(c => c.containerName === 'body').content.startsWith('*'));
+  assert.equal(h.pages.at(-1).containerTotalNum, 8);
+  const all = [...columns, ...h.pages.at(-1).imageObject];
+  assert.deepEqual(all.map(c => c.zOrderIndex).sort((a, b) => a - b), [0,1,2,3,4,5,6,7]);
+  assert.deepEqual(all.map(c => c.containerID).sort((a, b) => a - b), [1,2,3,4,5,6,7,8]);
   await h.scroll('down');
   assert.equal(h.upgrades.length, 1);
   assert.equal(h.upgrades[0].containerName, 'menu-cursor');
@@ -592,4 +596,13 @@ test('rapid native-text menu swipes coalesce instead of queuing every redraw', a
   assert.equal(h.upgrades.length, 2);
   assert.equal(h.upgrades.at(-1).content.split('\n')[4], '>');
   assert.equal(h.images.length, 0);
+});
+
+test('a rejected one-shot startup opens an error page through rebuild', async () => {
+  const h = await harness(2, false, 'tap', '', 1);
+  assert.equal(h.pages.length, 2);
+  assert.equal(h.pages[0].containerTotalNum, 8);
+  assert.equal(h.pages[1].containerTotalNum, 2);
+  assert.equal(h.pages[1].textObject[1].content, 'error'); // Harness translation returns the key.
+  assert.match(h.elements.get('diag').textContent, /could not open the reader \(1\)/);
 });

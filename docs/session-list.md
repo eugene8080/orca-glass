@@ -1,6 +1,17 @@
 # Session list
 Updated: 2026-11-03
 
+Version1.0.14 compatibility repair follows G2 startup rejection in1.0.13.
+The menu now has six native text containers plus two narrow image strips,
+IDs1..8 and layers0..7. Marker text is merged into title text, above the image
+strips; capture and selection cursor stay separate. The prior page declared
+nine containers and included layer9. Firmware rejection cause is not proven;
+this removes both count/range compatibility risks.67 tests/build pass and native
+simulator menu/reader navigation works. G2 validation remains pending.
+
+The one-shot startup call is marked consumed before awaiting its result.
+If rejected, the error/reconnect path uses rebuild rather than repeating create.
+
 2026-11-03 version1.0.13 supersedes the moving-block1.0.12 trial. A dedicated
 blank native text container captures gestures. Static native title/marker/right
 columns never receive cursor updates; a separate cursor column alone changes.

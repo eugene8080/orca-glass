@@ -153,17 +153,16 @@ async function show(s: Screen, reloadText = false) {
   const page =
     s.kind === 'list'
       ? {
-          containerTotalNum: s.sessionList ? 9 : 2,
-          ...(s.sessionList ? { imageObject: MENU_STRIPS.map((tile, i) => new ImageContainerProperty({ ...tile, zOrderIndex: 7 + i })) } : {}),
+          containerTotalNum: s.sessionList ? 8 : 2,
+          ...(s.sessionList ? { imageObject: MENU_STRIPS.map((tile, i) => new ImageContainerProperty({ ...tile, zOrderIndex: 4 + i })) } : {}),
           ...menu,
           textObject: s.sessionList ? [
             new TextContainerProperty({ ...HEAD, width: 300, content: sessionHeading(), isEventCapture: 0, paddingLength: 0, zOrderIndex: 1 }),
-            new TextContainerProperty({ containerID: 11, containerName: 'menu-count', xPosition: 300, yPosition: 0, width: 276, height: 36, content: nativeRight(`${s.connectedCount} connected terminals`, 276), isEventCapture: 0, paddingLength: 0, zOrderIndex: 2 }),
-            new TextContainerProperty({ containerID: 12, containerName: 'menu-input', xPosition: 0, yPosition: 0, width: 576, height: 288, content: ' ', isEventCapture: 1, paddingLength: 0, zOrderIndex: 0 }),
+            new TextContainerProperty({ containerID: 3, containerName: 'menu-count', xPosition: 300, yPosition: 0, width: 276, height: 36, content: nativeRight(`${s.connectedCount} connected terminals`, 276), isEventCapture: 0, paddingLength: 0, zOrderIndex: 2 }),
+            new TextContainerProperty({ containerID: 5, containerName: 'menu-input', xPosition: 0, yPosition: 0, width: 576, height: 288, content: ' ', isEventCapture: 1, paddingLength: 0, zOrderIndex: 0 }),
             new TextContainerProperty({ ...MENU_CURSOR, content: cursorText(s.items.length, s.selected || 0), isEventCapture: 0, paddingLength: 0, zOrderIndex: 3 }),
-            new TextContainerProperty({ containerID: 14, containerName: 'menu-markers', xPosition: 16, yPosition: 40, width: 24, height: 248, content: s.columns!.map(r => r.marker || ' ').join('\n'), isEventCapture: 0, paddingLength: 0, zOrderIndex: 9 }),
-            new TextContainerProperty({ ...MENU_LEFT, content: s.columns!.map(r => menuTitle(r.title)).join('\n'), isEventCapture: 0, paddingLength: 0, zOrderIndex: 5 }),
-            new TextContainerProperty({ containerID: 15, containerName: 'menu-right', xPosition: 396, yPosition: 40, width: 180, height: 248, content: s.columns!.map(r => nativeRight(r.right, 180)).join('\n'), isEventCapture: 0, paddingLength: 0, zOrderIndex: 6 }),
+            new TextContainerProperty({ ...MENU_LEFT, content: s.columns!.map(r => `${r.marker ? r.marker + '   ' : '    '}${menuTitle(r.title)}`).join('\n'), isEventCapture: 0, paddingLength: 0, zOrderIndex: 6 }),
+            new TextContainerProperty({ containerID: 6, containerName: 'menu-right', xPosition: 396, yPosition: 40, width: 180, height: 248, content: s.columns!.map(r => nativeRight(r.right, 180)).join('\n'), isEventCapture: 0, paddingLength: 0, zOrderIndex: 7 }),
           ] : [head],
           ...(s.sessionList ? {} : { listObject: [
             new ListContainerProperty({
@@ -193,9 +192,10 @@ async function show(s: Screen, reloadText = false) {
         };
   try {
     if (!started) {
+      // Startup is one-shot even when rejected; error/reconnect pages use rebuild.
+      started = true;
       const result = await bridge.createStartUpPageContainer(new CreateStartUpPageContainer(page));
       if (result !== 0) throw new Error(`Glasses could not open the reader (${result}). Reconnect and try again.`);
-      started = true;
     } else {
       const accepted = await bridge.rebuildPageContainer(new RebuildPageContainer(page));
       if (!accepted) throw new Error('Glasses rejected the screen update. Reconnect and try again.');

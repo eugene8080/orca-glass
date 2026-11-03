@@ -12,6 +12,16 @@ upstream Claude code is not evidence of authorization to test it.
 
 ## Current work
 
+2026-11-03 G2 rejects1.0.13 startup with result1. Candidate1.0.14 reduces menu
+from9 to8 containers, merges markers into title column, normalizes IDs1..8 and
+layers0..7. Prior menu had zOrder9 with9 containers; this is a compatibility
+suspect, not a hardware-proven root cause. Blank capture/cursor/native columns
+and tiny Braille strips retained. Startup latch is set before the one-shot call
+so rejected startup recovery uses rebuild rather than repeating create.
+67 tests/build pass, including ID/layer coverage and rejected-start recovery;
+simulator menu/reader open. Reader/voice layout unchanged. G2 retest pending.
+Beta1.0.14 uploaded/promoted and channel verified (46,064 bytes).
+
 2026-11-03 user confirms1.0.12 G2 speed fixed but text shifts on swipes.1.0.13
 separates blank event capture, static native text columns and cursor-only update.
 Header version/count and Refresh filter/provider tags use dedicated right columns

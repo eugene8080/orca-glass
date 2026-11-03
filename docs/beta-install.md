@@ -3,6 +3,12 @@ Updated: 2026-11-03
 
 ## Current state
 
+2026-11-03 beta **1.0.14** uploaded/promoted and channel verified (46,064 bytes).
+Compatibility repair for G2 startup invalid1: eight menu containers, contiguous
+IDs/layers, merged marker/title text, and rejected-start recovery using rebuild.
+67 tests/build pass; simulator menu and reader open. Exact hardware cause and
+G2 recovery remain unconfirmed. Fully close/reopen Orca Glass after updating.
+
 2026-11-03 beta **1.0.13** uploaded/promoted and channel verified (46,081 bytes).
 Stable compact native text columns with separate blank gesture capture/cursor;
 right-hand count/filter/providers, Refresh *, idle / and tiny marker-only Braille
