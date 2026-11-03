@@ -12,6 +12,12 @@ upstream Claude code is not evidence of authorization to test it.
 
 ## Current work
 
+2026-11-02 user verifies beta1.0.8 on physical G2: session click does nothing,
+frame and divider are present, slash appears before Waiting input, and
+[Tap & hold to input] is visible. These four checks are hardware-confirmed.
+Spinner/timing, provider duration, filter rename and voice flow are not newly
+verified by this report. Documentation only; no new build needed.
+
 2026-11-02 reader1.0.8 supersedes click controls: session click does nothing,
 including numbered terminal choices; removed Resume/Earlier/Later/Back menu.
 Voice review click-to-send remains. Idle slash is native text rather than an
