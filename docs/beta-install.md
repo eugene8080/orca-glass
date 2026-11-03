@@ -1,5 +1,16 @@
 # Personal beta installation
 
+2026-11-03 user approves usage preview and requests beta upload.1.0.23 uploaded/
+promoted; channel verified (47,519 bytes).79 tests/build/doctor passed before
+release. Production bridge restarted after verifying listener/parent process;
+old .local/custom.pid was stale, corrected to newly verified supervisor PID.
+Local and stableHTTPS usage endpoints return ok for Codex, Claude and Cursor;
+observed Codex weekly64%, Claude5h4%/weekly2%, Cursor monthly~2.02%. Only usage
+metadata read; no model prompts, Claude launches or provider browser interaction.
+Ordinary prototype dist restored; simulator/Usage Preview kept OPEN. G2 usage
+rendering remains pending user confirmation. No public publication.
+
+
 2026-11-03 user requests Cursor/Claude usage from existing Orca sessions. Orca
 account list reports Claude session3%/weekly2%, Cursor monthly~2.02%, Codex weekly
 ~64%. Bridge usage previously returned only Codex. New collectUsage retains all

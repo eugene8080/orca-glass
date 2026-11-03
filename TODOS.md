@@ -1,17 +1,16 @@
 # Orca Glass TODOs
 Updated: 2026-11-03
 
-Current beta: **1.0.22**.76 tests/build/doctor passed for the reader-width change. Simulator stays
+Current beta: **1.0.23**.79 tests/build/doctor passed for multi-provider usage. Simulator stays
 open for user review; visual changes require preview approval before beta upload.
 Completed/superseded release notes: [history](docs/todo-history.md).
 
 ## Open work
 
-- [ ] **Claude/Cursor usage:** implemented; simulator review pending. Read existing
-  Orca account usage, retain Codex fallback, add Cursor monthly display and Claude
-  five-hour/weekly figures.79 tests/build pass; native simulator shows sanitized
-  real usage snapshot. No provider prompts/Claude launch. Beta1.0.22 and production
-  bridge unchanged; next1.0.23 after approval, then restart bridge and verify HTTPS.
+- [ ] **Claude/Cursor usage:** beta1.0.23 live; G2 confirmation pending. Shows
+  Claude five-hour/weekly and Cursor monthly allowance alongside Codex. User
+  approved simulator2026-11-03; beta channel verified, bridge restarted and
+  local/stableHTTPS endpoints return ok for all three.79 tests/build/doctor pass.
 - [ ] **Public release preparation:** user requests profile and screenshots on
   2026-11-03. CLI name/tagline/description saved; six native simulator captures
   and reproducible sample-data preview prepared. See [store/listing.md](store/listing.md).
@@ -80,7 +79,7 @@ Completed/superseded release notes: [history](docs/todo-history.md).
 - [x] Dynamic agent filtering, English-only fork and /images ignore.
 - [x] Codex usage restored; user confirmed working in the conversation.
 - [x] Orca-workspace terminal policy and simulator placement.
-- [x] Private beta installation/update flow established; current1.0.22 uploaded.
+- [x] Private beta installation/update flow established; current1.0.23 uploaded.
 
 ## Deferred / closed scope
 
