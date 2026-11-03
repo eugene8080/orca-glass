@@ -1,6 +1,10 @@
 # Session reader
 Updated: 2026-11-02
 
+User confirms Filter by Agent works on G2, with Pi and Cursor visible alongside
+Claude and Codex. Dynamic provider discovery and filtering are hardware-confirmed;
+this report does not establish conversation parsing or near-field submenu depth.
+
 User confirms the terminal spacing repair on G2: no more `restartedor`.
 The row-boundary spacing fix is hardware-confirmed.
 

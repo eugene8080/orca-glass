@@ -12,6 +12,11 @@ upstream Claude code is not evidence of authorization to test it.
 
 ## Current work
 
+2026-11-02 user confirms Filter by Agent works on G2 and includes Pi and
+Cursor alongside Claude/Codex. Dynamic provider discovery/filter behavior is
+hardware-confirmed. This does not verify near-field submenu depth or reading
+conversation content for those providers. Documentation only.
+
 2026-11-02 user confirms spacing issue fixed on G2: no more restartedor.
 Terminal row-boundary spacing repair is hardware-confirmed. Documentation only.
 

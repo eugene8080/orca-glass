@@ -3,6 +3,7 @@ Updated: 2026-11-02
 
 | Task | Status | Evidence / remaining work |
 | --- | --- | --- |
+| Filter by Agent behavior and provider discovery | Hardware confirmed | 2026-11-02: user confirms filtering works on G2; Pi and Cursor appear alongside Claude and Codex. Near-field submenu depth and provider conversation parsing remain separate from this check. |
 | Filter by Agent label | Hardware confirmed | 2026-11-02: user confirms the renamed menu label on physical G2. Near-field submenu request remains separate and unresolved. |
 | Session click and G2 frame/slash corrections | Hardware confirmed for click/frame/divider/slash/hint | 2026-11-02: user confirms on G2 that session click does nothing, frame/divider are present, slash precedes Waiting input, and input hint is visible.58 tests/build previously passed. This report does not newly validate spinner/timer/filter label or voice send. |
 | Framed reader, animated status and provider timer | G2 spinner/labels/dots/timer visibility confirmed | 2026-11-02: user confirms Braille spinner, animated thinking/pondering labels, . / .. / ... dots and response timer present on G2. Earlier confirmed frame/divider/slash/hint. Exact cadence/timer numerical accuracy and tool/thinking filtering are not newly verified by this report.62 tests/build/doctor previously passed for implementation;58 current tests after click-menu removal. See docs/session-reader.md. |

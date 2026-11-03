@@ -3,6 +3,9 @@ Updated: 2026-11-02
 
 ## Current state
 
+User confirms Filter by Agent works on G2, including Pi and Cursor alongside
+Claude and Codex. Filtering and dynamic provider discovery are verified.
+
 User confirms the phone listing showed **1.0.6** and has now updated to
 **1.0.8**. The earlier phone update-availability report is resolved. No
 reinstallation or invitation change is needed. This does not establish the
