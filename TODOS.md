@@ -16,7 +16,9 @@ Completed/superseded release notes: [history](docs/todo-history.md).
   is local/supplemental. List shows fictional Cursor/Pi/Claude/Codex/OpenCode.
   Original-author credit added; production build now carries original MIT license
   and attribution (not yet uploaded). User requires preview before Publish.
-  Developer profile remains blank. No public review or publication submitted.
+  Developer profile remains blank. GIMP icon master and valid24x24 adaptation
+  revised from user's no-glasses XCF (v2); preview in store/gallery.html. Icon
+  approval/upload pending; portal placeholder unchanged. No review/publication.
 - [ ] **Monitor native popup request:** [GitHub #44](https://github.com/even-realities/everything-evenhub/issues/44)
   and [Discord thread](https://discord.com/channels/1301124787740868620/1484753075590664332/threads/1567124600658202754).
   Await maintainer response/API guidance. Primary use case: hold-to-talk with more

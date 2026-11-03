@@ -49,6 +49,20 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-03 user replaces icon starting point with store/icon/orca-glass-no-glasses.xcf.
+Source26x24 retained unchanged. GIMP produces cleaned26x24 source with hidden
+reference and no-glasses24x24 v2 adaptation; dimensions/colour/alpha/2x2-block
+checks pass. Both revised XCFs opened in existing GIMP Icon Preview terminal.
+store/gallery.html now shows revised versions. Visual approval pending; no
+portal icon upload, beta change or public submission.
+
+2026-11-03 user selects bottom-left orca-with-glasses design and requests GIMP
+editing. GIMP3.2.6 Python-Fu produces layered731x731 cleaned master (hidden
+original crop retained) and simplified24x24 candidate with2x2 blocks. PNG
+dimensions/colour/alpha/block checks pass. Files in store/icon; preview added
+to store/gallery.html. GIMP remains open in repo Orca terminal GIMP Icon Preview.
+Candidate awaits user review; portal icon unchanged. No beta/public upload.
+
 2026-11-03 Even Hub profile/screenshots prepared at user request. Name/tagline/
 description saved; five native576x288 screenshots and stock Office cover saved
 in portal. Session list has fictional Cursor/Pi/Claude/Codex/OpenCode; reader/

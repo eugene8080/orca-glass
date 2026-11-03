@@ -57,7 +57,7 @@ The Python step requires Pillow. Verify each image visually. The fixture replace
 
 - **General-user connection:** `scripts/build-beta.mjs` pins the build to the single PC origin allowed by `app/app.json`. Arbitrary users cannot pair their PCs with this installed build. Resolve public connection/setup before advertising a self-service install.
 - **Privacy:** complete a fork-specific policy covering microphone audio, network routes, local transcription and confirmed replies to desktop agents. Do not reuse the upstream policy as this developer's policy.
-- **Developer information:** complete the portal's currently blank personal/developer information before submission. Replace the current question-mark placeholder with a distinct 24×24 monochrome icon; no replacement icon was created in this screenshot task.
+- **Developer information:** complete the portal's currently blank personal/developer information before submission. A [revised GIMP icon candidate](icon/README.md) based on the user's no-glasses XCF is prepared and validates against the 24×24/2×2-block requirements. User review remains pending; the portal question-mark placeholder is unchanged.
 - **Name consistency:** manifest/portal say `Orca Glass`; on-glasses header says `Orca-glass`. Align in a later build before submission.
 - **Hardware:** retain open 1.0.21 checks in [TODOS.md](../TODOS.md). Final-only assistant filtering is not implemented; do not promise it.
 
