@@ -1,6 +1,8 @@
 # Session reader
 Updated: 2026-11-03
 
+2026-11-03 hardware confirmation: User confirms all three input rows can be filled with text on G2. This verifies the full three-row transcription area; no instruction heading consumes a row.
+
 Version1.0.16 removes the review instruction heading and provisional Listening
 heading; captions/transcription now occupy all three native input rows. Click
 still sends and double-click cancels. Timer and input hint are native text,

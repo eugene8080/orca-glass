@@ -1,6 +1,8 @@
 # Session list
 Updated: 2026-11-03
 
+2026-11-03 hardware confirmation: User confirms menu text remains stable during up/down swipes on physical G2. Startup/load and screen rejection recovery also confirmed. Spinner/alignment/filter placement are separate checks.
+
 Version1.0.16: Filter by Agent is the first main-list row; its right column shows
 All sessions or selected provider. Refresh is second, followed by New Session,
 Usage and terminals. Filter is removed from contextual menu; OS controls remain.

@@ -1,6 +1,8 @@
 # Personal beta installation
 Updated: 2026-11-03
 
+2026-11-03 hardware confirmation: User confirms host shutdown/load failure and G2 screen rejection recovered, all three input rows usable, and menu text stable during up/down swipes. These hardware checks are complete; no new build required.
+
 ## Current state
 
 2026-11-03 user confirms1.0.15 opens on Android and G2. Beta **1.0.16** now

@@ -12,6 +12,12 @@ upstream Claude code is not evidence of authorization to test it.
 
 ## Current work
 
+2026-11-03 user explicitly confirms on G2: host shutdown/load failure and screen
+rejection recovered; input can fill all three transcription rows; session-menu
+text no longer shifts during up/down swipes. These checks are hardware-confirmed.
+Do not infer new confirmation of spinner, filter-row placement, native hint font,
+exact alignment or terminal-chrome removal from this report. Documentation only.
+
 2026-11-03 user confirms1.0.15 on menu and both Android/G2 open; startup recovery
 is hardware-confirmed. No compatibility Status message seen does not prove mode,
 as transient status can be overwritten.1.0.16 adds persistent phone layout label.
