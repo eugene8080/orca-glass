@@ -1,4 +1,18 @@
 # Session reader
+
+2026-11-03 user confirms phone Menu Layout: Compact compatibility. This profile
+intentionally disables marker images/animation and uses inline count/filter labels,
+explaining reported symptoms without proving why G2 rejects the aligned profile.
+Beta1.0.17 uploaded/promoted; channel verified (46,786 bytes). It tries short session-only84/28px image strips instead of144/116px strips;
+image rejection now tries six aligned native text containers with static markers
+before the proven three-text compact recovery. Persistent phone mode distinguishes
+all three.73 tests/build/doctor pass. Native simulator spinner frames differ only
+inside marker gutter; label crop is identical across swipe. Physical G2 acceptance
+and right alignment remain pending. Header gap removal and shell exclusion included;
+shell exclusion already hardware-confirmed. Reader/voice unchanged. Simulator restored
+to unpaired localhost5173 preview in named Orca pwsh tab
+term_e2a166c1-fe0a-4eb2-911a-59ec15288e82 after synthetic demo checks.
+
 Updated: 2026-11-03
 
 2026-11-03 user confirms native footer text fixed, terminal UI chrome removal

@@ -6,11 +6,13 @@ Updated: 2026-11-03
 This list supersedes older pending statuses in the dated history below.
 
 - **Plain-shell exclusion:** confirmed2026-11-03; user reports cmd.exe is gone
-  from the G2 sessions list after Refresh. Header gap change remains unreleased.
+  from the G2 sessions list after Refresh. Header gap change included in beta1.0.17; hardware check pending.
 
-- **Spinner: known failing on G2.** Await phone version, persistent Menu layout
-  label and whether working-row marker is blank, slash, asterisk or static Braille.
-  Local bridge correctly reports this Codex session busy; no fix inferred yet.
+- **Spinner: G2 retest pending.** User confirms Menu Layout: Compact compatibility
+  on2026-11-03. That profile deliberately disables spinner images and uses inline
+  count/filter labels.1.0.17 tries shorter session-only image strips, then six
+  aligned native text containers with static markers, then proven compact recovery.
+  Simulator animation verified; actual G2 acceptance remains unverified.
 - **Filter placement/alignment:** first main-list row, selected provider beside
   it; Refresh below; contextual menu has only system controls. Placement/removal
   confirmed2026-11-03. Agent tags ([Codex]/[Claude]/[Pi]) right alignment also
@@ -34,6 +36,7 @@ tests of cancelled six-row overlay, Click paging or old review-page designs.
 
 | Task | Status | Evidence / remaining work |
 | --- | --- | --- |
+| Menu compatibility diagnosis and smaller markers | G2 retest pending | 2026-11-03: user confirms Compact compatibility.1.0.17 short84/28px marker strips animate in native simulator; label crop unchanged during swipe. Image rejection retains aligned six-text fallback; full rejection retains compact three-text recovery.73 tests/build/doctor pass. Exact device rejection cause unproven. |
 | Orca-workspace terminal policy and simulator move | Completed | 2026-11-03: repo rule added to CLAUDE.md/AGENTS.md. Standalone simulator task and old cmd tab stopped; named pwsh Vite/Simulator tabs created in current Orca worktree. HTTP5173/automation9899 healthy; one desktop-session simulator. Preview pairing pending; no demo substituted. |
 | Phone Failed to fetch follow-up | Recovered; user confirmed | 2026-11-03: PC local/tailnet HTTP200 with4 agent sessions, Android online, phone Chrome healthz ok:true. User confirms1.0.16 runs on G2 again. Exact transient cause not proven. |
 | Plain shell exclusion and title gap | Shell exclusion hardware-confirmed; gap source prepared | 2026-11-03: user confirms cmd.exe is gone from G2 list after Refresh. Agent identity/type filter preserves all provider names. Gap change starts menu at y28, simulator verified but not yet uploaded.72 tests/build.1.0.17 pending spinner diagnosis. |

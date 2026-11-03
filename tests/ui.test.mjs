@@ -40,7 +40,7 @@ async function harness(count = 2, voice = false, mode = 'tap', savedView = '', s
     getLocalStorage: async key => key === 'code' ? 'demo' : key === 'recording-mode' ? mode : key === 'lang' ? 'en' : key === 'view-provider' ? savedView : '',
     setLocalStorage: async () => {},
     createStartUpPageContainer: async p => { pages.push(p); return startupResult; },
-    rebuildPageContainer: async p => { pages.push(p); return !(rejectAlignedMenu && p.textObject.some(c => c.containerName === 'menu-right')); },
+    rebuildPageContainer: async p => { pages.push(p); return !(rejectAlignedMenu && p.textObject.some(c => c.containerName === 'menu-right') && (rejectAlignedMenu !== 'images' || !!p.imageObject)); },
     textContainerUpgrade: async value => { upgrades.push(value); return true; },
     onEvenHubEvent: fn => { event = fn; },
     audioControl: async on => { mic.push(on); return true; },
@@ -557,7 +557,8 @@ test('compact session menu uses native text and one update per cursor move', asy
   assert.equal(columns.find(c => c.containerName === 'head').height, 28);
   assert.equal(columns.find(c => c.containerName === 'body').yPosition, 28);
   assert.equal(columns.find(c => c.containerName === 'menu-right').xPosition, 396);
-  assert.ok(columns.find(c => c.containerName === 'body').content.trimStart().startsWith('Filter by Agent'));
+  assert.match(columns.find(c => c.containerName === 'body').content.trimStart(), /^\*\s+Filter by Agent/);
+  assert.ok(h.pages.at(-1).imageObject.every(c => c.height <= 84));
   assert.match(columns.find(c => c.containerName === 'menu-right').content.split('\n')[0], /All sessions/);
   assert.equal(columns.find(c => c.containerName === 'menu-right').content.split('\n')[1].trim(), '');
   assert.equal(h.pages.at(-1).containerTotalNum, 8);
@@ -653,4 +654,14 @@ test('system exit stops menu activity polling and marker animation', async () =>
   await h.system(7);
   assert.equal(h.timers.size, 0);
   assert.equal(h.animations.size, 0);
+});
+
+test('rejecting marker images retains aligned native columns before compact fallback', async () => {
+  const h = await harness(2, false, 'tap', '', 0, 'images');
+  assert.equal(h.pages.at(-1).containerTotalNum, 6);
+  assert.equal(h.pages.at(-1).imageObject, undefined);
+  assert.ok(h.pages.at(-1).textObject.some(c => c.containerName === 'menu-right'));
+  assert.match(h.elements.get('menu-layout').textContent, /static markers/);
+  await h.scroll('down');
+  assert.equal(h.upgrades.at(-1).containerName, 'menu-cursor');
 });

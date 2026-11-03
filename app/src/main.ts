@@ -41,13 +41,13 @@ const TEXT_BYTES = 999;
 const POLL_MS = 1000;
 
 type Screen =
-  | { kind: 'list'; title: string; items: string[]; sessionList?: boolean; compat?: boolean; columns?: SessionColumns[]; connectedCount?: number; selected?: number; paintedSelection?: number; cursorWriting?: boolean; onPick: (i: number) => void; onBack?: () => void }
+  | { kind: 'list'; title: string; items: string[]; sessionList?: boolean; compat?: boolean; textOnly?: boolean; columns?: SessionColumns[]; connectedCount?: number; selected?: number; paintedSelection?: number; cursorWriting?: boolean; onPick: (i: number) => void; onBack?: () => void }
   | { kind: 'text'; title: string; text: string; tail?: boolean; offset?: number; reading?: boolean; activityLabel?: string; activityState?: string; reportedSeconds?: number | null; statusFrame?: number; statusStartedAt?: number; savedHistory?: boolean; reader?: Thread; onClick?: () => void; onBack?: () => void; onHold?: () => void; };
 
 let bridge: EvenAppBridge;
 let current: Screen | null = null;
 let started = false;
-let compactMenuOnly = false;
+let preferredMenu: 'full' | 'text' | 'compact' = 'full';
 let poll: ReturnType<typeof setInterval> | undefined;
 let menuPoll: ReturnType<typeof setInterval> | undefined;
 let menuAnimation: ReturnType<typeof setInterval> | undefined;
@@ -158,7 +158,7 @@ async function show(s: Screen, reloadText = false) {
             new TextContainerProperty({ containerID: 3, containerName: 'menu-count', xPosition: 300, yPosition: 0, width: 276, height: 28, content: nativeRight(`${s.connectedCount} connected terminals`, 276), isEventCapture: 0, paddingLength: 0, zOrderIndex: 2 }),
             new TextContainerProperty({ containerID: 5, containerName: 'menu-input', xPosition: 0, yPosition: 0, width: 576, height: 288, content: ' ', isEventCapture: 1, paddingLength: 0, zOrderIndex: 0 }),
             new TextContainerProperty({ ...MENU_CURSOR, content: cursorText(s.items.length, s.selected || 0), isEventCapture: 0, paddingLength: 0, zOrderIndex: 3 }),
-            new TextContainerProperty({ ...MENU_LEFT, content: s.columns!.map(r => `     ${menuTitle(r.title)}`).join('\n'), isEventCapture: 0, paddingLength: 0, zOrderIndex: 4 }),
+            new TextContainerProperty({ ...MENU_LEFT, content: s.columns!.map(r => `${r.handle ? '     ' : (r.marker || ' ') + '    '}${menuTitle(r.title)}`).join('\n'), isEventCapture: 0, paddingLength: 0, zOrderIndex: 4 }),
             new TextContainerProperty({ containerID: 6, containerName: 'menu-right', xPosition: 396, yPosition: 28, width: 180, height: 260, content: s.columns!.map(r => nativeRight(r.right, 180)).join('\n'), isEventCapture: 0, paddingLength: 0, zOrderIndex: 5 }),
           ] : [head],
           ...(s.sessionList ? {} : { listObject: [
@@ -201,24 +201,29 @@ async function show(s: Screen, reloadText = false) {
         throw new Error(`${sessionHeading()}: native startup failed (${result}); bootstrap recovery rejected.`);
       }
     }
-    if (s.kind === 'list' && s.sessionList && compactMenuOnly) { s.compat = true; page = compatibilityMenu(s, menu) as typeof page; }
+    if (s.kind === 'list' && s.sessionList) {
+      if (preferredMenu === 'compact') { s.compat = true; page = compatibilityMenu(s, menu) as typeof page; }
+      else if (preferredMenu === 'text') { s.textOnly = true; page = textOnlyMenu(s, page) as typeof page; }
+    }
     let accepted = await bridge.rebuildPageContainer(new RebuildPageContainer(page));
+    if (!accepted && s.kind === 'list' && s.sessionList && !s.compat && !s.textOnly) {
+      s.textOnly = true;
+      accepted = await bridge.rebuildPageContainer(new RebuildPageContainer(textOnlyMenu(s, page)));
+      if (accepted) { preferredMenu = 'text'; diag(`${sessionHeading()}: marker-image layout rejected; native aligned text active.`); }
+    }
     if (!accepted && s.kind === 'list' && s.sessionList && !s.compat) {
       s.compat = true;
       accepted = await bridge.rebuildPageContainer(new RebuildPageContainer(compatibilityMenu(s, menu)));
-      if (accepted) {
-        compactMenuOnly = true;
-        diag(`${sessionHeading()}: aligned menu rejected; compact compatibility menu active.`);
-      }
+      if (accepted) { preferredMenu = 'compact'; diag(`${sessionHeading()}: aligned layouts rejected; compact compatibility menu active.`); }
     }
     if (!accepted) throw new Error(`${sessionHeading()}: ${s.kind === 'list' && s.sessionList ? 'both aligned and compact menus rejected' : 'glasses rejected the screen update'}.`);
     if (s.kind === 'list' && s.sessionList) document.getElementById('menu-layout')!.textContent = s.compat
-      ? 'Menu layout: Compact compatibility' : 'Menu layout: Aligned native text';
+      ? 'Menu layout: Compact compatibility' : s.textOnly ? 'Menu layout: Aligned native text (static markers)' : 'Menu layout: Aligned native text';
     if (uploadText && s.kind === 'text') {
       const accepted = await bridge.textContainerUpgrade(new TextContainerUpgrade({ containerID: BODY.containerID, containerName: BODY.containerName, content }));
       if (!accepted) throw new Error('Glasses could not load the selected text. Click to retry.');
     }
-    if (s.kind === 'list' && s.sessionList && !s.compat) startMenuSpinner(s);
+    if (s.kind === 'list' && s.sessionList && !s.compat && !s.textOnly) startMenuSpinner(s);
     if (s.kind === 'text' && s.reader) {
       await bridge.updateImageRawData(new ImageRawDataUpdate({ containerID: STATUS_ICON.containerID, containerName: STATUS_ICON.containerName, imageData: statusPixels(s.activityLabel![0] === '/' ? '' : s.activityLabel![0]) })).catch(e => diag((e as Error).message));
       startReaderUpdates(s);
@@ -265,6 +270,11 @@ function compatibilityMenu(screen: SessionMenuScreen, menu: object) {
     new TextContainerProperty({ containerID: 3, containerName: 'menu-input', xPosition: 0, yPosition: 0,
       width: 576, height: 288, content: ' ', isEventCapture: 1 }),
   ] };
+}
+function textOnlyMenu(screen: SessionMenuScreen, fullPage: { textObject: TextContainerProperty[] }) {
+  return { containerTotalNum: 6, textObject: fullPage.textObject.map(container => container.containerName === 'body'
+    ? new TextContainerProperty({ ...container, content: screen.columns!.map(row => `${row.busy ? '*    ' : (row.marker || ' ') + '    '}${menuTitle(row.title)}`).join('\n') })
+    : container) };
 }
 function compatibilityText(screen: SessionMenuScreen, selected = screen.selected || 0) {
   return screen.items.map((item, i) => `${i === selected ? '>' : ' '} ${clipBytes(item, 48)}`).join('\n');
