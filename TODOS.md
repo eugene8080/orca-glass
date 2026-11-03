@@ -14,6 +14,9 @@ This list supersedes older pending statuses in the dated history below.
   confirmed2026-11-03 in the one-at-a-time checklist. Connected count is on the
   same header row as name/version but is **not right-aligned**, confirmed by
   user2026-11-03. Header count alignment needs correction.
+  Selected filter ([All sessions]/[Codex]) is also on the correct Filter by Agent
+  row but **not right-aligned**, confirmed by user2026-11-03. Its alignment needs
+  correction; provider tags remain confirmed aligned.
 - **Native footer text:** confirmed fixed2026-11-03.
 - **Terminal UI chrome:** confirmed fixed2026-11-03. Public progress commentary
   still remains; final-only filtering is separate work.
