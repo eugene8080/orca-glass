@@ -49,6 +49,14 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-03 listing checklist: description was incomplete because Category was
+unset. Saved AI category through portal; App description now complete. Privacy
+wizard starts with contact information; Developer name required, email explicitly
+public, phone/address fields present but requiredness unverified. No contact data
+saved. User concerned about spam: prefer handle/dedicated support address; await
+chosen public contact, leave personal phone/address blank. Privacy/terms remain
+unfinished; no review/publication.
+
 2026-11-03 user approves earlier store/icon/orca-glass-icon-preview.png,
 explicitly correcting the v2 selection. Matching native24x24 orca-glass-icon.png
 saved through Even Hub CLI update (success); refreshed portal visibly shows
