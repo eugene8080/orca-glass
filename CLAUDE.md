@@ -42,6 +42,14 @@ it available. Automatic commit/push does not authorize beta promotion.
 
 ## Current work
 
+2026-11-03 user marks Compact native-text session menu trial done and asks TODO
+cleanup. TODOS.md rewritten as current open work, optional verification/limitations,
+confirmed completions and deferred scope. Full previous log preserved in
+ docs/todo-history.md with explicit historical/superseded warning; compact trial
+row closed there too. Remaining active items: latest1.0.21 G2 checks, identify bold
+bar, final-only response filtering. Reboot and long-idle checks are optional
+verification gaps, not current failures. No code/runtime/beta changes or tests.
+
 2026-11-03 user explicitly confirms "Phone Failed to fetch follow-up" resolved.
 TODOS.md row closed as Resolved; user confirmed. Exact earlier transient cause
 remains unproven. Documentation only; no runtime/code/beta change.

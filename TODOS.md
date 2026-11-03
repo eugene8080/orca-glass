@@ -1,129 +1,63 @@
-# Orca Glass work
+# Orca Glass TODOs
 Updated: 2026-11-03
 
-## Current hardware checks
+Current beta: **1.0.21**.75 tests and build passed before release. Simulator stays
+open for user review; visual changes require preview approval before beta upload.
+Completed/superseded release notes: [history](docs/todo-history.md).
 
-This list supersedes older pending statuses in the dated history below.
+## Open work
 
-- **Plain-shell exclusion:** confirmed2026-11-03; user reports cmd.exe is gone
-  from the G2 sessions list after Refresh. Header gap removal hardware-confirmed2026-11-03: user reports no blank row.
+- [ ] **G2 check of beta1.0.21:** verify the three contextual actions (Refresh
+  sessions, New Session, Usage), retained OS Display off/Brightness/Close, moving
+  dot, and no displaced slash when a working session is selected. Titles/count/
+  filter alignment were approved earlier; only latest-build regressions need checks.
+  Simulator routes all three actions and marker frames correctly. Ask one check
+  at a time, per user preference.
+- [ ] **Bold vertical bar:** identify the reported bar's location. Likely the
+  native reader scrollbar; location question remains unanswered. Installed SDK
+  has no scrollbar-hide setting. Preserve native smooth scrolling; do not claim
+  removal or add a destructive scrolling workaround.
+- [ ] **Main-response-only filtering:** tool records/internal reasoning and terminal
+  footer chrome are filtered, but public assistant progress commentary remains.
+  Final-only filtering was requested earlier and is not implemented. See
+  [reader details](docs/session-reader.md).
 
-- **Move list actions into contextual menu:** beta1.0.21 uploaded; G2 check pending.
-  Refresh sessions, New Session, Usage are first-level contextual actions only on
-  session list. Filter by Agent remains in list.7 first-page/6 later session rows.
-  75 tests/build pass; native simulator routes all three, no agent launched. Popup
-  left open; user requested upload2026-11-03, beta channel1.0.21 verified. OS entries need G2 check.
-- **Marker wrap when working row selected:** beta1.0.21 uploaded; G2 check pending. Arrow/separator plus dot caused native wrap and displaced later slashes.
-  Separator removed, gutter32px, titles unchanged. Simulator checks all three dot
-  frames: following idle row stationary.74 tests/build pass. Preview left open;
-  beta1.0.21 includes fix after explicit user upload request.
-- **Unified title alignment1.0.20:** simulator approved; G2 check pending. Working
-  names gain one space; action rows lose two so all match idle names.74 tests/build
-  pass, native simulator labels stationary. User approved simulator2026-11-03; beta1.0.20 uploaded/promoted
-  and channel verified (46,434 bytes). Preview remains open. Refresh sessions retained.
-- **Bold vertical bar:** investigation pending location confirmation. Likely native
-  reader scrollbar; SDK exposes no hide control. No reader/scrolling change made.
-- **Session-list animation: native dot implemented; G2 check pending.** Beta1.0.19
-  uses one middle-height native dot moving across three positions, with no list
-  images. Marker/cursor updates leave title/right columns unchanged. All session
-  names move two spaces left; working rows omit one extra space. Smaller ◊ Usage
-  icon sits in its own marker column; Usage title aligns with other actions.
-  74 tests/build/doctor pass; native simulator labels stationary during animation
-  and swipe, navigation verified. G2 visual confirmation remains pending.
-  Count/filter alignment and title gap remain hardware-confirmed on1.0.17.
-- **Filter placement/alignment:** first main-list row, selected provider beside
-  it; Refresh below; contextual menu has only system controls. Placement/removal
-  confirmed2026-11-03. Agent tags ([Codex]/[Claude]/[Pi]) right alignment also
-  confirmed2026-11-03 in the one-at-a-time checklist. Connected count is on the
-  same header row as name/version and **right alignment is confirmed** by the
-  user2026-11-03 on the1.0.17 aligned static fallback. This supersedes the
-  earlier compact-mode alignment failure.
-  Selected filter ([All sessions]/[Codex]) is on the correct Filter by Agent
-  row and **right alignment is confirmed** by user2026-11-03 on1.0.17. This
-  supersedes the earlier compact-mode failure; provider tags remain confirmed aligned.
-- **Native footer text:** confirmed fixed2026-11-03.
-- **Terminal UI chrome:** confirmed fixed2026-11-03. Public progress commentary
-  still remains; final-only filtering is separate work.
-- **Voice completion:** confirmed fixed2026-11-03.
+## Optional verification / known limitations
 
-Already confirmed: Android/G2 startup recovery, menu speed, stationary menu text
-on swipes, full three-row transcription, terminal spacing fix, earlier filtering/
-provider discovery and reader status/spinner visibility. Do not request repeat
-tests of cancelled six-row overlay, Click paging or old review-page designs.
+- [ ] **Automatic startup after a real reboot:** sign-in task and manual task
+  launch verified; no real reboot/recovery check recorded. This is a verification
+  gap, not a current startup failure. Orca must be running.
+- [ ] **Idle title retention:** fix and synthetic idle/incarnation tests passed;
+  no explicit long-idle G2 confirmation recorded. Monitor for recurrence of
+  "Codex ready" replacing the session name; no new failure reported.
+- **Other provider conversations:** list/filter discovers Pi, Cursor and OpenCode,
+  but safe terminal conversation parsing currently recognizes Codex/Claude only.
+  Unknown formats cannot be claimed as fully supported readers. Claude live
+  testing remains prohibited without explicit authorization.
 
-## Implementation and verification history
+## Completed / confirmed
 
-| Task | Status | Evidence / remaining work |
-| --- | --- | --- |
-| Menu compatibility diagnosis and smaller markers | Done; user confirmed | 2026-11-03: user explicitly marks this task done. Aligned native-text menu replaces rejected image-marker layout; compact recovery retained. This closes the compatibility/small-marker task without asserting the historical image rejection cause. |
-| Orca-workspace terminal policy and simulator move | Completed | 2026-11-03: repo rule added to CLAUDE.md/AGENTS.md. Standalone simulator task and old cmd tab stopped; named pwsh Vite/Simulator tabs created in current Orca worktree. HTTP5173/automation9899 healthy; one desktop-session simulator. Preview pairing pending; no demo substituted. |
-| Phone Failed to fetch follow-up | Resolved; user confirmed | 2026-11-03: user explicitly confirms this follow-up is resolved. Earlier PC local/tailnet HTTP200, phone healthz ok:true and successful G2 launch supported recovery. Exact historical transient cause remains unproven. |
-| Plain shell exclusion and title gap | Shell exclusion hardware-confirmed; gap source prepared | 2026-11-03: user confirms cmd.exe is gone from G2 list after Refresh. Agent identity/type filter preserves all provider names. Gap change starts menu at y28, simulator verified but not yet uploaded.72 tests/build.1.0.17 pending spinner diagnosis. |
-| Startup recovery1.0.15 | Hardware confirmed | 2026-11-03: user confirms version1.0.15 appears and both Android/G2 open. Compatibility mode remains unconfirmed;1.0.16 adds persistent layout indicator. |
-| Filter list row, full transcription area and native footer text | Simulator verified; G2 pending | 2026-11-03: Filter first row with selected provider, Refresh second; OS-only contextual menu. Draft/provisional captions use all three rows; native timer/hint replace raster text. Live menu activity polling and marker layering corrected.71 tests/build; three-row review, no body reset and native timer verified in simulator. |
-| Recover from persistent G2 page rejection | Resolved; hardware confirmed | 2026-11-03: user explicitly confirms recovery after native bootstrap/fallback changes. No further recovery work required by current evidence. |
-| Host shutdown/load failure and ongoing G2 rejection | Resolved; hardware confirmed | 2026-11-03: user explicitly confirms host shutdown/load failure and ongoing G2 rejection recovered. Earlier force-stop alone did not fix page rejection; recovery is now confirmed. Exact original cause remains unproven. |
-| G2 startup invalid1 regression | Resolved by current recovery flow | 2026-11-03: user confirms G2 rejection recovered. Does not prove1.0.14 container/layer hypothesis; current native bootstrap/fallback retained. |
-| Stabilize menu and restore aligned columns/status markers | Swipe stability hardware-confirmed; remaining visual checks separate | 2026-11-03: user confirms menu text does not shift up/down during swipes. This report does not newly verify alignment or spinner. |
-| Three-row native input area | Hardware confirmed | 2026-11-03: user confirms input fills three text rows after instruction heading removal. Native review uses all three rows for transcription. |
-| Filter agent terminal UI chrome | Implemented; hardware check pending | 2026-11-03: trailing composer/status/shortcut chrome stripped for Codex and recognized Claude/generic patterns. Actual Codex pattern read, synthetic Claude tests only. Genuine quoted messages preserved. Unknown conversation parser formats remain unavailable; commentary filtering unchanged. |
-| Compact native-text session menu trial | Simulator verified; G2 pending | 2026-11-02: user requests Nick's text-cursor approach.1.0.12 one multiline native text container, > cursor, four terminals/page; one text update per swipe, rapid moves coalesced, no list images/timer. Pending writes finish before page navigation.63 tests/build; native simulator session/filter navigation verified. Reader/voice unchanged. |
-| Investigate Books dense/fast menus | Comparison complete; exact Books source unavailable | 2026-11-02: author notes document native-text custom menus and per-call overhead. Our1.0.10 selection always sent4 images because navigation omitted pixel cache; serial uncoalesced queue could backlog. Compact native text is viable but not verified Books implementation. Optional app/source link requested. No behavior/beta change. See docs/books-rendering-investigation.md. |
-| Restore native session list speed | Simulator verified; G2 pending | 2026-11-02: user rejects image list as slow.1.0.11 restores native header/list/capture/scroll, no list images or animation timer. Version/count/filter/providers inline; / idle, * active, ? unknown snapshots.15 terminals/page.62 tests/build pass; native simulator selection works. Reader/voice unchanged. |
-| Session list layout and activity markers | Simulator verified; G2 pending | 2026-11-02: manifest version/count header, * Refresh and right-aligned current filter, / idle, animated Braille busy, right-aligned provider tags. Four terminals/page with highlight/up/down/click and explicit paging. Animates image tiles without native rebuild. Activity uses exact Orca pane, not titles.62 tests/build/doctor; simulator navigation/filter/spinner diff verified. |
-| English-only fork and reference-image ignore | Implemented | 2026-11-02: /images/ ignored; English-only app manifest/UI/demo/templates/server/STT; legacy Japanese/auto preferences resolve English and controls removed. README/store/voice docs updated; historical Japanese README marked upstream-only. Existing app screenshot left untracked. |
-| Six-row voice overlay | Cancelled by user | 2026-11-02: user says never mind, do not implement six-row overlay. Failed trial reverted; retain1.0.9 layout, existing menu and no-op Click. No layout decision remains pending. |
-| Main-response filtering review | Existing filter is not final-only | 2026-11-02: user reports verbose tool/thinking text. Structured history excludes tool/internal analysis records but retains commentary and final_answer/unphased assistant messages. Terminal fallback heuristics cannot reliably separate progress from final answer. No filter code change made for informational question. |
-| Bordered voice overlay preserving chat | Simulator verified; G2 trial pending | 2026-11-02: precreated two-tile footer border; no rebuild/body write during capture/review/cancel/send; chat text crop identical, one complete fake send.59 tests/build pass. No optical depth or independent draft scrolling claimed. |
-| Sequential contextual menu and click scroll | Public SDK capability blocked | 2026-11-02: menu replacement supported but no programmatic open; OS entries always remain. No native scroll/End/Page Down command in public bridge. No unsupported commands or text replacement workaround added. Single worktree recommended for shared reader code. |
-| Filter by Agent behavior and provider discovery | Hardware confirmed | 2026-11-02: user confirms filtering works on G2; Pi and Cursor appear alongside Claude and Codex. Near-field submenu depth and provider conversation parsing remain separate from this check. |
-| Filter by Agent label | Hardware confirmed | 2026-11-02: user confirms the renamed menu label on physical G2. Near-field submenu request remains separate and unresolved. |
-| Session click and G2 frame/slash corrections | Hardware confirmed for click/frame/divider/slash/hint | 2026-11-02: user confirms on G2 that session click does nothing, frame/divider are present, slash precedes Waiting input, and input hint is visible.58 tests/build previously passed. This report does not newly validate spinner/timer/filter label or voice send. |
-| Framed reader, animated status and provider timer | G2 spinner/labels/dots/timer visibility confirmed | 2026-11-02: user confirms Braille spinner, animated thinking/pondering labels, . / .. / ... dots and response timer present on G2. Earlier confirmed frame/divider/slash/hint. Exact cadence/timer numerical accuracy and tool/thinking filtering are not newly verified by this report.62 tests/build/doctor previously passed for implementation;58 current tests after click-menu removal. See docs/session-reader.md. |
-| Filter Agents rename and near-field choices | Rename prepared; supported-layout choice pending | 2026-11-02: user confirms1.0.6 native menu all system entries intact. Renamed labels to Filter Agents in source/tests;56 tests/build pass. LatestSDK0.0.16 has first-level menu actions only, auto-closes selection, no nested popup/open-menu/depth control. Asked direct agent choices in native Menu vs renamed normal-distance page. No new beta uploaded. |
-| Phone cannot see beta1.0.6 update | Resolved; user confirmed phone updated to1.0.8 | 2026-11-02: user confirms phone listing showed1.0.6 and now updated to1.0.8. Earlier availability report is resolved; historical CLI tester-roster Invited discrepancy is not explained by this confirmation. No reinstall or invitation change needed. |
-| Native system entries missing report | Open; physical G2 scope pending | 2026-11-02: user supplied Windows simulator screenshots showing only View options and says1.0.5 had Display off/Brightness/Close. Confirmed1.0.5 omitted menuObject;1.0.6 declares only View options per published additive contract. Asked whether physical G2 is also affected; no answer yet. No code change/new beta/fake system controls. Complete native menu not verified; custom action/filter only had simulator coverage. |
-| Native Menu and session View options | Beta1.0.6 live; G2 check pending | 2026-11-02: View options > custom native action only on session list, persisted provider selection with ✓; dynamic providers from connected Orca sessions plus Claude/Codex/All Sessions. Reader keeps OS-only menu. Display off/Brightness/Close remain native; OS controls ordering/close wording. App name Orca Glass in manifest/portal.56 tests/build/doctor; simulator menu/filter/reader-context verified. Beta1.0.6 (46,466 bytes) channel verified. Exact close toast cannot be customized. See docs/context-menu.md. |
-| Preserve spaces at terminal row boundaries | Hardware confirmed | 2026-11-02: user confirms spacing fixed on G2, no more restartedor. Original fix removed guessed row concatenation and preserves row newlines/internal spaces.53 tests/doctor passed when implemented; hardware verification now complete. |
-| G2 Working transition and auto-refresh follow-up | Status user verified; text symptom open | 2026-11-02: user first reported Waiting stayed fixed and text needed Resume latest output, then corrected that Working is visible. Working and Waiting now both reported on G2. Code intentionally pauses body updates after scroll/cancel while status polling continues; no evidence yet whether stale text occurred without that pause. No code/beta change. |
-| G2 status display confirmation | User verified | 2026-11-02: after close/reopen guidance, user reports footer now says Waiting for input. Earlier user confirmed bottom review/chat position stable. No new beta or code change needed. Actual cause of earlier stale/unavailable display is not proven; working→waiting transition on G2 has not yet been explicitly confirmed. |
-| G2 status still unavailable after1.0.5 | Open; phone version/diagnostic confirmation pending | 2026-11-02: user confirms bottom review/chat stable, footer unavailable. Added credential-free activity tracing; phone origin127.0.0.1:44253 requests selected e4c9a8 and receives working repeatedly. Downloaded beta1.0.5 SHA256 matches tested package. Asked installed version; not yet confirmed. Real-client simulator launch attempt rejected blocked by policy; not run. No new beta or layout changes. |
-| Status fix and restore bottom review | Beta1.0.5 live; G2 retest pending | 2026-11-02: user chose smooth native scrolling and removal of separate review screen. Restored bottom-panel draft; no full-page fallback. Status initial fetch and valid native text payload retained. Desktop simulator: Working↔Waiting and live reply rendered; reader pixels identical through record/review/cancel/send; no native rebuild/body rewrite, one full fake send.50 tests/build/doctor pass. Beta1.0.5 (46,075 bytes) channel verified. No G2 check or real agent input. |
-| Desktop simulator interaction results | Status/live reply pass; review focus fails | 2026-11-02: SSH instance was session0; manual interactive task launched official sim in session1 on9899. Reproduced rejected status update with layout fields; removed fields and visually verified Working→Waiting. Live reply after history-source fallback rendered. Bottom draft review still scrolls underlying native chat; normal interior scroll emits no app gesture. Asked user: app-controlled line scrolling vs native chat/phone draft review. No new beta. See docs/simulator-check.md. |
-| Diagnose simulator startup after manual launch | Automation alive; app WebView absent | 2026-11-02: user opened simulator. Ping/fixture200; glasses framebuffer black, WebView screenshot main window not found, console empty, injected click no active event container. WebView2 runtime installed. No simulator interaction tests passed; asked user what visible window shows. No beta upload. See docs/simulator-check.md. |
-| Repair beta1.0.4 regression; simulator before beta | Candidate1.0.5; simulator launch pending user | 2026-11-02: user reported unavailable status and dedicated-review chat reset. Restored bottom review with no rebuild/fallback; initial activity fetched before render, request failures diagnosed. Native review gestures may still move underlying chat: simulator verification required before upload. Automatic launch rejected blocked by policy; user asked to run npm run sim:check. Installed beta remains1.0.4. See docs/simulator-check.md. |
-| Live reader recovery and focused transcript review | Beta1.0.4 live; G2 retest pending | 2026-11-02: live history endpoint returned terminal-buffer after saved binding disappeared; UI had ignored this source forever. Now falls back to live screen and checks/retries upload acknowledgments. Dedicated review screen owns scrolling through complete transcript; click sends once/double cancels, returns selected chat block (native scroll offset unpreservable). 50 tests/build/doctor pass; beta1.0.4 (46,426 bytes) uploaded/promoted, channel verified. Includes bottom status. No G2/phone test or agent input. |
-| Bottom-area working/waiting status | Beta1.0.3 live; hardware pending | 2026-11-02: exact workspace/pane activity endpoint maps observed state; reader bottom shows Working/Waiting/Needs attention/Status unavailable. Status continues while text paused; recording/review takes precedence; cancel restores status without resuming text. 47 tests/build/doctor pass incl late-poll/voice guards. HTTPS working/waiting verified. Beta1.0.3 uploaded/promoted (46,020 bytes); phone update/G2 check pending. No inference, terminal input or Claude tests. |
-| Restore Codex usage on glasses | Live; phone display pending | 2026-11-02: Orca usage returned OpenAI403. Same read-only endpoint via selected PcSettings proxy returned200; egress matched configured IP. Added scoped Node proxy fallback using existing local Codex login, 60s cache and sanitized errors. Installed beta HTTPS usage now status=ok, weekly44%, reset2d17h; absent5h window stays absent. 44 tests/build/doctor pass. No global/Orca proxy change, inference, Claude test or beta reinstall. |
-| Prevent idle session-name regression | Live; real idle phone check pending | 2026-11-02: user confirmed tab title also becomes Codex ready after idle. Prefer recorded conversationName joined by exact workspace/pane; retain last meaningful title in memory per incarnation during metadata gaps. 42 tests including idle reset/name gap/rename/incarnation isolation pass; build/doctor passed before cache-only addition. Scheduled bridge restarted; HTTPS names verified. No actual idle transition or phone verification, input or beta reinstall. |
-| Keep session names when Codex is idle | Live; phone refresh pending | 2026-11-02: program title became Codex ready. Resolve display names from exact workspace/tab visual-layout identity, preferring explicit pane names; retain descriptive worker program titles over generated worker-task IDs. Restarted scheduled bridge; HTTPS returns orca-glass beta and Audit Orca VPN preflight checks. 40 tests/build/doctor pass. No phone verification, terminal input or beta reinstall. |
-| Show all existing local providers | Live; phone refresh pending | 2026-11-02: removed Codex-only list/read/history/reply restriction at user request; connected/orphan checks remain. Restarted scheduled bridge. HTTPS lists three terminals including OpenCode child; OpenCode screen/history HTTP200 with text. 38 tests/build/doctor pass before doctor copy adjustment. No terminal input, Claude test, new-provider launch or beta update. Usage403 remains a separate Orca proxy issue. |
-| Windows bridge automatic startup | Configured; task launch verified | 2026-11-02: PSCAP11 eugen sign-in task Orca Glass Bridge starts hidden supervisor; battery allowed, unlimited runtime, one-minute failure retries. Replaced inspected manual runtime and verified Running, authenticated local/HTTPS capabilities200 and HTTPS sessions200 (two Codex sessions). No real reboot or recovery-timing test. Starts at user sign-in; Orca must run. See docs/beta-install.md. |
-| Install personal beta | Beta live; invitation acceptance/phone install pending | 2026-11-02: registered com.eugene8080.orcaglass as eugene8080@gmail.com; uploaded1.0.2 (45,776 bytes), promoted to beta, server channel verified. Self-invitation sent; tester status Invited. User must accept email and install via Me → Beta tester with phone Tailscale connected. Stable tailnet-only HTTPS8443; existing443 Funnel untouched. 38 tests/build/pack/doctor pass. No public publication or phone/G2 verification. See docs/beta-install.md. |
-| Restore prototype QR connection | PC verified; phone rescan pending | 2026-11-02: custom supervisor was absent, port8787 had no listener, and old Quick Tunnel hostname no longer resolved. Restarted hidden supervisor and regenerated private QR. Local/public health, public app and authenticated capabilities returned HTTP200. Opened private pairing page. Quick Tunnel URL changes on restart; old QR must be replaced. No application code changed or phone/G2 verification performed. |
-| Resume live replies after voice send | Implemented; G2 retest pending | 2026-11-01: successful Send resumes polling without rebuilding chat; Cancel retains paused reading position. Existing source/identity guards retained. 36 tests/build pass, including new response visible after send. |
-| Separate voice area from chat | Implemented; G2 retest pending | 2026-11-01: transparent foreground text overlapped chat on hardware. Reserve bottom 576x72 for voice, reduce reader height to 168 with 8px gap. No rebuild on capture/review/dismiss; reserved area remains empty when inactive. 36 tests/build pass. |
-| Hold regression after foreground panel | Repair candidate live; G2 retest pending | 2026-11-01: dim-space panel initialization, explicit visibility, rejected-panel fallback to standard recording screen, hold-stage phone diagnostics. Exact native failure unknown. 36 mocked tests/build pass. |
-| Quarter-screen voice foreground panel | Implemented; G2 check pending | 2026-11-01: pre-created layered panel; recording/review/Send/Cancel never rebuild or rewrite chat. Polling stays paused until Resume latest output. 35 tests/build pass; native SDK validates layer ordering. Transparency and visual stacking need hardware confirmation. |
-| Voice Send/Cancel review; automatic scroll investigation | Voice implemented; auto-scroll unresolved | 2026-11-01: hold release transcribes then click sends / double-click cancels. 34 tests/build pass. Installed SDK and official reference provide no programmatic scrolling command. Working reader unchanged; no ticket submitted per user. |
-| Restore working reader upload size | PC validated; G2 retest pending | 2026-11-01: hardware rejected larger upload. Restored 900-byte intact blocks; retained native scrolling without gesture-triggered replacement. Same URL/QR. 33 tests and build pass. |
-| Larger intact reader blocks | PC validated; G2 retest pending | 2026-11-01: supersedes rejected bottom-first windows. Up to 2,000 UTF-8 bytes per block; swipe never replaces text; explicit Earlier/Later switches intact blocks. Latest block filled from end. 32 tests/build pass. Native Terminal full-history parity remains open. |
-| Direct hold and bottom-first earlier text | Implemented; hardware retest pending | 2026-11-01: approved controls replace Reply/instruction menus. Hold directly from chat ignores old tap setting. Earlier sections show bottom window first; further up visits every remaining window. 32 tests/build pass. Static update; existing custom QR stays valid. |
-| Reconnect native Even Terminal | PC verified; phone check pending | 2026-11-01: existing selected-proxy launcher started host46304 and Codex app-server37820. Both inherit localhost18889 proxy/narrow bypass. Original pairing config hash unchanged; authenticated Codex info/session-list return HTTP200 via Tailscale. No Claude or inference tests. |
-| Saved Codex history and automatic scroll continuation | Implemented; hardware pending | 2026-11-01: exact Orca pane/incarnation mapping yields 163 messages / 62,273 characters for this session; unmapped adjacent terminal safely falls back. Read-only incremental JSONL parser excludes tools/reasoning/instructions. SDK text-boundary events load adjacent sections. 29 tests/build pass. |
-| Earlier text display repair | Implemented; G2 retest pending | 2026-11-01: Eugene confirmed smooth firmware scrolling but Earlier text did nothing. Navigation now rebuilds an empty reader then explicitly uploads the selected section, bounds sections to 900 UTF-8 bytes, and checks native acknowledgments. 25 tests/build pass; exact hardware failure cause not proven. Static app updated, same tunnel/QR. |
-| Warm Whisper previews and native overflow scrolling | Implemented; hardware pending | 2026-11-01: warm CPU decodes about 0.5 seconds for public 3/6/11-second clips. Serialized previews every 1.5 seconds; hold release sends, tap reviews. Intact text uses firmware scrolling; click opens reading controls. Supersedes line-step rendering. Native voice navigation was rejected. |
-| Native Codex routing and incremental scrolling | Implemented; hardware check pending | 2026-11-01: native echo confirmed by Eugene. Same endpoint now routes after explicit voice session selection; mocked send/dedup/menu/incarnation tests pass. Custom reader moves one line per scroll, no page counters. Twenty tests/build pass. |
-| Hold release transcription | Implemented | 2026-11-01: user confirmed hold capture works; release now transcribes immediately. Final send/cancel remains. Fourteen tests/build pass; reload app. |
-| Text scrolling | Implemented; hardware pending | 2026-11-01: page counters, scroll up/down, preserve reading position, retained terminal history endpoint (up to 1,000 rows). Full archived Codex transcript is not implemented. Fourteen tests/build pass. |
-| Native Even AI voice route | Echo prototype; hardware pending | User prefers built-in live captions/release-to-send. Official custom-agent endpoint confirmed. Separate Tailscale echo-only server on 8788; private settings page generated. Twelve automated tests pass. No routing into Codex yet. See docs/native-ai-voice.md. |
-| Recording mode / status correction | Implemented; hold hardware pending | 2026-11-01: truthful connected-terminal header; persisted tap/hold setting. Hold release waits for click-to-transcribe or double-click discard. Ten automated checks and build pass; reload phone app for hardware test. |
-| First G2 voice test | Passed | Eugene confirmed session list, accurate transcription and about 2–3 seconds delay. Test sentence reached this Codex conversation. No Claude interaction. |
-| Live Orca workflow | Running; hardware pending | 2026-11-01 custom supervisor started; local/HTTPS health and capabilities passed, nine Codex terminals. Private custom pairing QR generated. Seven automated tests, build and doctor passed. Await Android/G2 scan. |
-| G2 speech transcription | Local engine verified; hardware pending | Reused upstream PCM → whisper.cpp → review → Orca text. Windows b5454/base.en installed under ignored .local/voice, downloads hash verified; public JFK fixture passed through bridge transcribe. Real G2 capture/send still unverified. See docs/voice-input.md. |
-| Native Even Terminal / Codex | Awaiting phone check | 0.10.5 installed and running over Tailscale on 3456; PC-side Codex info and session listing passed. Pairing QR generated. See docs/native-terminal.md. |
-| Windows fork bridge | Alternative retained, stopped | Windows paths, discovery, pairing ported. Build, doctor, three menu tests, authenticated live Codex read and unauthenticated 401 passed. Public tunnel validation was not completed; initial failures were 1033/404, then isolated config and HTTP/2 were added. |
-| Actual numbered choices | Awaiting hardware check | Native package source supports structured Codex questions/approvals. Fork has synthetic Codex fixtures only. Neither path has a live option selection verified. |
-| Claude testing | Prohibited | Explicit user instruction, 2026-10-29. Await explicit authorization. |
-| Direct mobile protocol transport | Deferred | Existing bridge is the first implementation. Requires an Even WebView transport prototype. |
-| Public store release | Not requested | Private development QR first; no public submission. |
+- [x] Compact native-text session menu trial — user marks done2026-11-03.
+- [x] Menu compatibility diagnosis and smaller markers — user marks done2026-11-03.
+- [x] Phone Failed to fetch follow-up — user marks resolved2026-11-03.
+- [x] Android/G2 startup/load rejection recovery; menu speed and stationary text.
+- [x] Count/filter/provider alignment, no blank title row, plain cmd.exe excluded.
+- [x] Three-row transcription, native footer text, voice completion/chat retention.
+- [x] Terminal UI chrome/merged-space fixes; Working/Waiting and reader animation.
+- [x] Dynamic agent filtering, English-only fork and /images ignore.
+- [x] Codex usage restored; user confirmed working in the conversation.
+- [x] Orca-workspace terminal policy and simulator placement.
+- [x] Private beta installation/update flow established; current1.0.21 uploaded.
+
+## Deferred / closed scope
+
+- [Even SDK requests](docs/sdk-feature-requests.md): native scroll controls/offset
+  preservation, voice overlay/STT, contextual submenus, text controls and optional
+  scrollbar visibility. No SDK ticket or Discord message sent by agent.
+- Six-row overlay and app-managed Click paging cancelled; separate review screen
+  removed. Single Click in a session stays no-op except voice review Send.
+- Native Even AI router abandoned in favour of custom Orca Glass UI. Old native
+  Terminal pairing/QR trials are historical, not active blockers for this beta.
+- Direct mobile-protocol transport deferred; public marketplace release not requested.
+- Historical numbered-choice trials are not a current task; do not submit agent
+  input for verification without authorization.
