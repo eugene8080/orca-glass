@@ -1,6 +1,9 @@
 # Session reader
 Updated: 2026-11-02
 
+User confirms the terminal spacing repair on G2: no more `restartedor`.
+The row-boundary spacing fix is hardware-confirmed.
+
 Hardware confirmation: user verified on G2 that session click does nothing,
 the frame and divider are present, `/` appears before Waiting input, and
 `[Tap & hold to input]` is visible. This confirms those four beta1.0.8 checks;

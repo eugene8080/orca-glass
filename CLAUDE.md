@@ -12,6 +12,9 @@ upstream Claude code is not evidence of authorization to test it.
 
 ## Current work
 
+2026-11-02 user confirms spacing issue fixed on G2: no more restartedor.
+Terminal row-boundary spacing repair is hardware-confirmed. Documentation only.
+
 2026-11-02 user confirms phone listing showed1.0.6 and has now updated to1.0.8.
 Phone update-availability report resolved by user confirmation. This does not
 explain the historical CLI tester-roster Invited status. No new build needed.
