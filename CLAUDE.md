@@ -12,6 +12,17 @@ upstream Claude code is not evidence of authorization to test it.
 
 ## Current work
 
+2026-11-02 user leaves menu unchanged and explicitly declines app-managed Click
+page advance; Click stays no-op. Six-row voice overlay trial failed native checks:
+enlarged foreground image tiles cover chat but clearing leaves black regions;
+background tiles plus separate native text overlap unchanged chat. Brightness-only
+updates did not dim in simulator; sending a one-character partial update replaced
+the body and lost position. All experimental source changes reverted, ordinary
+1.0.9 build restored, simulator restored to localhost8787 demo. No new beta.
+Asked layout preference: retain current chat/small voice area or reserve six voice
+rows upfront (leaving about1–2 native chat rows). Await that answer before changing
+layout. Trial screenshots under .local/large-overlay-*, native-large-*, partial-*.
+
 2026-11-02 voice-border trial1.0.9: user authorizes bordered input overlay
 provided mounted chat never refreshes/resets behind it. Added two precreated
 280x64 image border tiles in reserved footer; capture/review toggles pixels only,

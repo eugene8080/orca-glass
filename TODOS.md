@@ -3,6 +3,7 @@ Updated: 2026-11-02
 
 | Task | Status | Evidence / remaining work |
 | --- | --- | --- |
+| Six-row voice overlay | Layout choice pending; failed trial reverted | 2026-11-02: enlarged image overlay leaves black chat regions after clearing. Native text overlay overlaps chat; brightness-only updates ineffective; partial update replaces body and loses position. Reverted all trial code; beta1.0.9 unchanged. Asked retain current chat/small voice box vs reserve six rows upfront and reduce chat to about1–2 rows. User explicitly leaves menu and Click unchanged after page-advance explanation. |
 | Bordered voice overlay preserving chat | Simulator verified; G2 trial pending | 2026-11-02: precreated two-tile footer border; no rebuild/body write during capture/review/cancel/send; chat text crop identical, one complete fake send.59 tests/build pass. No optical depth or independent draft scrolling claimed. |
 | Sequential contextual menu and click scroll | Public SDK capability blocked | 2026-11-02: menu replacement supported but no programmatic open; OS entries always remain. No native scroll/End/Page Down command in public bridge. No unsupported commands or text replacement workaround added. Single worktree recommended for shared reader code. |
 | Filter by Agent behavior and provider discovery | Hardware confirmed | 2026-11-02: user confirms filtering works on G2; Pi and Cursor appear alongside Claude and Codex. Near-field submenu depth and provider conversation parsing remain separate from this check. |

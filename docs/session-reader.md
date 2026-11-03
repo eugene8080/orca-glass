@@ -1,6 +1,21 @@
 # Session reader
 Updated: 2026-11-02
 
+Six-row trial, not released: user requested a larger review box while preserving
+background scroll. Official native simulator showed that enlarging the foreground
+image over chat masks it and clearing those tiles leaves black regions. Moving
+tiles behind chat avoids that artifact but native voice text overlaps chat.
+Brightness-only body upgrades did not dim it in the tested simulator. A partial
+one-character update did trigger the brightness change but replaced body content
+and lost the position. Pixel checks failed. All experimental source was reverted;
+ordinary1.0.9 build restored. No new beta was uploaded. A layout decision is
+pending: current chat with small voice box, or six voice rows reserved at session
+creation with only about1–2 native chat rows left visible.
+
+User explicitly retains the existing contextual menu and declines Click page
+advance after its difference from native scrolling was explained. Click remains
+no-op. Do not implement app-managed Click paging from the earlier request alone.
+
 Version1.0.9 voice trial: two precreated280x64 image tiles draw a border around
 the reserved footer at x8/y220, total560x64. They sit behind voice text, within
 the four-image limit. Border uploads share the serialized panel queue and clear
