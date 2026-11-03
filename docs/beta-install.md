@@ -3,6 +3,11 @@ Updated: 2026-11-02
 
 ## Current state
 
+User confirms the phone listing showed **1.0.6** and has now updated to
+**1.0.8**. The earlier phone update-availability report is resolved. No
+reinstallation or invitation change is needed. This does not establish the
+cause of the historical CLI tester-roster discrepancy.
+
 2026-11-02 beta **1.0.8** uploaded/promoted and channel verified (47,455 bytes).
 Session click now does nothing; voice review click-to-send remains. Restores
 native idle slash and bright frame/divider, and renames filter to Filter by Agent.

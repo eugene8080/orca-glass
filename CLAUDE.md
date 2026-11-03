@@ -12,6 +12,10 @@ upstream Claude code is not evidence of authorization to test it.
 
 ## Current work
 
+2026-11-02 user confirms phone listing showed1.0.6 and has now updated to1.0.8.
+Phone update-availability report resolved by user confirmation. This does not
+explain the historical CLI tester-roster Invited status. No new build needed.
+
 2026-11-02 user confirms menu label Filter by Agent on physical G2.
 Label verification complete; this does not verify a near-field filter submenu.
 
