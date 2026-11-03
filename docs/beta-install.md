@@ -3,6 +3,13 @@ Updated: 2026-11-02
 
 ## Current state
 
+2026-11-02 beta **1.0.12** uploaded/promoted and channel verified (45,260 bytes).
+Authorized compact native-text menu trial: one multiline text container and >
+cursor, four terminals/page, one text update per move, rapid swipes coalesced.
+No session-menu images or animation timer. Reader/voice/filter layout unchanged.
+63 tests/build pass; simulator compact/cursor/session/filter verified. G2 speed
+check pending. This follows Nick's published pattern; Books source unverified.
+
 2026-11-02 beta **1.0.11** uploaded/promoted and channel verified (44,992 bytes).
 User requested native text after1.0.10 image list felt slow. Restored native
 header/list/selection/scroll, with no session-list images or animation timers.

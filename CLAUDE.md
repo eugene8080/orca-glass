@@ -12,6 +12,17 @@ upstream Claude code is not evidence of authorization to test it.
 
 ## Current work
 
+2026-11-02 user authorizes Nick-style native-text menu trial.1.0.12 sessions
+page uses one multiline TextContainerProperty with > selection cursor; four
+terminals/page, up to9 compact lines. Swipe updates one text container, no images
+or animation timer. Rapid swipes coalesce to latest selected row; navigation
+waits for pending cursor writes before reusing BODY. Filter page remains native
+list; reader/voice unchanged. Row titles truncate at48 UTF-8 bytes preserving
+handle/provider suffix.63 tests/build pass; official simulator compact rows,
+cursor movement, selected session and contextual filter verified. G2 speed
+trial pending; this follows published pattern, not verified Books source.
+Beta1.0.12 uploaded/promoted and channel verified (45,260 bytes).
+
 2026-11-02 Books v3.2.1 investigation only: exact Books source not found among
 Nick Ustinov's29 public repos; optional app/source link requested. His public
 even-g2-notes documents native-text custom menus (one text upgrade per cursor

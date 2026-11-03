@@ -1,6 +1,20 @@
 # Session list
 Updated: 2026-11-02
 
+Version1.0.12 is an authorized compact native-text trial. The sessions page uses
+one multiline native text container with a `>` selection cursor, following the
+pattern described in Nick Ustinov's public UI notes. Four terminals/page and
+Previous/Next actions yield at most9 compact lines. Swipe moves selection using
+one textContainerUpgrade; rapid moves coalesce to the latest index. Click and
+Filter navigation wait for pending writes to finish. No list images or animation
+timers. The filter page still uses the native list; reader/voice unchanged.
+Titles truncate inside48 bytes while preserving the provider/handle suffix.
+63 tests/build pass, including one update per move and rapid-swipe coalescing.
+Official simulator compact layout/cursor/session/filter checks passed. G2 speed
+check pending; no claim that Books' exact implementation has been reproduced.
+
+The following1.0.11 details are historical and superseded for the session menu.
+
 Version1.0.11 restores native text/list controls after the user reported that
 1.0.10 custom image rendering was too slow. No session-list images or animation
 /polling timers remain. Firmware owns selection and scrolling. Up to15 terminals

@@ -43,7 +43,7 @@ const TEXT_BYTES = 999;
 const POLL_MS = 1000;
 
 type Screen =
-  | { kind: 'list'; title: string; items: string[]; sessionList?: boolean; onPick: (i: number) => void; onBack?: () => void }
+  | { kind: 'list'; title: string; items: string[]; sessionList?: boolean; selected?: number; paintedSelection?: number; cursorWriting?: boolean; onPick: (i: number) => void; onBack?: () => void }
   | { kind: 'text'; title: string; text: string; tail?: boolean; offset?: number; reading?: boolean; activityLabel?: string; activityState?: string; reportedSeconds?: number | null; statusFrame?: number; statusStartedAt?: number; savedHistory?: boolean; reader?: Thread; onClick?: () => void; onBack?: () => void; onHold?: () => void; };
 
 let bridge: EvenAppBridge;
@@ -52,6 +52,7 @@ let started = false;
 let poll: ReturnType<typeof setInterval> | undefined;
 let statusAnimation: ReturnType<typeof setInterval> | undefined;
 let panelWrites: Promise<void> = Promise.resolve();
+let sessionCursorWrites: Promise<void> = Promise.resolve();
 let voiceBorderVisible = false;
 let selectedThread: Thread | null = null;
 let sending = false;
@@ -152,8 +153,8 @@ async function show(s: Screen, reloadText = false) {
       ? {
           containerTotalNum: 2,
           ...menu,
-          textObject: [head],
-          listObject: [
+          textObject: s.sessionList ? [head, new TextContainerProperty({ ...BODY, content: sessionMenuText(s), isEventCapture: 1 })] : [head],
+          ...(s.sessionList ? {} : { listObject: [
             new ListContainerProperty({
               ...BODY,
               isEventCapture: 1,
@@ -162,7 +163,7 @@ async function show(s: Screen, reloadText = false) {
                 itemName: s.items.slice(0, LIST_MAX).map((t) => clipBytes(t, LIST_ITEM_BYTES)),
               }),
             }),
-          ],
+          ] }),
         }
       : {
           containerTotalNum: s.reader ? 9 : 2,
@@ -231,12 +232,32 @@ async function guard(title: string, f: () => Promise<void>, back: () => void) {
 // ---- 画面 ----
 
 
+type SessionMenuScreen = Extract<Screen, { kind: 'list' }>;
+function sessionMenuText(screen: SessionMenuScreen, selected = screen.selected || 0) {
+  return screen.items.map((item, i) => `${i === selected ? '>' : ' '} ${clipBytes(item, 48)}`).join('\n');
+}
+async function updateSessionCursor(screen: SessionMenuScreen) {
+  if (screen.cursorWriting) return;
+  screen.cursorWriting = true;
+  try {
+    // Coalesce rapid swipes to the newest position instead of queuing redraws.
+    while (current === screen && screen.paintedSelection !== screen.selected) {
+      const selected = screen.selected || 0;
+      const accepted = await bridge.textContainerUpgrade(new TextContainerUpgrade({ containerID: BODY.containerID,
+        containerName: BODY.containerName, content: sessionMenuText(screen, selected) }));
+      if (!accepted) throw new Error('Session menu text update rejected');
+      screen.paintedSelection = selected;
+    }
+  } catch (e) { diag((e as Error).message); }
+  finally { screen.cursorWriting = false; }
+}
+
 function home(page = 0) {
   selectThread(null);
   return guard('Orca-glass', async () => {
     const allThreads = await api.threads();
     const threads = viewProvider === 'all' ? allThreads : allThreads.filter(t => t.agent === viewProvider);
-    const pageSize = LIST_MAX - 5;
+    const pageSize = 4;
     page = Math.max(0, Math.min(page, Math.ceil(threads.length / pageSize) - 1));
     const visible = threads.slice(page * pageSize, (page + 1) * pageSize);
     const actions: { label: string; run: () => unknown }[] = [
@@ -247,7 +268,7 @@ function home(page = 0) {
     ];
     if (page > 0) actions.push({ label: 'Previous page', run: () => home(page - 1) });
     if ((page + 1) * pageSize < threads.length) actions.push({ label: 'Next page', run: () => home(page + 1) });
-    await show({ kind: 'list', title: sessionListTitle(allThreads.length), sessionList: true,
+    await show({ kind: 'list', title: sessionListTitle(allThreads.length), sessionList: true, selected: 0, paintedSelection: 0,
       items: actions.map(a => a.label),
       onPick: i => { actions[i]?.run(); } });
   }, home);
@@ -648,7 +669,8 @@ function confirm(w: Workspace, p: Provider, model: string, prompt: number, label
 function onEvent(e: EvenHubEvent) {
   if (e.menuItemClickEvent) {
     if (e.menuItemClickEvent.itemID === VIEW_OPTIONS_ID && current?.kind === 'list' && current.sessionList) {
-      void viewOptions();
+      const owner = current;
+      void sessionCursorWrites.then(() => { if (current === owner) void viewOptions(); });
     }
     return;
   }
@@ -672,6 +694,11 @@ function onEvent(e: EvenHubEvent) {
   if (!ev) return;
   // CLICK_EVENT(0) は既定値のため JSON から省かれて届くことがある
   const type = ev.eventType ?? OsEventTypeList.CLICK_EVENT;
+  if (s.kind === 'list' && s.sessionList && (type === OsEventTypeList.SCROLL_TOP_EVENT || type === OsEventTypeList.SCROLL_BOTTOM_EVENT)) {
+    s.selected = Math.max(0, Math.min(s.items.length - 1, (s.selected || 0) + (type === OsEventTypeList.SCROLL_TOP_EVENT ? -1 : 1)));
+    if (!s.cursorWriting) sessionCursorWrites = updateSessionCursor(s);
+    return;
+  }
   if (s.kind === 'text' && (type === OsEventTypeList.SCROLL_TOP_EVENT || type === OsEventTypeList.SCROLL_BOTTOM_EVENT)) {
     // Firmware scrolls overflowing text. Replacing content here causes visible jumps.
     // Pause polling so incoming output cannot reset the reader's scroll position.
@@ -701,7 +728,12 @@ function onEvent(e: EvenHubEvent) {
   if (type !== OsEventTypeList.CLICK_EVENT) return;
   if (s.kind === 'list') {
     // 先頭項目(0)も既定値として省かれうる
-    if (e.listEvent) s.onPick(e.listEvent.currentSelectItemIndex ?? 0);
+    if (s.sessionList) {
+      const index = e.listEvent?.currentSelectItemIndex ?? s.selected ?? 0;
+      // Finish in-flight cursor writes before reusing BODY on the next page.
+      void sessionCursorWrites.then(() => { if (current === s) s.onPick(index); });
+    }
+    else if (e.listEvent) s.onPick(e.listEvent.currentSelectItemIndex ?? 0);
   } else {
     s.onClick?.();
   }
