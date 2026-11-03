@@ -43,12 +43,13 @@ const TEXT_BYTES = 999;
 const POLL_MS = 1000;
 
 type Screen =
-  | { kind: 'list'; title: string; items: string[]; sessionList?: boolean; columns?: SessionColumns[]; connectedCount?: number; selected?: number; paintedSelection?: number; cursorWriting?: boolean; onPick: (i: number) => void; onBack?: () => void }
+  | { kind: 'list'; title: string; items: string[]; sessionList?: boolean; compat?: boolean; columns?: SessionColumns[]; connectedCount?: number; selected?: number; paintedSelection?: number; cursorWriting?: boolean; onPick: (i: number) => void; onBack?: () => void }
   | { kind: 'text'; title: string; text: string; tail?: boolean; offset?: number; reading?: boolean; activityLabel?: string; activityState?: string; reportedSeconds?: number | null; statusFrame?: number; statusStartedAt?: number; savedHistory?: boolean; reader?: Thread; onClick?: () => void; onBack?: () => void; onHold?: () => void; };
 
 let bridge: EvenAppBridge;
 let current: Screen | null = null;
 let started = false;
+let compactMenuOnly = false;
 let poll: ReturnType<typeof setInterval> | undefined;
 let menuAnimation: ReturnType<typeof setInterval> | undefined;
 let statusAnimation: ReturnType<typeof setInterval> | undefined;
@@ -150,7 +151,7 @@ async function show(s: Screen, reloadText = false) {
   const menu = s.kind === 'list' && s.sessionList ? {
     menuObject: new MenuContainerProperty({ menuItems: [new MenuItemProperty({ itemID: VIEW_OPTIONS_ID, itemName: 'Filter by Agent >' })] }),
   } : {};
-  const page =
+  let page =
     s.kind === 'list'
       ? {
           containerTotalNum: s.sessionList ? 8 : 2,
@@ -192,19 +193,34 @@ async function show(s: Screen, reloadText = false) {
         };
   try {
     if (!started) {
-      // Startup is one-shot even when rejected; error/reconnect pages use rebuild.
+      // Bootstrap with the small, hardware-proven native text shape. The richer
+      // menu is a later rebuild, so rejection cannot consume startup itself.
       started = true;
-      const result = await bridge.createStartUpPageContainer(new CreateStartUpPageContainer(page));
-      if (result !== 0) throw new Error(`Glasses could not open the reader (${result}). Reconnect and try again.`);
-    } else {
-      const accepted = await bridge.rebuildPageContainer(new RebuildPageContainer(page));
-      if (!accepted) throw new Error('Glasses rejected the screen update. Reconnect and try again.');
+      const bootstrap = { containerTotalNum: 2, textObject: [
+        new TextContainerProperty({ ...HEAD, content: sessionHeading(), isEventCapture: 0 }),
+        new TextContainerProperty({ ...BODY, content: 'Connecting to Orca…', isEventCapture: 1 }),
+      ] };
+      const result = await bridge.createStartUpPageContainer(new CreateStartUpPageContainer(bootstrap));
+      if (result !== 0 && !await bridge.rebuildPageContainer(new RebuildPageContainer(bootstrap))) {
+        throw new Error(`${sessionHeading()}: native startup failed (${result}); bootstrap recovery rejected.`);
+      }
     }
+    if (s.kind === 'list' && s.sessionList && compactMenuOnly) { s.compat = true; page = compatibilityMenu(s, menu) as typeof page; }
+    let accepted = await bridge.rebuildPageContainer(new RebuildPageContainer(page));
+    if (!accepted && s.kind === 'list' && s.sessionList && !s.compat) {
+      s.compat = true;
+      accepted = await bridge.rebuildPageContainer(new RebuildPageContainer(compatibilityMenu(s, menu)));
+      if (accepted) {
+        compactMenuOnly = true;
+        diag(`${sessionHeading()}: aligned menu rejected; compact compatibility menu active.`);
+      }
+    }
+    if (!accepted) throw new Error(`${sessionHeading()}: ${s.kind === 'list' && s.sessionList ? 'both aligned and compact menus rejected' : 'glasses rejected the screen update'}.`);
     if (uploadText && s.kind === 'text') {
       const accepted = await bridge.textContainerUpgrade(new TextContainerUpgrade({ containerID: BODY.containerID, containerName: BODY.containerName, content }));
       if (!accepted) throw new Error('Glasses could not load the selected text. Click to retry.');
     }
-    if (s.kind === 'list' && s.sessionList) startMenuSpinner(s);
+    if (s.kind === 'list' && s.sessionList && !s.compat) startMenuSpinner(s);
     if (s.kind === 'text' && s.reader) {
       await bridge.updateImageRawData(new ImageRawDataUpdate({ containerID: STATUS_ICON.containerID, containerName: STATUS_ICON.containerName, imageData: statusPixels(s.activityLabel![0] === '/' ? '' : s.activityLabel![0]) })).catch(e => diag((e as Error).message));
       await inputHint(true).catch(e => diag((e as Error).message));
@@ -245,6 +261,17 @@ async function guard(title: string, f: () => Promise<void>, back: () => void) {
 
 
 type SessionMenuScreen = Extract<Screen, { kind: 'list' }>;
+function compatibilityMenu(screen: SessionMenuScreen, menu: object) {
+  return { containerTotalNum: 3, ...menu, textObject: [
+    new TextContainerProperty({ ...HEAD, content: screen.title, isEventCapture: 0 }),
+    new TextContainerProperty({ ...BODY, content: compatibilityText(screen), isEventCapture: 0 }),
+    new TextContainerProperty({ containerID: 3, containerName: 'menu-input', xPosition: 0, yPosition: 0,
+      width: 576, height: 288, content: ' ', isEventCapture: 1 }),
+  ] };
+}
+function compatibilityText(screen: SessionMenuScreen, selected = screen.selected || 0) {
+  return screen.items.map((item, i) => `${i === selected ? '>' : ' '} ${clipBytes(item, 48)}`).join('\n');
+}
 function startMenuSpinner(screen: SessionMenuScreen) {
   if (!screen.columns?.some(row => row.busy)) return;
   let frame = 0, busy = false;
@@ -281,8 +308,9 @@ async function updateSessionCursor(screen: SessionMenuScreen) {
     // Coalesce rapid swipes to the newest position instead of queuing redraws.
     while (current === screen && screen.paintedSelection !== screen.selected) {
       const selected = screen.selected || 0;
-      const accepted = await bridge.textContainerUpgrade(new TextContainerUpgrade({ containerID: MENU_CURSOR.containerID,
-        containerName: MENU_CURSOR.containerName, content: cursorText(screen.items.length, selected) }));
+      const accepted = await bridge.textContainerUpgrade(new TextContainerUpgrade(screen.compat
+        ? { containerID: BODY.containerID, containerName: BODY.containerName, content: compatibilityText(screen, selected) }
+        : { containerID: MENU_CURSOR.containerID, containerName: MENU_CURSOR.containerName, content: cursorText(screen.items.length, selected) }));
       if (!accepted) throw new Error('Session menu text update rejected');
       screen.paintedSelection = selected;
     }
@@ -832,6 +860,7 @@ function useLang(pref: string) {
 }
 
 async function main() {
+  document.getElementById('app-heading')!.textContent = sessionHeading();
   bridge = await waitForEvenAppBridge();
   // 開発用URLからも接続コードと言語だけを読み込む
   const q = new URLSearchParams(location.search);

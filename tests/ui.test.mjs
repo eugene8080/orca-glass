@@ -16,7 +16,7 @@ vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../app/src/session-l
 
 // Exercise the real controller with a simulated Even bridge: no agent input,
 // microphone access, network, or hardware claims.
-async function harness(count = 2, voice = false, mode = 'tap', savedView = '', startupResult = 0) {
+async function harness(count = 2, voice = false, mode = 'tap', savedView = '', startupResult = 0, rejectAlignedMenu = false) {
   const elements = new Map();
   const element = id => {
     if (!elements.has(id)) elements.set(id, { value: '', hidden: false, textContent: '', listeners: {}, addEventListener(name, fn) { this.listeners[name] = fn; } });
@@ -40,7 +40,7 @@ async function harness(count = 2, voice = false, mode = 'tap', savedView = '', s
     getLocalStorage: async key => key === 'code' ? 'demo' : key === 'recording-mode' ? mode : key === 'lang' ? 'en' : key === 'view-provider' ? savedView : '',
     setLocalStorage: async () => {},
     createStartUpPageContainer: async p => { pages.push(p); return startupResult; },
-    rebuildPageContainer: async p => { pages.push(p); return true; },
+    rebuildPageContainer: async p => { pages.push(p); return !(rejectAlignedMenu && p.menuObject && p.textObject.length > 3); },
     textContainerUpgrade: async value => { upgrades.push(value); return true; },
     onEvenHubEvent: fn => { event = fn; },
     audioControl: async on => { mic.push(on); return true; },
@@ -99,7 +99,7 @@ test('native Filter by Agent belongs only to the session list and does not dupli
   assert.equal(h.pages.at(-1).menuObject.menuItems.length, 1);
   assert.equal(h.pages.at(-1).menuObject.menuItems[0].itemName, 'Filter by Agent >');
   await h.system(4);
-  assert.equal(h.pages.length, 1);
+  assert.equal(h.pages.length, 2);
   await h.pick(3);
   assert.equal(h.pages.at(-1).menuObject, undefined);
   const count = h.pages.length;
@@ -598,11 +598,26 @@ test('rapid native-text menu swipes coalesce instead of queuing every redraw', a
   assert.equal(h.images.length, 0);
 });
 
-test('a rejected one-shot startup opens an error page through rebuild', async () => {
+test('startup uses a minimal native page and recovers an already-consumed startup', async () => {
   const h = await harness(2, false, 'tap', '', 1);
-  assert.equal(h.pages.length, 2);
-  assert.equal(h.pages[0].containerTotalNum, 8);
+  assert.equal(h.pages.length, 3);
+  assert.equal(h.pages[0].containerTotalNum, 2);
   assert.equal(h.pages[1].containerTotalNum, 2);
-  assert.equal(h.pages[1].textObject[1].content, 'error'); // Harness translation returns the key.
-  assert.match(h.elements.get('diag').textContent, /could not open the reader \(1\)/);
+  assert.equal(h.pages[2].containerTotalNum, 8);
+});
+
+test('hardware rejecting aligned layout gets an operable compact fallback', async () => {
+  const h = await harness(2, false, 'tap', '', 0, true);
+  assert.equal(h.pages[0].containerTotalNum, 2);
+  assert.equal(h.pages[1].containerTotalNum, 8);
+  assert.equal(h.pages.at(-1).containerTotalNum, 3);
+  assert.equal(h.pages.at(-1).imageObject, undefined);
+  assert.match(h.elements.get('diag').textContent, /compact compatibility menu active/);
+  await h.scroll('down'); await h.scroll('down'); await h.scroll('down');
+  assert.equal(h.upgrades.at(-1).containerName, 'body');
+  await h.tap();
+  assert.equal(h.pages.at(-1).textObject[1].content, 'Content terminal-0');
+  await h.back();
+  assert.equal(h.pages.at(-1).containerTotalNum, 3);
+  assert.equal(h.pages.filter(p => p.containerTotalNum === 8).length, 1);
 });

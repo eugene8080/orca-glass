@@ -12,6 +12,19 @@ upstream Claude code is not evidence of authorization to test it.
 
 ## Current work
 
+2026-11-03 force-stop clears host-load error but phone still shows our rejected
+screen update.1.0.15 starts with minimal two-text native bootstrap, then rebuilds
+the requested layout. Startup result1 can recover by rebuilding bootstrap once.
+If aligned menu rejected, rebuild three-text compact fallback with blank input
+capture and inline count/filter/provider labels; latch that mode for rest of app
+run and skip marker images. Fallback uses one text update per move and supports
+navigation; aligned layout still available where accepted. Widened cursor16→24px
+to remove another firmware-size risk. Phone heading shows actual package version.
+68 tests/build pass; official simulator forced aligned rejection via isolated
+fixture, native fallback/cursor/session-reader verified visually. Normal startup
+also checked. No claim of hardware recovery until G2 retest. See docs/session-list.md.
+Beta1.0.15 uploaded/promoted and channel verified (46,390 bytes).
+
 2026-11-03 follow-up after1.0.14 instructions: phone screenshot says Failed to
 load: Bad state: Host shutdown did not complete; user also reports Glasses
 rejected the screen update. Installed version not reconfirmed. The screenshot

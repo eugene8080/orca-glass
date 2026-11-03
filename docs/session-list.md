@@ -1,6 +1,20 @@
 # Session list
 Updated: 2026-11-03
 
+Version1.0.15 recovery: user still gets rejected-screen status after force-stop.
+Initial startup now uses the known small two-text shape, then attempts aligned
+menu through rebuild. If rejected, it rebuilds a three-text compact menu with a
+separate blank input capture. This keeps text stationary while cursor updates
+the compact body; labels are inline and marker images are disabled in fallback.
+Successful fallback is retained for subsequent menus during that app run. Phone
+Status identifies fallback activation and phone heading shows installed version.
+The cursor container is24px wide (previously16), removing a possible firmware
+size constraint; exact original hardware rejection cause remains unconfirmed.
+68 tests/build pass. Isolated simulator explicitly rejected aligned rebuilds;
+fallback native rendering, selection and entry into reader passed. Hardware
+acceptance is pending. Do not describe fallback as satisfying right alignment
+or animated list Braille, which remain conditional on aligned-layout acceptance.
+
 Version1.0.14 compatibility repair follows G2 startup rejection in1.0.13.
 The menu now has six native text containers plus two narrow image strips,
 IDs1..8 and layers0..7. Marker text is merged into title text, above the image

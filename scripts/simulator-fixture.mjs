@@ -27,6 +27,7 @@ const timer=setInterval(()=>{
  host.callHandler=async(name,...args)=>{
   let p;try{p=typeof args[0]==='string'?JSON.parse(args[0]):args[0];}catch{}
   if(p?.method)console.log('Native call',JSON.stringify(p));
+  if(new URLSearchParams(location.search).has('rejectAligned') && p?.method==='rebuildPageContainer' && p.data?.textObject?.some(c=>c.containerName==='menu-right'))return false;
   if(p?.method==='audioControl'){
    if(JSON.stringify(p.data).includes('true'))setTimeout(()=>window.dispatchEvent(new CustomEvent('evenHubEvent',{detail:{audioEvent:{audioPcm:Array(32000).fill(0)}}})),100);
    return true;

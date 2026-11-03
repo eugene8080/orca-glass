@@ -3,6 +3,14 @@ Updated: 2026-11-03
 
 ## Current state
 
+2026-11-03 beta **1.0.15** uploaded/promoted and channel verified (46,390 bytes).
+Minimal native startup, one-shot recovery and automatic compact-menu fallback
+when aligned layout is rejected. Phone heading displays installed version;
+Status reports compatibility activation. Fallback labels are inline and list
+Braille animation is disabled; reader/input layout retained.68 tests/build pass;
+forced-rejection native simulator fallback/cursor/session navigation verified.
+G2 acceptance remains pending. No repeated force-stop or pairing change requested.
+
 2026-11-03 follow-up: user screenshot reports **Failed to load: Bad state: Host
 shutdown did not complete** in the Even app; user also reports rejected screen
 update. Installed version not reconfirmed. Requested Android Force stop of Even
