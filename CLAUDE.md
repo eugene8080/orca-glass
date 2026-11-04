@@ -50,6 +50,26 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-04 user requests Even Hub README refresh and Hermes-bridge status.
+Updated store description in dedicated Eugene Chrome's existing Even Hub tab,
+Store listing > Description > Edit > Confirm. Reload confirms persisted beta1.0.27
+text (1535 source characters), distinguishes public1.0.23, documents workspace
+multi-filter/labels, swipe paging, Claude reader/choices, voice and reset modes.
+Hermes explicitly marked development-only. No build promotion/review submission.
+README.md synchronized; historical1.0.21 screenshots labelled as historical.
+Portal currently confirms public1.0.23 live and beta1.0.27. Earlier listing
+preparation notes claiming no publication are historical, not current status.
+Browser connector failed; documented Orca computer-use operated the same verified
+Eugene Chrome window10228026 instead. Screenshot .local/evenhub-readme-updated.png.
+Hermes branch eugene8080/hermes-bridge atd02caff checked read-only in its worktree:
+107 tests/build/doctor pass, live discovery15 sessions/unavailableProfiles0;
+fixture8795 has9 synthetic rows, native automation9902 returns pong. Merge-tree
+check against current main reports conflicts only in CLAUDE.md/TODOS.md; source
+files auto-merge, but combined integration is not tested or approved. No PR exists.
+Existing worker preview remains open. No prompts/replies, merge, deployment,
+profile/runtime/config changes or model calls. Pending integration review and
+G2/user-confirmed reply testing; current beta has no Hermes support.
+
 2026-11-04 user approves Usage reset toggle beta.1.0.27 uploaded/promoted;
 beta channel verified (49,865 bytes), public remains1.0.23.107 tests/build/doctor
 passed for implementation; beta/prototype builds pass. Production bridge restarted

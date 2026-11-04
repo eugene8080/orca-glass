@@ -26,26 +26,19 @@ Completed/superseded release notes: [history](docs/todo-history.md).
   Claude five-hour/weekly and Cursor monthly allowance alongside Codex. User
   approved simulator2026-11-03; beta channel verified, bridge restarted and
   local/stableHTTPS endpoints return ok for all three.79 tests/build/doctor pass.
-- [ ] **Public release preparation:** user requests profile and screenshots on
-  2026-11-03. CLI name/tagline/description saved; six native simulator captures
-  and reproducible sample-data preview prepared. See [store/listing.md](store/listing.md).
-  Public build still pins one private PC origin; general-user connection/setup,
-  fork privacy policy and on-glasses/portal name consistency remain open.
-  Five primary screenshots and Office cover saved in the portal; sixth screenshot
-  is local/supplemental. List shows fictional Cursor/Pi/Claude/Codex/OpenCode.
-  Original-author credit added; production build now carries original MIT license
-  and attribution (not yet uploaded). User requires preview before Publish.
-  User completed contact details; Quiet Signal and Personal Information now shown
-  complete. Portal generated/attached policy and all checklist items complete, but
-  template misstates developer collection/sharing and includes phone/address in
-  publicly retrievable PDF. Corrected store/Orca-Glass-Privacy-and-Terms.pdf ready;
-  user approved it and requested submission. Refreshed portal still points to old
-  PDF; replacement pending (only generator exposed). Submission held for corrected
-  attachment and public connection/setup (1.0.22 remains pinned to private PC).
-  AI category saved; description checklist
-  complete. User selected orca-glass-icon.png (earlier design);
-  matching24x24 orca-glass-icon.png saved and verified in portal. Preview in
-  store/gallery.html. No review/publication.
+- [ ] **Hermes integration review/deployment:** worker branch
+  eugene8080/hermes-bridge atd02caff implemented, not in beta1.0.27.2026-11-04
+  recheck:107 tests/build/doctor pass;15 live-discovered sessions, zero unavailable
+  profiles; isolated fixture8795/native9902 healthy. Merge-tree reports only shared
+  notes/TODO conflicts; combined source integration remains untested. No live
+  prompts, merge, config change or deployment. See the worker branch's
+  docs/hermes-bridge.md; user preview/G2/real confirmed reply checks remain pending.
+- [ ] **General installation / public listing follow-up:** public1.0.23 is live;
+  beta1.0.27 is current. README/Even Hub description updated2026-11-04, saved and
+  verified after reload. Packaged origin is still one configured private PC, so
+  arbitrary-PC self-service setup remains open. Earlier submission/privacy notes
+  are historical; current PDF contents were not rechecked in this task. See
+  [listing status](store/listing.md).
 - [ ] **Monitor native popup request:** [GitHub #44](https://github.com/even-realities/everything-evenhub/issues/44)
   and [Discord thread](https://discord.com/channels/1301124787740868620/1484753075590664332/threads/1567124600658202754).
   Await maintainer response/API guidance. Primary use case: hold-to-talk with more
@@ -77,6 +70,9 @@ Completed/superseded release notes: [history](docs/todo-history.md).
 
 ## Completed / confirmed
 
+- [x] Even Hub description and repository README refreshed for beta1.0.27,
+  with public1.0.23 distinction; saved portal text verified after reload2026-11-04.
+  Hermes branch health/status checked without submitting agent input.
 - [x] Workspace multi-filter and [workspace/Agent] session labels — user confirms
   beta1.0.25 works on G2,2026-11-04. Follow-up removes paging rows; tracked above.
 - [x] Claude saved chat / blank-reader recovery, concise working progress and

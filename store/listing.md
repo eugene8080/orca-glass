@@ -1,11 +1,27 @@
 # Even Hub listing — Orca Glass
-Updated: 2026-11-03
+Updated: 2026-11-04
+
+## Current status
+
+2026-11-04: authenticated portal confirms **public1.0.23 is live**, latest beta
+**1.0.27**. The user requested a README/description refresh. Saved the1535-character
+[description](description.txt) through Store listing > Description > Edit > Confirm
+in dedicated Eugene Chrome, then reloaded to confirm persistence. Newer controls
+are explicitly beta-only; Hermes is development-only. No build promotion or
+review submission. Existing tagline remains **Read your Orca sessions. Speak your
+next step.** Repository README updated to the same release status. Screenshot
+proof is ignored local `.local/evenhub-readme-updated.png`.
+
+The dated preparation/attachment observations below are historical. They do not
+establish the current attachment's contents or a current publication blocker;
+no privacy PDF was opened or changed during this README-only update. The private
+PC origin/self-service limitation remains in the current manifest and description.
 
 ## Profile
 
 - Package ID: `com.eugene8080.orcaglass`
 - App name: **Orca Glass**
-- Tagline: **Read your coding sessions. Speak your next step.**
+- Tagline: **Read your Orca sessions. Speak your next step.**
 - Description: [exact portal text](description.txt), under 2,000 characters.
 - Windows source/setup: https://github.com/eugene8080/orca-glass/tree/windows-android-codex
 - Chosen creator: Quiet Signal (Personal Information now complete in portal).

@@ -1,6 +1,6 @@
 # Orca Glass
 
-**Read your coding sessions. Speak your next step.**
+**Read your Orca sessions. Speak your next step.**
 
 Orca Glass connects Even Realities G2 glasses to Orca on Windows. Browse connected sessions, read a conversation, check agent activity, and review a spoken instruction before sending it back to your PC.
 
@@ -8,23 +8,29 @@ This is Eugene's Windows/Android fork of [2ero20ne's Orca Glass](https://github.
 
 ## Availability
 
-As of 2026-11-03, **1.0.21 is a personal beta**, not a public Even Hub release. The installed build connects to a specific PC over Tailscale; it is not yet a self-service installation for arbitrary PCs. Orca and the companion bridge must remain running. The phone and glasses do not run the coding agent.
+As of 2026-11-04, the Even Hub **public build is 1.0.23** and the **latest beta is 1.0.27**. The newer controls described below require the beta. The installed build connects to a specific PC over Tailscale; it is not yet a self-service installation for arbitrary PCs. Orca and the companion bridge must remain running. The phone and glasses do not run the coding agent.
 
 The active app is the custom Orca Glass bridge. Earlier native Even Terminal experiments are historical. See [current work](TODOS.md) and [beta setup/release history](docs/beta-install.md).
 
 ## Features and controls
 
-- **Sessions:** browse connected agent terminals, filter by provider, and see working/idle activity. The contextual menu offers Refresh sessions, New Session and Usage.
-- **Conversation:** read native scrollable text with live activity status. Scrolling pauses text updates; return to the list and reopen to resume.
-- **Voice:** hold to talk, release to review, click to send, double-click to cancel. Whisper transcribes on the PC. The conversation stays mounted above the voice review area.
+- **Sessions:** filter by agent and by one or more Orca workspaces. Rows show `[workspace/Agent]`, for example `[porttracker/Claude]`. Swipe past the last/first row to change pages; there are no paging buttons in the sessions or workspace menus.
+- **Conversation:** read native scrollable text with working/waiting status and `/` user / `>` assistant markers. Codex and Claude use verified saved history when available. Claude keeps previous chat visible during long runs and shows a short public activity summary. Scrolling pauses body updates; reopen the session to resume. Sending a voice message also resumes live updates.
+- **Voice:** hold to talk, release to review up to three native text rows, click to send, double-click to cancel. Whisper transcribes on the PC. The conversation stays mounted above the review area.
+- **Numbered prompts:** Click opens choices only when the terminal is showing a recognized interactive prompt. Review the option and click to confirm, or hold to speak a number and review before sending. The bridge rejects stale questions. Select `Type something` first for a custom response. Outside prompts, voice remains the default and Click does nothing in a session.
+- **Usage:** view available Codex, Claude and Cursor allowances. Click the top Reset selector to cycle Computer time, Phone time and Absolute time (remaining duration, e.g. `2d5h12m`). The choice is remembered; missing reset timestamps are reported rather than guessed.
+- **App menu:** Refresh sessions, New Session and Usage are available from the session-list contextual menu alongside the G2 system controls.
 - **New session:** choose an existing Orca workspace and start Codex.
-- **Usage:** view available allowance windows; absent windows are not invented.
 
-Codex is the primary supported workflow. Other connected agents may appear in the list and filter, but reader support depends on their terminal format. Tool records, internal reasoning and terminal chrome are filtered; public assistant progress messages can still appear. New-session creation is Codex-only. Live Claude testing is not authorized in this project.
+Other agents may appear in the session list and filters, but discovery does not guarantee full reader support. Tool output, internal reasoning and terminal chrome are filtered; public assistant progress commentary can still appear. New-session creation remains Codex-only.
+
+### Hermes development status
+
+A Hermes adapter exists in the separate [hermes-bridge branch](https://github.com/eugene8080/orca-glass/tree/eugene8080/hermes-bridge), not in beta 1.0.27. It uses the existing authenticated local Hermes gateway for live/stored sessions and groups agents as Hermes regardless of model. Tests and an isolated simulator preview pass; integration review, deployment and G2/user-confirmed reply checks remain pending. See that branch's `docs/hermes-bridge.md` for the exact scope.
 
 ## Screenshots
 
-Native 576 × 288 simulator captures of 1.0.21 with fictional sample data.
+Historical native 576 × 288 simulator captures of 1.0.21 with fictional sample data. Current beta menus and usage controls include the later changes described above.
 
 | Sessions | Conversation | Voice review |
 | --- | --- | --- |
