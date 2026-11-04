@@ -43,7 +43,7 @@ const TEXT_BYTES = 999;
 const POLL_MS = 1000;
 
 type Screen =
-  | { kind: 'list'; title: string; items: string[]; sessionList?: boolean; workspacePicker?: boolean; menuActions?: { id: number; label: string; run: () => unknown }[]; compat?: boolean; columns?: SessionColumns[]; connectedCount?: number; selected?: number; paintedSelection?: number; menuFrame?: number; paintedCursor?: string; cursorWriting?: boolean; onPick: (i: number) => void; onBack?: () => void }
+  | { kind: 'list'; title: string; items: string[]; sessionList?: boolean; workspacePicker?: boolean; menuActions?: { id: number; label: string; run: () => unknown }[]; compat?: boolean; columns?: SessionColumns[]; connectedCount?: number; selected?: number; paintedSelection?: number; menuFrame?: number; paintedCursor?: string; cursorWriting?: boolean; paging?: boolean; onPreviousPage?: () => unknown; onNextPage?: () => unknown; onPick: (i: number) => void; onBack?: () => void }
   | { kind: 'text'; title: string; text: string; conversationText?: string; choiceMenu?: ChoiceMenu | null; tail?: boolean; offset?: number; reading?: boolean; activityLabel?: string; activityState?: string; reportedSeconds?: number | null; statusFrame?: number; statusStartedAt?: number; savedHistory?: boolean; reader?: Thread; onClick?: () => void; onBack?: () => void; onHold?: () => void; };
 
 let bridge: EvenAppBridge;
@@ -279,16 +279,16 @@ function startMenuSpinner(screen: SessionMenuScreen) {
   screen.menuFrame = 0;
   screen.paintedCursor = menuCursorText(screen.columns!, screen.selected || 0);
   menuAnimation = setInterval(() => {
-    if (current !== screen) return;
+    if (current !== screen || screen.paging) return;
     screen.menuFrame = ((screen.menuFrame || 0) + 1) % 3;
     if (!screen.cursorWriting) sessionCursorWrites = updateSessionCursor(screen);
   }, 500);
   menuPoll = setInterval(async () => {
-    if (polling || current !== screen) return;
+    if (polling || current !== screen || screen.paging) return;
     polling = true;
     try {
       const latest = await api.threads();
-      if (current !== screen) return;
+      if (current !== screen || screen.paging) return;
       for (const row of screen.columns!) {
         if (!row.handle) continue;
         const state = latest.find(t => t.handle === row.handle)?.state || 'unknown';
@@ -319,32 +319,35 @@ async function updateSessionCursor(screen: SessionMenuScreen) {
   finally { screen.cursorWriting = false; }
 }
 
-function home(page = 0) {
+function home(page = 0, selected = 0) {
   selectThread(null);
   return guard('Orca-glass', async () => {
+    const owner = current;
     const allThreads = await api.threads();
+    if (current !== owner) return;
     const threads = allThreads.filter(t => (viewProvider === 'all' || t.agent === viewProvider) && (viewWorkspaces === null || !!t.workspaceId && viewWorkspaces.has(t.workspaceId)));
     for (const t of allThreads) if (t.workspaceId) workspaceNames.set(t.workspaceId, t.workspaceName || t.workspaceLabel || 'Workspace');
     const workspaceFilter = viewWorkspaces === null ? 'All workspaces' : viewWorkspaces.size === 0 ? 'None' : viewWorkspaces.size === 1 ? workspaceNames.get([...viewWorkspaces][0]) || '1 selected' : `${viewWorkspaces.size} selected`;
-    const pageCount = threads.length <= 6 ? 1 : 1 + Math.ceil((threads.length - 6) / 5);
+    const pageSize = 7; // Nine native rows: two filters plus seven sessions.
+    const pageCount = Math.max(1, Math.ceil(threads.length / pageSize));
     page = Math.max(0, Math.min(page, pageCount - 1));
-    const pageSize = page === 0 ? 6 : 5;
-    const start = page === 0 ? 0 : 6 + (page - 1) * 5;
+    const start = page * pageSize;
     const visible = threads.slice(start, start + pageSize);
     const actions: { label: string; run: () => unknown }[] = [
       { label: `* Filter by Agent [${viewProvider === 'all' ? 'All sessions' : agentLabel(viewProvider)}]`, run: () => viewOptions() },
       { label: `* Filter by Workspace [${workspaceFilter}]`, run: () => workspaceOptions() },
       ...visible.map(t => ({ label: sessionRow(t.title, t.handle, t.agent, t.state, t.workspaceName), run: () => thread(t) })),
     ];
-    if (page > 0) actions.push({ label: 'Previous page', run: () => home(page - 1) });
-    if (page + 1 < pageCount) actions.push({ label: 'Next page', run: () => home(page + 1) });
     const columns = actions.map((a, i): SessionColumns => {
       const t = i >= 2 ? visible[i - 2] : undefined;
       if (t) return { marker: t.state === 'idle' ? '/' : t.state === 'busy' ? '' : '?', title: compactSessionTitle(t.title, t.handle), right: sessionAgentLabel(t.workspaceName || '', t.agent), busy: t.state === 'busy', handle: t.handle };
       return i === 0 ? { marker: '*', title: 'Filter by Agent', right: `[${viewProvider === 'all' ? 'All sessions' : agentLabel(viewProvider)}]` }
         : i === 1 ? { marker: '*', title: 'Filter by Workspace', right: `[${workspaceFilter}]` } : { marker: '', title: a.label, right: '' };
     });
-    await show({ kind: 'list', title: sessionListTitle(allThreads.length), sessionList: true, columns, connectedCount: allThreads.length, selected: 0, paintedSelection: 0,
+    const selection = selected < 0 ? actions.length - 1 : Math.min(selected, actions.length - 1);
+    await show({ kind: 'list', title: sessionListTitle(allThreads.length), sessionList: true, columns, connectedCount: allThreads.length, selected: selection, paintedSelection: selection,
+      onPreviousPage: page > 0 ? () => home(page - 1, -1) : undefined,
+      onNextPage: page + 1 < pageCount ? () => home(page + 1) : undefined,
       menuActions: [
         { id: 1001, label: 'Refresh sessions', run: () => home(page) },
         { id: 1002, label: 'New Session', run: newSession },
@@ -389,7 +392,7 @@ function workspaceOptions(page = 0, selected = 0) {
     for (const t of threads) if (t.workspaceId) choices.set(t.workspaceId, t.workspaceLabel || t.workspaceName || 'Workspace');
     for (const id of viewWorkspaces || []) if (!choices.has(id)) choices.set(id, `${workspaceNames.get(id) || id.replaceAll('\\', '/').split('/').pop() || 'Workspace'} (unavailable)`);
     const rows = [...choices].sort((a, b) => a[1].localeCompare(b[1]));
-    const size = 5;
+    const size = 7; // Done/All plus seven checkboxes; no navigation rows.
     page = Math.max(0, Math.min(page, Math.max(0, Math.ceil(rows.length / size) - 1)));
     const save = async () => bridge.setLocalStorage('view-workspaces', viewWorkspaces === null ? 'all' : JSON.stringify([...viewWorkspaces]));
     const actions: { label: string; run: () => unknown }[] = [
@@ -404,9 +407,10 @@ function workspaceOptions(page = 0, selected = 0) {
         const owner = current; await save(); if (current === owner) await workspaceOptions(page, index);
       } });
     }
-    if (page > 0) actions.push({ label: 'Previous page', run: () => workspaceOptions(page - 1) });
-    if ((page + 1) * size < rows.length) actions.push({ label: 'Next page', run: () => workspaceOptions(page + 1) });
-    await show({ kind: 'list', workspacePicker: true, title: 'Filter by Workspace', items: actions.map(a => a.label), selected,
+    const selection = selected < 0 ? actions.length - 1 : Math.min(selected, actions.length - 1);
+    await show({ kind: 'list', workspacePicker: true, title: 'Filter by Workspace', items: actions.map(a => a.label), selected: selection,
+      onPreviousPage: page > 0 ? () => workspaceOptions(page - 1, -1) : undefined,
+      onNextPage: (page + 1) * size < rows.length ? () => workspaceOptions(page + 1) : undefined,
       onPick: i => { void actions[i]?.run(); }, onBack: () => home() });
   }, home);
 }
@@ -838,8 +842,20 @@ function onEvent(e: EvenHubEvent) {
   if (!ev) return;
   // CLICK_EVENT(0) は既定値のため JSON から省かれて届くことがある
   const type = ev.eventType ?? OsEventTypeList.CLICK_EVENT;
+  // Finish old-page cursor writes before reusing the same native containers.
+  // Ignore repeated swipes/clicks during a fetch so one edge gesture changes
+  // exactly one page and cannot activate a row from the page being replaced.
+  if (s.kind === 'list' && s.paging) return;
   if (s.kind === 'list' && (s.sessionList || s.workspacePicker) && (type === OsEventTypeList.SCROLL_TOP_EVENT || type === OsEventTypeList.SCROLL_BOTTOM_EVENT)) {
-    s.selected = Math.max(0, Math.min(s.items.length - 1, (s.selected || 0) + (type === OsEventTypeList.SCROLL_TOP_EVENT ? -1 : 1)));
+    const next = (s.selected || 0) + (type === OsEventTypeList.SCROLL_TOP_EVENT ? -1 : 1);
+    const changePage = next < 0 ? s.onPreviousPage : next >= s.items.length ? s.onNextPage : undefined;
+    if (changePage) {
+      s.paging = true;
+      void sessionCursorWrites.then(() => { if (current === s) return changePage(); })
+        .catch(e => diag((e as Error).message)).finally(() => { s.paging = false; });
+      return;
+    }
+    s.selected = Math.max(0, Math.min(s.items.length - 1, next));
     if (!s.cursorWriting) sessionCursorWrites = updateSessionCursor(s);
     return;
   }

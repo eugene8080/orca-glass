@@ -1,5 +1,21 @@
 # Session reader
 
+2026-11-04 user confirms workspace filter beta1.0.25 works on G2, then requests
+removal of Previous/Next rows from main sessions and workspace checkbox picker.
+Both now page on a swipe beyond the last/first row; next page selects first row,
+previous selects last. Outer ends clamp without wrapping. Filter/Done/All rows
+remain available on each page; capacity is seven sessions/checks plus two controls.
+Page changes wait for old native cursor writes, suppress spinner writes and
+repeated gestures/clicks during fetch, and cannot reopen a screen after system exit.
+Checkbox selection/persistence remains unchanged; Agent filter's separate native
+list is outside this change.101 tests/build/doctor pass. Native simulator verified
+sessions00-06 ->07-13 and reverse selecting06; workspace picker07-13 without
+navigation rows. Synthetic fixture has15 sessions/workspaces; no live input.
+Preview LEFT OPEN on root workspace, simulator9900 in
+term_ca89245d-e79b-4863-89c1-a65ddb9e8f8e; fixture8791 reused in
+term_fb9c320c-6a93-402e-b6bb-748a21072f5e. Await preview approval before beta;
+production bridge/beta1.0.25 unchanged. Prior workspace-filter G2 todo closed.
+
 2026-11-04 user approves workspace-filter beta and requests local/origin branch
 cleanup after PR completion. PR https://github.com/eugene8080/orca-glass/pull/1
 merged into windows-android-codex as653b005 (merge preserves feature commits).

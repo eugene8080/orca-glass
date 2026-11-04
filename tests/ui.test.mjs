@@ -89,9 +89,9 @@ test('every live terminal remains reachable through session-list pages', async (
   for (let page = 0; page < 20; page++) {
     const labels = menuItems(h);
     labels.filter(s => s.includes('Session ')).forEach(s => seen.add(s));
-    const next = labels.indexOf('Next page');
-    if (next < 0) break;
-    await h.pick(next);
+    assert.ok(!labels.some(s => /^(Next|Previous) page$/.test(s)));
+    if (seen.size === 40) break;
+    for (let row = 0; row < labels.length; row++) await h.scroll('down');
   }
   assert.equal(seen.size, 40);
 });
@@ -889,9 +889,9 @@ test('workspace picker pages reach every entry and saved unavailable workspaces 
     const items = menuItems(h);
     items.filter(s => s.includes('Workspace ')).forEach(s => seen.add(s));
     assert.ok(items.length <= 9);
-    const next = items.indexOf('Next page');
-    if (next < 0) break;
-    await h.pick(next);
+    assert.ok(!items.some(s => /^(Next|Previous) page$/.test(s)));
+    if (seen.size === 15) break;
+    for (let row = 0; row < items.length; row++) await h.scroll('down');
   }
   assert.equal(seen.size, 15);
   await h.back();
@@ -910,4 +910,72 @@ test('workspaces with the same project name are filtered by exact Orca ID', asyn
   await h.pick(child); await h.pick(0);
   assert.equal(menuItems(h).length, 3);
   assert.match(menuItems(h)[2], /Child session/);
+});
+
+
+test('session edge swipes change pages in both directions and clamp at the outer ends', async () => {
+  const h = await harness(15);
+  assert.equal(menuItems(h).length, 9);
+  for (let i = 0; i < 9; i++) await h.scroll('down');
+  assert.match(menuItems(h)[2], /Session 7/);
+  assert.match(h.pages.at(-1).textObject.find(c => c.containerName === 'menu-cursor').content.split('\n')[0], /^>/);
+  await h.scroll('up');
+  assert.match(menuItems(h)[2], /Session 0/);
+  assert.match(h.pages.at(-1).textObject.find(c => c.containerName === 'menu-cursor').content.split('\n')[8], /^>/);
+  for (let i = 0; i < 8; i++) await h.scroll('up');
+  const count = h.pages.length;
+  await h.scroll('up');
+  assert.equal(h.pages.length, count);
+  for (let i = 0; i < 18; i++) await h.scroll('down');
+  assert.equal(menuItems(h).length, 3);
+  assert.match(menuItems(h)[2], /Session 14/);
+  await h.scroll('down'); await h.scroll('down');
+  const finalCount = h.pages.length;
+  await h.scroll('down');
+  assert.equal(h.pages.length, finalCount);
+});
+
+test('workspace edge swipes retain checks and reverse to the last row of the previous page', async () => {
+  const h = await harness(0);
+  h.api.workspaces = async () => Array.from({ length: 10 }, (_, i) => ({ id: `w${i}`, name: `Workspace ${String(i).padStart(2, '0')}` }));
+  await h.pick(1);
+  for (let i = 0; i < 8; i++) await h.scroll('down');
+  await h.tap();
+  assert.equal(menuItems(h)[8], '[x] Workspace 06');
+  await h.scroll('down');
+  assert.equal(menuItems(h)[2], '[ ] Workspace 07');
+  assert.match(h.pages.at(-1).textObject.find(c => c.containerName === 'body').content, /^> Done/);
+  await h.scroll('up');
+  assert.equal(menuItems(h)[8], '[x] Workspace 06');
+  assert.match(h.pages.at(-1).textObject.find(c => c.containerName === 'body').content.split('\n')[8], /^>/);
+  await h.scroll('down');
+  await h.pick(2);
+  assert.equal(menuItems(h)[2], '[x] Workspace 07');
+  await h.pick(0);
+  assert.match(h.pages.at(-1).textObject.find(c => c.containerName === 'menu-right').content, /2 selected/);
+});
+
+test('rapid edge swipes and clicks cannot skip pages or activate a row during a page fetch', async () => {
+  const h = await harness(20);
+  for (let i = 0; i < 8; i++) await h.scroll('down');
+  let finish, calls = 0;
+  h.api.threads = () => { calls++; return new Promise(resolve => { finish = resolve; }); };
+  await h.scroll('down'); await h.scroll('down'); await h.tap();
+  assert.equal(calls, 1);
+  finish(h.threads); await h.flush();
+  assert.match(menuItems(h)[2], /Session 7/);
+  assert.equal(h.sends.length + h.choices.length, 0);
+});
+
+test('an in-flight page fetch cannot reopen the glasses after system exit', async () => {
+  const h = await harness(15);
+  for (let i = 0; i < 8; i++) await h.scroll('down');
+  let finish;
+  h.api.threads = () => new Promise(resolve => { finish = resolve; });
+  await h.scroll('down');
+  const count = h.pages.length;
+  await h.system(7);
+  finish(h.threads); await h.flush();
+  assert.equal(h.pages.length, count);
+  assert.equal(h.timers.size, 0);
 });

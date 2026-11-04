@@ -8,13 +8,12 @@ Completed/superseded release notes: [history](docs/todo-history.md).
 
 ## Open work
 
-- [ ] **Workspace multi-filter / workspace-agent row labels — G2 confirmation:**
-  beta1.0.25 live2026-11-04. Native [x]/[ ] selections persist and combine with
-  agent filtering; session labels show [workspace/Agent].97 tests/build/doctor
-  and native simulator checks pass; user approved upload. Bridge restarted;
-  local/stableHTTPS health and live workspace metadata verified. PR #1 merged;
-  feature worktree/local/origin branch removed after merge verification.
-  See [reader details](docs/session-reader.md).
+- [ ] **Swipe-only menu paging:** prepared for sessions and workspace picker;
+  no Previous/Next rows. Swipe past last/first row changes pages and selects the
+  opposite edge; outer ends clamp. Seven entries plus two controls per page.
+ 101 tests/build/doctor pass, native simulator forward/reverse checks pass.
+  Preview OPEN (fixture8791/simulator9900); awaiting approval before beta upload.
+  Installed beta1.0.25 unchanged. See [reader details](docs/session-reader.md).
 - [ ] **Claude/Cursor usage:** beta1.0.23 live; G2 confirmation pending. Shows
   Claude five-hour/weekly and Cursor monthly allowance alongside Codex. User
   approved simulator2026-11-03; beta channel verified, bridge restarted and
@@ -70,6 +69,8 @@ Completed/superseded release notes: [history](docs/todo-history.md).
 
 ## Completed / confirmed
 
+- [x] Workspace multi-filter and [workspace/Agent] session labels — user confirms
+  beta1.0.25 works on G2,2026-11-04. Follow-up removes paging rows; tracked above.
 - [x] Claude saved chat / blank-reader recovery, concise working progress and
   numbered-input feature group — user confirms beta1.0.24 works on G2,2026-11-04.
   Overall release accepted; native/voice/stale-question edge cases also covered by
