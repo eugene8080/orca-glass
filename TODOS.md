@@ -1,26 +1,27 @@
 # Orca Glass TODOs
 Updated: 2026-11-04
 
-Current beta: **1.0.23**.79 tests/build/doctor passed for multi-provider usage. Simulator stays
+Current beta: **1.0.24**.91 tests/build/doctor passed for Claude reader/progress/choices. Simulator stays
 open for user review; visual changes require preview approval before beta upload.
 Completed/superseded release notes: [history](docs/todo-history.md).
 
 ## Open work
 
-- [ ] **Claude progress and numbered prompts:** candidate prepared2026-11-04;
+- [ ] **Claude progress and numbered prompts:** beta1.0.24 live2026-11-04;
  91 tests/build/doctor pass. One brief public activity line retains previous chat;
  wrapped native choices detected, Click opens choices only during a prompt,
  confirmation and reviewed spoken numbers use stale-question validation. Native
  simulator verified five choices, descriptions and native/voice fixture sends;
- left OPEN for user preview. No live Claude prompts/choices submitted. Next beta
- and G2 confirmation pending preview approval. Type something first for a custom
+ left OPEN. User approved upload; beta channel verified (48,244 bytes), bridge
+ restarted and local/stableHTTPS health pass. No live Claude prompts/choices
+ submitted. G2 confirmation pending. Type something first for a custom
  voice answer. See [reader details](docs/session-reader.md).
-- [ ] **Claude saved conversation / blank reader:** fix prepared; preview approval
-  pending before beta. Exact live pane binding now loads saved Claude chat while
+- [ ] **Claude saved conversation / blank reader:** beta1.0.24 live; G2 check
+  pending. Exact live pane binding now loads saved Claude chat while
   the terminal is filled with tools; current solid-circle reply marker supported.
   Read-only target check returned654 messages;83 synthetic tests/build/doctor pass.
-  Simulator left open on synthetic conversation. Production bridge and beta1.0.23
-  unchanged. No Claude prompts/launches. See [reader details](docs/session-reader.md).
+  Simulator left open. Production bridge updated; read-only Campaign history
+  returns442 messages from claude-transcript after restart. No Claude prompts/launches. See [reader details](docs/session-reader.md).
 - [ ] **Claude/Cursor usage:** beta1.0.23 live; G2 confirmation pending. Shows
   Claude five-hour/weekly and Cursor monthly allowance alongside Codex. User
   approved simulator2026-11-03; beta channel verified, bridge restarted and

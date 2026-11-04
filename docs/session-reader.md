@@ -1,5 +1,14 @@
 # Session reader
 
+2026-11-04 user approves upload of the Claude reader/progress/numbered-input
+preview. Beta1.0.24 uploaded/promoted; channel verified (48,244 bytes), public
+channel remains1.0.23.91 tests/build/doctor passed for implementation; beta package
+build and restored prototype build pass. Verified production listener/supervisor
+before restarting scheduled bridge; new supervisor52988, .local/custom.pid updated.
+Local/stableHTTPS health pass;13 connected sessions. Read-only Campaign session
+history returns claude-transcript,442 messages/280956 characters. No live Claude
+prompts/choices submitted. Native simulator stays OPEN; G2 verification pending.
+
 2026-11-04 user requests short Claude thinking/progress and numbered prompt
 controls with voice remaining default. Existing Claude session reading plus
 user-initiated G2 selection/voice are authorized; no autonomous Claude prompts,
