@@ -34,7 +34,7 @@ export function demoCall(lang: Lang, method: string, path: string, body: unknown
     case 'GET /healthz':
       return { ok: true };
     case 'GET /api/threads':
-      return c.threads.map(([handle, title, agent, state]) => ({ handle, title, agent, state }) as Thread);
+      return c.threads.map(([handle, title, agent, state]) => ({ handle, title, agent, state, workspaceId: handle === 'demo-3' ? 'demo-ws-2' : 'demo-ws-1', workspaceName: handle === 'demo-3' ? 'website' : 'my-app', workspaceLabel: handle === 'demo-3' ? 'website' : 'my-app' }) as Thread);
     case 'GET /api/thread':
     case 'GET /api/history':
       return { text: '/ Please review this session.\n> ' + (c.texts[searchParams.get('handle') as keyof typeof c.texts] ?? '').replaceAll('\n', '\n  ') };

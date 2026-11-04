@@ -22,7 +22,7 @@ import { applyPage, detectLang, setLang, t as tr } from './i18n';
 import { clipBytes, textSections, choiceNumber, readerContent } from './text';
 import { readerStatus, statusPixels, voiceBorderPixels, SPINNER } from './reader-status';
 import { footerHint } from './footer-hint';
-import { agentLabel, sessionRow, sessionListTitle, sessionHeading, MENU_LEFT, MENU_CURSOR, menuNativeText, menuCursorText, nativeRight, compactSessionTitle, type SessionColumns } from './session-list';
+import { agentLabel, sessionRow, sessionListTitle, sessionHeading, MENU_LEFT, MENU_RIGHT, MENU_CURSOR, sessionAgentLabel, menuNativeText, menuCursorText, nativeRight, compactSessionTitle, type SessionColumns } from './session-list';
 
 // 画面 576x288。上に見出し(テキスト)、下に本文(リスト or テキスト)の2段構成で統一する。
 const HEAD = { containerID: 1, containerName: 'head', xPosition: 0, yPosition: 0, width: 576, height: 36 };
@@ -43,7 +43,7 @@ const TEXT_BYTES = 999;
 const POLL_MS = 1000;
 
 type Screen =
-  | { kind: 'list'; title: string; items: string[]; sessionList?: boolean; menuActions?: { id: number; label: string; run: () => unknown }[]; compat?: boolean; columns?: SessionColumns[]; connectedCount?: number; selected?: number; paintedSelection?: number; menuFrame?: number; paintedCursor?: string; cursorWriting?: boolean; onPick: (i: number) => void; onBack?: () => void }
+  | { kind: 'list'; title: string; items: string[]; sessionList?: boolean; workspacePicker?: boolean; menuActions?: { id: number; label: string; run: () => unknown }[]; compat?: boolean; columns?: SessionColumns[]; connectedCount?: number; selected?: number; paintedSelection?: number; menuFrame?: number; paintedCursor?: string; cursorWriting?: boolean; onPick: (i: number) => void; onBack?: () => void }
   | { kind: 'text'; title: string; text: string; conversationText?: string; choiceMenu?: ChoiceMenu | null; tail?: boolean; offset?: number; reading?: boolean; activityLabel?: string; activityState?: string; reportedSeconds?: number | null; statusFrame?: number; statusStartedAt?: number; savedHistory?: boolean; reader?: Thread; onClick?: () => void; onBack?: () => void; onHold?: () => void; };
 
 let bridge: EvenAppBridge;
@@ -62,6 +62,8 @@ let sending = false;
 let holding = false;
 let releaseCapture: (() => void) | null = null;
 let viewProvider = 'all';
+let viewWorkspaces: Set<string> | null = null;
+let workspaceNames = new Map<string, string>();
 const providerName = agentLabel;
 
 function selectThread(t: Thread | null) {
@@ -162,7 +164,7 @@ async function show(s: Screen, reloadText = false) {
             new TextContainerProperty({ containerID: 5, containerName: 'menu-input', xPosition: 0, yPosition: 0, width: 576, height: 288, content: ' ', isEventCapture: 1, paddingLength: 0, zOrderIndex: 0 }),
             new TextContainerProperty({ ...MENU_CURSOR, content: menuCursorText(s.columns!, s.selected || 0), isEventCapture: 0, paddingLength: 0, zOrderIndex: 3 }),
             new TextContainerProperty({ ...MENU_LEFT, content: menuNativeText(s.columns!), isEventCapture: 0, paddingLength: 0, zOrderIndex: 4 }),
-            new TextContainerProperty({ containerID: 6, containerName: 'menu-right', xPosition: 396, yPosition: 28, width: 180, height: 260, content: s.columns!.map(r => nativeRight(r.right, 180)).join('\n'), isEventCapture: 0, paddingLength: 0, zOrderIndex: 5 }),
+            new TextContainerProperty({ containerID: 6, containerName: 'menu-right', ...MENU_RIGHT, yPosition: 28, height: 260, content: s.columns!.map(r => nativeRight(r.right, MENU_RIGHT.width)).join('\n'), isEventCapture: 0, paddingLength: 0, zOrderIndex: 5 }),
           ] : [head],
           ...(s.sessionList ? {} : { listObject: [
             new ListContainerProperty({
@@ -207,6 +209,7 @@ async function show(s: Screen, reloadText = false) {
     if (s.kind === 'list' && s.sessionList && compactMenuOnly) {
       s.compat = true; page = compatibilityMenu(s, menu) as typeof page;
     }
+    if (s.kind === 'list' && s.workspacePicker) { s.compat = true; page = compatibilityMenu(s, {}) as typeof page; }
     let accepted = await bridge.rebuildPageContainer(new RebuildPageContainer(page));
     if (!accepted && s.kind === 'list' && s.sessionList && !s.compat) {
       s.compat = true;
@@ -320,23 +323,26 @@ function home(page = 0) {
   selectThread(null);
   return guard('Orca-glass', async () => {
     const allThreads = await api.threads();
-    const threads = viewProvider === 'all' ? allThreads : allThreads.filter(t => t.agent === viewProvider);
-    const pageCount = threads.length <= 7 ? 1 : 1 + Math.ceil((threads.length - 7) / 6);
+    const threads = allThreads.filter(t => (viewProvider === 'all' || t.agent === viewProvider) && (viewWorkspaces === null || !!t.workspaceId && viewWorkspaces.has(t.workspaceId)));
+    for (const t of allThreads) if (t.workspaceId) workspaceNames.set(t.workspaceId, t.workspaceName || t.workspaceLabel || 'Workspace');
+    const workspaceFilter = viewWorkspaces === null ? 'All workspaces' : viewWorkspaces.size === 0 ? 'None' : viewWorkspaces.size === 1 ? workspaceNames.get([...viewWorkspaces][0]) || '1 selected' : `${viewWorkspaces.size} selected`;
+    const pageCount = threads.length <= 6 ? 1 : 1 + Math.ceil((threads.length - 6) / 5);
     page = Math.max(0, Math.min(page, pageCount - 1));
-    const pageSize = page === 0 ? 7 : 6;
-    const start = page === 0 ? 0 : 7 + (page - 1) * 6;
+    const pageSize = page === 0 ? 6 : 5;
+    const start = page === 0 ? 0 : 6 + (page - 1) * 5;
     const visible = threads.slice(start, start + pageSize);
     const actions: { label: string; run: () => unknown }[] = [
       { label: `* Filter by Agent [${viewProvider === 'all' ? 'All sessions' : agentLabel(viewProvider)}]`, run: () => viewOptions() },
-      ...visible.map(t => ({ label: sessionRow(t.title, t.handle, t.agent, t.state), run: () => thread(t) })),
+      { label: `* Filter by Workspace [${workspaceFilter}]`, run: () => workspaceOptions() },
+      ...visible.map(t => ({ label: sessionRow(t.title, t.handle, t.agent, t.state, t.workspaceName), run: () => thread(t) })),
     ];
     if (page > 0) actions.push({ label: 'Previous page', run: () => home(page - 1) });
     if (page + 1 < pageCount) actions.push({ label: 'Next page', run: () => home(page + 1) });
     const columns = actions.map((a, i): SessionColumns => {
-      const t = i >= 1 ? visible[i - 1] : undefined;
-      if (t) return { marker: t.state === 'idle' ? '/' : t.state === 'busy' ? '' : '?', title: compactSessionTitle(t.title, t.handle), right: `[${agentLabel(t.agent)}]`, busy: t.state === 'busy', handle: t.handle };
+      const t = i >= 2 ? visible[i - 2] : undefined;
+      if (t) return { marker: t.state === 'idle' ? '/' : t.state === 'busy' ? '' : '?', title: compactSessionTitle(t.title, t.handle), right: sessionAgentLabel(t.workspaceName || '', t.agent), busy: t.state === 'busy', handle: t.handle };
       return i === 0 ? { marker: '*', title: 'Filter by Agent', right: `[${viewProvider === 'all' ? 'All sessions' : agentLabel(viewProvider)}]` }
-        : { marker: '', title: a.label, right: '' };
+        : i === 1 ? { marker: '*', title: 'Filter by Workspace', right: `[${workspaceFilter}]` } : { marker: '', title: a.label, right: '' };
     });
     await show({ kind: 'list', title: sessionListTitle(allThreads.length), sessionList: true, columns, connectedCount: allThreads.length, selected: 0, paintedSelection: 0,
       menuActions: [
@@ -369,6 +375,39 @@ function viewOptions(page = 0) {
     if ((page + 1) * size < providers.length) actions.push({ label: 'Next page', run: () => viewOptions(page + 1) });
     await show({ kind: 'list', title: 'Filter by Agent', items: actions.map(a => a.label),
       onPick: i => { void actions[i]?.run(); }, onBack: home });
+  }, home);
+}
+
+// null means all workspaces; an explicit empty set means none. Keep each
+// toggle selected in a native text page so multiple picks do not jump to row 1.
+function workspaceOptions(page = 0, selected = 0) {
+  return guard('Filter by Workspace', async () => {
+    const owner = current;
+    const [threads, catalog] = await Promise.all([api.threads(), api.workspaces().catch(() => [])]);
+    if (current !== owner) return;
+    const choices = new Map(catalog.map(w => [w.id, w.name]));
+    for (const t of threads) if (t.workspaceId) choices.set(t.workspaceId, t.workspaceLabel || t.workspaceName || 'Workspace');
+    for (const id of viewWorkspaces || []) if (!choices.has(id)) choices.set(id, `${workspaceNames.get(id) || id.replaceAll('\\', '/').split('/').pop() || 'Workspace'} (unavailable)`);
+    const rows = [...choices].sort((a, b) => a[1].localeCompare(b[1]));
+    const size = 5;
+    page = Math.max(0, Math.min(page, Math.max(0, Math.ceil(rows.length / size) - 1)));
+    const save = async () => bridge.setLocalStorage('view-workspaces', viewWorkspaces === null ? 'all' : JSON.stringify([...viewWorkspaces]));
+    const actions: { label: string; run: () => unknown }[] = [
+      { label: 'Done', run: () => home() },
+      { label: `[${viewWorkspaces === null ? 'x' : ' '}] All workspaces`, run: async () => { const owner = current; viewWorkspaces = null; await save(); if (current === owner) await workspaceOptions(page, 1); } },
+    ];
+    for (const [id, name] of rows.slice(page * size, (page + 1) * size)) {
+      const index = actions.length;
+      actions.push({ label: `[${viewWorkspaces?.has(id) ? 'x' : ' '}] ${name}`, run: async () => {
+        viewWorkspaces ??= new Set();
+        if (viewWorkspaces.has(id)) viewWorkspaces.delete(id); else viewWorkspaces.add(id);
+        const owner = current; await save(); if (current === owner) await workspaceOptions(page, index);
+      } });
+    }
+    if (page > 0) actions.push({ label: 'Previous page', run: () => workspaceOptions(page - 1) });
+    if ((page + 1) * size < rows.length) actions.push({ label: 'Next page', run: () => workspaceOptions(page + 1) });
+    await show({ kind: 'list', workspacePicker: true, title: 'Filter by Workspace', items: actions.map(a => a.label), selected,
+      onPick: i => { void actions[i]?.run(); }, onBack: () => home() });
   }, home);
 }
 
@@ -799,7 +838,7 @@ function onEvent(e: EvenHubEvent) {
   if (!ev) return;
   // CLICK_EVENT(0) は既定値のため JSON から省かれて届くことがある
   const type = ev.eventType ?? OsEventTypeList.CLICK_EVENT;
-  if (s.kind === 'list' && s.sessionList && (type === OsEventTypeList.SCROLL_TOP_EVENT || type === OsEventTypeList.SCROLL_BOTTOM_EVENT)) {
+  if (s.kind === 'list' && (s.sessionList || s.workspacePicker) && (type === OsEventTypeList.SCROLL_TOP_EVENT || type === OsEventTypeList.SCROLL_BOTTOM_EVENT)) {
     s.selected = Math.max(0, Math.min(s.items.length - 1, (s.selected || 0) + (type === OsEventTypeList.SCROLL_TOP_EVENT ? -1 : 1)));
     if (!s.cursorWriting) sessionCursorWrites = updateSessionCursor(s);
     return;
@@ -833,7 +872,7 @@ function onEvent(e: EvenHubEvent) {
   if (type !== OsEventTypeList.CLICK_EVENT) return;
   if (s.kind === 'list') {
     // 先頭項目(0)も既定値として省かれうる
-    if (s.sessionList) {
+    if (s.sessionList || s.workspacePicker) {
       const index = e.listEvent?.currentSelectItemIndex ?? s.selected ?? 0;
       // Finish in-flight cursor writes before reusing BODY on the next page.
       void sessionCursorWrites.then(() => { if (current === s) s.onPick(index); });
@@ -905,6 +944,10 @@ async function main() {
   const pref = 'en';
   await bridge.setLocalStorage('lang', 'en');
   viewProvider = (await bridge.getLocalStorage('view-provider')) || 'all';
+  try {
+    const stored = JSON.parse(await bridge.getLocalStorage('view-workspaces') || 'null');
+    if (Array.isArray(stored) && stored.every(id => typeof id === 'string')) viewWorkspaces = new Set(stored);
+  } catch { /* Older or corrupt preferences safely restore all workspaces. */ }
   useLang(pref);
   const draft = document.getElementById('reply-text') as HTMLTextAreaElement;
   const send = document.getElementById('send-reply') as HTMLButtonElement;

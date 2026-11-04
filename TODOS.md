@@ -7,6 +7,14 @@ Completed/superseded release notes: [history](docs/todo-history.md).
 
 ## Open work
 
+- [ ] **Workspace multi-filter / workspace-agent row labels:** implemented in
+  feature/workspace-filter (separate Orca worktree). Filter by Workspace is directly
+  below Filter by Agent; native [x]/[ ] selections persist, combine with agent
+  filter and retain cursor. Session labels include [porttracker/Claude] and
+  [orca-glass/Codex].97 tests/build/doctor pass, native simulator verified two
+  selected workspaces and filtered results; preview OPEN on8793/9900. Await user
+  preview approval before beta/release integration. Production beta1.0.24 unchanged.
+  See [reader details](docs/session-reader.md).
 - [ ] **Claude/Cursor usage:** beta1.0.23 live; G2 confirmation pending. Shows
   Claude five-hour/weekly and Cursor monthly allowance alongside Codex. User
   approved simulator2026-11-03; beta channel verified, bridge restarted and

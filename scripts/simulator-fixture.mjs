@@ -2,10 +2,17 @@
 import { createServer } from '../app/node_modules/vite/dist/node/index.js';
 import { fileURLToPath } from 'node:url';
 
+const port = Number(process.env.ORCA_GLASS_SIM_PORT || 8791);
 const fixture = {
   state: 'working', source: 'claude-transcript', progress: 'Reading files', menu: null,
   text: Array.from({ length: 35 }, (_, i) => `Chat line ${i + 1}: native reader scroll retention check.`).join('\n'),
   transcript: Array.from({ length: 30 }, (_, i) => `Draft line ${i + 1}: review this transcription.`).join('\n'),
+  threads: [
+    { handle: 'fixture', title: 'Archive retrieval', agent: 'claude', state: 'busy', workspaceId: 'ws-port', workspaceName: 'porttracker', workspaceLabel: 'porttracker' },
+    { handle: 'glass', title: 'Workspace filter', agent: 'codex', state: 'idle', workspaceId: 'ws-glass', workspaceName: 'orca-glass', workspaceLabel: 'orca-glass' },
+    { handle: 'settings', title: 'Review Windows settings', agent: 'codex', state: 'idle', workspaceId: 'ws-pc', workspaceName: 'pc-settings', workspaceLabel: 'pc-settings' },
+  ],
+  workspaces: [{ id: 'ws-port', name: 'porttracker' }, { id: 'ws-glass', name: 'orca-glass' }, { id: 'ws-pc', name: 'pc-settings' }],
   sends: [],
   usage: {
     codex: { provider: 'codex', status: 'ok', weekly: { usedPercent: 63, resetDescription: 'Thursday' } },
@@ -18,7 +25,7 @@ const request=async()=>{const r=await fetch('/__fixture');return r.json();};
 export const setDemo=()=>{},setApiLang=()=>{},setConnection=()=>{};
 export const currentBase=()=> 'isolated simulator';
 export const api={
-  threads:async()=>[{handle:'fixture',title:'Simulator conversation',agent:'claude',state:'busy'}],
+  threads:async()=>(await request()).threads,workspaces:async()=>(await request()).workspaces,
   thread:async()=>{const s=await request();return {text:s.text,menu:s.menu,progress:s.progress};},history:async()=>{const s=await request();return {text:s.text,source:s.source};},
   activity:async()=>({state:(await request()).state}),
   health:async()=>({ok:true}),capabilities:async()=>({voice:true}),
@@ -46,7 +53,7 @@ const timer=setInterval(()=>{
 const server = await createServer({
   root: fileURLToPath(new URL('../app/', import.meta.url)), configFile: false,
   define: { __BRIDGE_ORIGIN__: '""', __APP_VERSION__: JSON.stringify(JSON.parse((await import('node:fs')).readFileSync(new URL('../app/app.json', import.meta.url), 'utf8')).version) },
-  server: { host: '127.0.0.1', port: 8791, strictPort: true },
+  server: { host: '127.0.0.1', port, strictPort: true },
   plugins: [{
     name: 'isolated-native-simulator', enforce: 'pre',
     resolveId(id) { if (id === './api') return '\0fixture-api'; },
@@ -71,6 +78,7 @@ const server = await createServer({
             } else if (req.url === '/__fixture/send') fixture.sends.push(data);
             else {
               if ('menu' in data) fixture.menu = data.menu;
+              for (const key of ['threads', 'workspaces']) if (Array.isArray(data[key])) fixture[key] = data[key];
               if (data.usage && typeof data.usage === 'object') fixture.usage = data.usage;
               for (const key of ['state', 'text', 'source', 'transcript', 'progress']) {
                 if (typeof data[key] === 'string') fixture[key] = data[key];
@@ -85,4 +93,4 @@ const server = await createServer({
   }],
 });
 await server.listen();
-console.log('Isolated simulator fixture: http://127.0.0.1:8791/?code=demo&lang=en');
+console.log(`Isolated simulator fixture: http://127.0.0.1:${port}/?code=demo&lang=en`);
