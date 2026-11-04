@@ -1,6 +1,17 @@
 # Hermes session bridge
 Updated: 2026-11-04
 
+## Release status — 2026-11-04
+
+User approved release. PR #2 merged as `5a48a6f`; beta **1.0.28** promoted and
+verified (49,867 bytes), public remains1.0.23.113 tests/build/doctor pass. Production
+bridge restarted; stableHTTPS health passes and discovery lists15 Hermes sessions.
+Feature worktree and local/origin branch removed; synthetic captures preserved
+under main `.local/hermes-merged-preview`. G2 and a real user-confirmed reply remain
+pending. No real prompt/resume/reply submitted during release. Earlier held/branch
+status below is historical.
+
+
 ## Implementation plan / status
 
 - [x] Inspect installed Hermes 0.22.5 and Orca Glass discovery, transcript and reply paths.

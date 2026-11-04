@@ -1,7 +1,7 @@
 # Orca Glass TODOs
 Updated: 2026-11-04
 
-Current beta: **1.0.27**.107 tests/build/doctor passed for Usage reset-time modes.
+Current beta: **1.0.28**.113 tests/build/doctor passed for integrated Hermes support.
 Workspace-filter preview approved, released and retired with merged worktree cleanup.
 Future visual changes require preview approval before beta upload.
 Completed/superseded release notes: [history](docs/todo-history.md).
@@ -26,17 +26,15 @@ Completed/superseded release notes: [history](docs/todo-history.md).
   Claude five-hour/weekly and Cursor monthly allowance alongside Codex. User
   approved simulator2026-11-03; beta channel verified, bridge restarted and
   local/stableHTTPS endpoints return ok for all three.79 tests/build/doctor pass.
-- [ ] **Hermes PR preview/merge/deployment:** [PR #2](https://github.com/eugene8080/orca-glass/pull/2)
-  both P2 fixes implemented; current release branch integrated and shared note
-  conflicts resolved.113 combined tests (seven Python helper cases), build/doctor,
-  installed canonical projection synthetic smoke and three read-only stored reads
-  pass. Native synthetic interactions pass; preview LEFT OPEN on8795/9902.
-  Screenshot API returns solid green, so visual approval remains required.
-  See [review](docs/hermes-pr-review.md) and [implementation](docs/hermes-bridge.md).
-  Pending user preview approval, merge, approved beta/deployment and G2/real
-  user-confirmed reply checks. No real prompt/resume/reply; beta1.0.27 unchanged.
+- [ ] **Hermes — G2 confirmation:** PR #2 merged as5a48a6f; beta1.0.28 live
+  (49,867 bytes), bridge restarted and stableHTTPS lists15 Hermes sessions.
+ 113 tests/build/doctor and synthetic native interaction checks pass. Worktree
+  and local/origin feature branches deleted after merge; preview captures kept
+  in main .local/hermes-merged-preview. Physical reading and a real user-confirmed
+  Hermes reply remain unverified; no autonomous live prompt/resume/reply sent.
+  See [implementation](docs/hermes-bridge.md) and [review](docs/hermes-pr-review.md).
 - [ ] **General installation / public listing follow-up:** public1.0.23 is live;
-  beta1.0.27 is current. README/Even Hub description updated2026-11-04, saved and
+  beta1.0.28 is current. README/Even Hub description updated2026-11-04, saved and
   verified after reload. Packaged origin is still one configured private PC, so
   arbitrary-PC self-service setup remains open. Earlier submission/privacy notes
   are historical; current PDF contents were not rechecked in this task. See

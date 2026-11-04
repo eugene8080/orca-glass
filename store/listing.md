@@ -3,6 +3,10 @@ Updated: 2026-11-04
 
 ## Current status
 
+2026-11-04 later release: beta **1.0.28** promoted and CLI channel verified;
+public remains1.0.23. Hermes support is now in beta. The portal description below
+was saved for1.0.27 and was not edited during the1.0.28 release.
+
 2026-11-04: authenticated portal confirms **public1.0.23 is live**, latest beta
 **1.0.27**. The user requested a README/description refresh. Saved the1535-character
 [description](description.txt) through Store listing > Description > Edit > Confirm

@@ -50,6 +50,22 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-04 user approves Hermes beta and requests worktree/branch cleanup.
+PR #2 merged as5a48a6f; beta1.0.28 uploaded/promoted, channel verified49,867bytes;
+public remains1.0.23.113 tests/doctor and beta/prototype builds pass. Scheduled
+bridge restarted after verified listener/supervisor ownership; supervisor85400,
+local/stableHTTPS health pass. StableHTTPS lists28 sessions including15 Hermes.
+No real prompts/resumes/replies submitted; physical G2/confirmed Hermes reply
+still pending. Closed all three feature tabs, preserved synthetic preview files
+under main .local/hermes-merged-preview, unlinked dependency junction without
+following it. Orca removal initially left a locked empty directory; after tabs
+stopped, explicitly removed the verified empty directory and Orca completed
+removal. Worktree/local branch/origin branch now absent; main dependencies intact.
+Existing root usage preview and unrelated user screenshot retained. No Hermes
+installation/config/model change or public publication. Even Hub description
+still reflects the prior1.0.27 README refresh; not edited during this release.
+
+
 2026-11-04 user authorizes Hermes PR fixes and conflict resolution. Feature branch
 now integrates current windows-android-codex c5d30c7 (including usage reset modes).
 Both P2 findings fixed: stored reads use installed canonical display projection,

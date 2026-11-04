@@ -8,7 +8,7 @@ This is Eugene's Windows/Android fork of [2ero20ne's Orca Glass](https://github.
 
 ## Availability
 
-As of 2026-11-04, the Even Hub **public build is 1.0.23** and the **latest beta is 1.0.27**. The newer controls described below require the beta. The installed build connects to a specific PC over Tailscale; it is not yet a self-service installation for arbitrary PCs. Orca and the companion bridge must remain running. The phone and glasses do not run the coding agent.
+As of 2026-11-04, the Even Hub **public build is 1.0.23** and the **latest beta is 1.0.28**. The newer controls described below require the beta. The installed build connects to a specific PC over Tailscale; it is not yet a self-service installation for arbitrary PCs. Orca and the companion bridge must remain running. The phone and glasses do not run the coding agent.
 
 The active app is the custom Orca Glass bridge. Earlier native Even Terminal experiments are historical. See [current work](TODOS.md) and [beta setup/release history](docs/beta-install.md).
 
@@ -24,9 +24,15 @@ The active app is the custom Orca Glass bridge. Earlier native Even Terminal exp
 
 Other agents may appear in the session list and filters, but discovery does not guarantee full reader support. Tool output, internal reasoning and terminal chrome are filtered; public assistant progress commentary can still appear. New-session creation remains Codex-only.
 
-### Hermes development status
+### Hermes support (beta 1.0.28)
 
-A Hermes adapter exists in the separate [hermes-bridge branch](https://github.com/eugene8080/orca-glass/tree/eugene8080/hermes-bridge), not in beta 1.0.27. It uses the existing authenticated local Hermes gateway for live/stored sessions and groups agents as Hermes regardless of model. Tests and an isolated simulator preview pass; integration review, deployment and G2/user-confirmed reply checks remain pending. See that branch's `docs/hermes-bridge.md` for the exact scope.
+Browse live and saved sessions from the existing authenticated local Hermes gateway.
+Sessions group as Hermes regardless of model. Verified Orca ownership supplies the
+workspace; other sessions appear under `Hermes: <profile>`. Saved reading filters
+hidden scaffolding, tools and reasoning. Reviewed voice replies target the exact
+captured profile/session and reject stale ownership. The bridge does not start
+Hermes or create sessions. Physical G2 and a real user-confirmed Hermes reply
+still need verification. See [implementation](docs/hermes-bridge.md).
 
 ## Screenshots
 
