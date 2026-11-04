@@ -50,6 +50,37 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-04 user authorizes Hermes PR fixes and conflict resolution. Feature branch
+now integrates current windows-android-codex c5d30c7 (including usage reset modes).
+Both P2 findings fixed: stored reads use installed canonical display projection,
+with hidden/model-only defensive exclusions and stdout restoration; compressed
+picker rows validate root timestamp plus exact compression tip/source. Replaced
+or newly compressed targets still fail closed.113 combined Node tests (including
+seven Python helper cases), build and doctor pass. Installed canonical projection
+synthetic smoke excludes hidden/model-only scaffolds; read-only discovery15,
+unavailableProfiles0, three stored reads succeed without exposing chat in logs.
+Native fixture interaction check passes on8795/9902 with synthetic confirmed send
+only. Preview restarted in its existing named Orca tabs and LEFT OPEN. Screenshot
+API returns solid green; capture is not visual/hardware proof. User visual review,
+PR merge and release remain pending; beta1.0.27/production unchanged. No real
+prompt/resume/reply or Hermes runtime/config changes. See docs/hermes-pr-review.md.
+
+
+2026-11-04 Hermes adapter implemented in child eugene8080/hermes-bridge from
+8caa276, pending coordinator review. Stable hermes/Hermes identity across models;
+installed authenticated gateway transport covers live and stored Desktop/profile
+sessions without another installation or runtime. Exact profile/session/owner
+checks protect reads and confirmed replies; reciprocal Orca pane/profile receipts
+assign workspaces, otherwise explicit Hermes profile groups.107 tests/build/doctor
+pass; read-only discovery found15 Hermes sessions, including both live/stored
+Desktop history. No live prompts, production restart/config change or beta upload.
+Native synthetic preview LEFT OPEN in child workspace: fixture8795
+term_9c62e87a-7074-4277-ba84-08ec0d2facde; simulator9902
+term_9eb00df6-46b1-4ce7-b587-b60b47e26e5b. Seven mixed-model Hermes sessions plus
+Codex/Claude; filter, reader and one exact confirmed synthetic reply verified.
+See docs/hermes-bridge.md for plan, limits and review steps. Main checkout's
+unrelated usage changes/screenshot untouched; G2 and real confirmed reply pending.
+
 2026-11-04 user requests Hermes PR creation during code review. Created
 https://github.com/eugene8080/orca-glass/pull/2 from eugene8080/hermes-bridge at
 d02caff into windows-android-codex; open, merge conflicts in shared notes/TODOs.

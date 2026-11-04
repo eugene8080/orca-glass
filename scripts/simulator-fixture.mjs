@@ -24,19 +24,23 @@ const fixture = {
     cursor: { provider: 'cursor', status: 'ok', monthly: limit(2.02, 4320) },
   },
 };
+const hermesScenario = process.env.ORCA_GLASS_SIM_SCENARIO === 'hermes'
+  ? await (await import('./hermes-fixture.mjs')).createHermesFixture() : null;
+if (hermesScenario) Object.assign(fixture, hermesScenario);
 const api = `
 const request=async()=>{const r=await fetch('/__fixture');return r.json();};
+const read=async(handle)=>{const r=await fetch('/__fixture/read?handle='+encodeURIComponent(handle));const data=await r.json();if(!r.ok)throw new Error(data.error);return data;};
 export const setDemo=()=>{},setApiLang=()=>{},setConnection=()=>{};
 export const currentBase=()=> 'isolated simulator';
 export const api={
   threads:async()=>(await request()).threads,workspaces:async()=>(await request()).workspaces,
-  thread:async()=>{const s=await request();return {text:s.text,menu:s.menu,progress:s.progress};},history:async()=>{const s=await request();return {text:s.text,source:s.source};},
-  activity:async()=>({state:(await request()).state}),
+  thread:read,history:read,
+  activity:async(handle)=>{const r=await fetch('/__fixture/activity?handle='+encodeURIComponent(handle));return r.json();},
   health:async()=>({ok:true}),capabilities:async()=>({voice:true}),
   usage:async()=>(await request()).usage,
   transcribe:async()=>({text:(await request()).transcript}),
   choice:async(handle,menuId,value)=>{const r=await fetch('/__fixture/choice',{method:'POST',body:JSON.stringify({handle,menuId,value})});const data=await r.json();if(!r.ok)throw new Error(data.error);return data;},
-  say:async(handle,text)=>{await fetch('/__fixture/send',{method:'POST',body:JSON.stringify({handle,text})});return {sent:text};}
+  say:async(handle,text)=>{const r=await fetch('/__fixture/send',{method:'POST',body:JSON.stringify({handle,text})});const data=await r.json();if(!r.ok)throw new Error(data.error);return {sent:text};}
 };`;
 const shim = `<script>
 const timer=setInterval(()=>{
@@ -67,6 +71,14 @@ const server = await createServer({
       vite.middlewares.use(async (req, res, next) => {
         if (!req.url?.startsWith('/__fixture')) return next();
         try {
+          const url = new URL(req.url, 'http://127.0.0.1');
+          if (req.method === 'GET' && ['/__fixture/read', '/__fixture/activity'].includes(url.pathname)) {
+            const handle = url.searchParams.get('handle');
+            const result = url.pathname.endsWith('/read')
+              ? hermesScenario ? await hermesScenario.read(handle) : { text: fixture.text, menu: fixture.menu, progress: fixture.progress, source: fixture.source }
+              : hermesScenario ? await hermesScenario.activity(handle) : { state: fixture.state };
+            res.setHeader('content-type', 'application/json'); res.end(JSON.stringify(result)); return;
+          }
           if (req.method === 'POST') {
             let body = ''; for await (const part of req) body += part;
             const data = JSON.parse(body);
@@ -79,7 +91,10 @@ const server = await createServer({
               res.setHeader('content-type', 'application/json');
               res.end(JSON.stringify({ sent }));
               return;
-            } else if (req.url === '/__fixture/send') fixture.sends.push(data);
+            } else if (req.url === '/__fixture/send') {
+              if (hermesScenario) await hermesScenario.send(data.handle, data.text);
+              else fixture.sends.push(data);
+            }
             else {
               if ('menu' in data) fixture.menu = data.menu;
               for (const key of ['threads', 'workspaces']) if (Array.isArray(data[key])) fixture[key] = data[key];

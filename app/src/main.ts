@@ -163,7 +163,7 @@ async function show(s: Screen, reloadText = false) {
           ...menu,
           textObject: s.sessionList ? [
             new TextContainerProperty({ ...HEAD, width: 300, height: 28, content: sessionHeading(), isEventCapture: 0, paddingLength: 0, zOrderIndex: 1 }),
-            new TextContainerProperty({ containerID: 3, containerName: 'menu-count', xPosition: 300, yPosition: 0, width: 276, height: 28, content: nativeRight(`${s.connectedCount} connected terminals`, 276), isEventCapture: 0, paddingLength: 0, zOrderIndex: 2 }),
+            new TextContainerProperty({ containerID: 3, containerName: 'menu-count', xPosition: 300, yPosition: 0, width: 276, height: 28, content: nativeRight(`${s.connectedCount} sessions`, 276), isEventCapture: 0, paddingLength: 0, zOrderIndex: 2 }),
             new TextContainerProperty({ containerID: 5, containerName: 'menu-input', xPosition: 0, yPosition: 0, width: 576, height: 288, content: ' ', isEventCapture: 1, paddingLength: 0, zOrderIndex: 0 }),
             new TextContainerProperty({ ...MENU_CURSOR, content: menuCursorText(s.columns!, s.selected || 0), isEventCapture: 0, paddingLength: 0, zOrderIndex: 3 }),
             new TextContainerProperty({ ...MENU_LEFT, content: menuNativeText(s.columns!), isEventCapture: 0, paddingLength: 0, zOrderIndex: 4 }),
@@ -425,7 +425,7 @@ function thread(t: Thread, note = '') {
     const title = () => `${t.title}${note ? `  ${note}` : ''}`;
     const snapshot = await api.thread(t.handle);
     const saved = await api.history(t.handle).catch(() => null);
-    const useSaved = ['codex-transcript', 'claude-transcript'].includes(saved?.source || '');
+    const useSaved = ['codex-transcript', 'claude-transcript', 'hermes-transcript'].includes(saved?.source || '');
     const conversationText = useSaved ? saved!.text : snapshot.text;
     const state = await api.activity(t.handle).catch(e => {
       diag(`Activity request failed: ${(e as Error).message}`);
@@ -493,7 +493,7 @@ function startReaderUpdates(screen: Screen | null) {
     }
     if (screen.reading) { reading = false; return; }
     let r = await (screen.savedHistory ? api.history(t.handle) : Promise.resolve(snapshot)).catch(() => null);
-    if (screen.savedHistory && (!r || !('source' in r) || !['codex-transcript', 'claude-transcript'].includes(r.source || ''))) {
+    if (screen.savedHistory && (!r || !('source' in r) || !['codex-transcript', 'claude-transcript', 'hermes-transcript'].includes(r.source || ''))) {
       r = snapshot;
       // Stay on live output after losing the verified saved-history association.
       if (r && current === screen) screen.savedHistory = false;
@@ -518,7 +518,7 @@ function history(t: Thread) {
   return guard(t.title, async () => {
     const r = await api.history(t.handle);
     if (current !== previous) return;
-    await show({ kind: 'text', title: ['codex-transcript', 'claude-transcript'].includes(r.source || '') ? 'Conversation history' : 'Terminal buffer only',
+    await show({ kind: 'text', title: ['codex-transcript', 'claude-transcript', 'hermes-transcript'].includes(r.source || '') ? 'Conversation history' : 'Terminal buffer only',
       text: r.text || r.reason || 'No older terminal output is retained.', tail: true, reader: t,
       onBack: () => thread(t),
       onHold: () => { void record(t, true); } });

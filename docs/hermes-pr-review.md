@@ -6,9 +6,41 @@ PR: https://github.com/eugene8080/orca-glass/pull/2
 
 Reviewed head: `d02caff55b70a93f35ead2ffdcfb9af76f23b228`, branch
 `eugene8080/hermes-bridge`, targeting `windows-android-codex`.
-No implementation fixes, merge or deployment performed.
+Original review below concerns that head; fixes and validation are recorded next.
 
-## Findings
+## Fix validation — 2026-11-04
+
+Both findings below are resolved in the feature branch. Stored reads run Hermes's
+canonical `gateway.session_controls.display_projection` before the user/assistant
+allowlist. Hidden and model-only metadata are also excluded defensively. The
+sidecar import may redirect stdout; the helper restores both output streams so
+its JSON transport remains intact, including failures.
+
+Compressed picker identity now checks the logical root's creation timestamp,
+the gateway-selected physical row's source, and the explicit compression link
+from that root to that exact row. A newer tip, changed timestamp/source, hidden
+root or missing root is refused. It reads the captured row, never a guessed tip.
+
+Current base `windows-android-codex` at `c5d30c7` integrated; shared notes/TODO
+conflicts reconciled, including usage-reset changes.113 combined Node tests pass,
+including the Python helper runner's seven cases. TypeScript/Vite build and doctor
+pass. Regression checks exercise compressed parent100/child200 timestamps,
+replacement/hidden/missing identity failures, projection delegation and JSON
+stream restoration. Installed canonical projection synthetic smoke confirms
+hidden/model-only rows are absent. Read-only gateway discovery returns15 sessions,
+zero unavailable profiles, and three sampled stored reads succeed. Logs contain
+counts only, no real chat or identifiers.
+
+Native simulator check passes: one Hermes filter, seven mixed-model sessions,
+saved reading, no send before confirmation, one exact synthetic reply. Existing
+named Orca tabs restarted and preview LEFT OPEN on8795/9902. Its screenshot API
+returns solid green, so automated captures do not establish visual correctness.
+User preview approval, PR merge, beta/deployment and physical G2/real confirmed
+reply remain pending. Beta1.0.27 and production unchanged; no real prompt,
+resume or reply submitted.
+
+## Original findings
+
 
 1. **P2 â€” Hidden model-facing rows become visible in stored conversations.**
    [bridge/hermes-client.py:30](https://github.com/eugene8080/orca-glass/blob/d02caff55b70a93f35ead2ffdcfb9af76f23b228/bridge/hermes-client.py#L30)
@@ -49,5 +81,5 @@ No implementation fixes, merge or deployment performed.
   behavior with the newer usage-reset implementation. Physical G2 and a real
   user-confirmed reply remain pending.
 
-Recommendation: fix both findings, reconcile the shared notes and run the combined
-suite before merging. Beta1.0.27 remains unchanged.
+Original recommendation addressed by the fix validation above. Preview approval
+remains required before merge/release. Beta1.0.27 remains unchanged.

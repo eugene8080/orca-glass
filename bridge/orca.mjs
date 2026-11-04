@@ -9,6 +9,7 @@ import { terminalConversation } from './reader-text.mjs';
 import { terminalProvider } from './terminal-provider.mjs';
 import { progressSummary } from './progress.mjs';
 import { workspaceLabels } from './workspace-label.mjs';
+import { hermes, isHermes } from './hermes.mjs';
 
 const run = promisify(execFile);
 const ORCA = orcaExecutable();
@@ -33,12 +34,13 @@ function stateFromTitle(title) {
 }
 
 export async function listThreads() {
+  const hermesDiscovery = hermes.discover();
   const [{ terminals, visualLayouts }, { worktrees }] = await Promise.all([
     orca(['terminal', 'list', '--include-visual-layouts']),
     orca(['worktree', 'ps']),
   ]);
   const names = sessionTitles(visualLayouts, worktrees);
-  return terminals
+  const threads = terminals
     .filter((t) => t.connected && !t.orphaned)
     .flatMap((t) => {
       const workspace = worktrees.find(w => w.worktreeId === t.worktreeId);
@@ -61,6 +63,8 @@ export async function listThreads() {
       lastOutputAt: t.lastOutputAt,
     }]; })
     .sort((a, b) => (b.lastOutputAt || 0) - (a.lastOutputAt || 0));
+  await hermesDiscovery;
+  return (await hermes.merge(threads, terminals)).sort((a, b) => (b.lastOutputAt || 0) - (a.lastOutputAt || 0));
 }
 
 // エージェントの本文ではない UI の定型表示(アンケート・Tips・更新通知)。グラスの狭い画面を占有するので落とす
@@ -162,6 +166,7 @@ async function agentOf(handle) {
 }
 
 export async function readThread(handle) {
+  if (isHermes(handle)) return hermes.read(handle);
   await requireLiveTerminal(handle);
   const { terminal } = await orca(['terminal', 'read', '--terminal', handle, '--screen']);
   const lines = terminal.tail || [];
@@ -179,6 +184,7 @@ export async function readThread(handle) {
 }
 
 export async function readHistory(handle) {
+  if (isHermes(handle)) return hermes.read(handle);
   const live = await requireLiveTerminal(handle);
   let reason = 'No verified saved conversation is associated with this terminal.';
   try {
@@ -203,10 +209,12 @@ export async function requireLiveTerminal(handle) {
   if (!terminal?.connected || terminal.orphaned) {
     throw new Error('Terminal is disconnected or orphaned.');
   }
+  if (terminal.agentIdentity === 'hermes') throw new Error('Select the verified Hermes gateway session, not its terminal.');
   return terminal;
 }
 
 export async function activity(handle) {
+  if (isHermes(handle)) return hermes.activity(handle);
   const terminal = await requireLiveTerminal(handle);
   const [{ worktrees }, screen] = await Promise.all([
     orca(['worktree', 'ps']),
@@ -229,6 +237,7 @@ export async function choose(handle, id, value) {
 
 // 番号付きの選択肢(❯ 1. Yes / 2. … )が画面に出ているか
 export async function hasNumberedMenu(handle) {
+  if (isHermes(handle)) return false;
   const { terminal } = await orca(['terminal', 'read', '--terminal', handle, '--screen']);
   const tail = (terminal.tail || []).slice(-25);
   // 返答中の箇条書き「1. 2.」と区別するため、選択中の印 ❯ が付いた番号行を必須にする
@@ -238,6 +247,7 @@ export async function hasNumberedMenu(handle) {
 }
 
 export async function sendToThread(handle, text, enter) {
+  if (isHermes(handle)) return hermes.send(handle, text, enter);
   await requireLiveTerminal(handle);
   const args = ['terminal', 'send', '--terminal', handle, '--text', text];
   if (enter) args.push('--enter');

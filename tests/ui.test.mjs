@@ -143,6 +143,29 @@ test('saved provider filter restores even with no matching live sessions', async
   assert.equal(h.sends.length, 0);
 });
 
+test('Hermes mixed models share one filter and saved reader uses confirmed voice flow', async () => {
+  const h = await harness(2, true, 'hold');
+  const models = ['GPT', 'Claude', 'Gemini', 'Qwen', 'Local', 'Custom', 'Other'];
+  h.api.threads = async () => [
+    ...models.map((model, i) => ({ handle: `hermes:${i}`, title: `Hermes ${model}`, agent: 'hermes',
+      workspaceId: `profile-${i % 2}`, workspaceName: `Hermes profile ${i % 2}`, workspaceLabel: `profile ${i % 2}` })),
+    { handle: 'codex', title: 'Codex regression', agent: 'codex' },
+    { handle: 'claude', title: 'Claude regression', agent: 'claude' },
+  ];
+  await h.pick(0);
+  assert.deepEqual([...menuItems(h)], ['<-', 'All Sessions ✓', 'Claude', 'Codex', 'Hermes']);
+  await h.pick(4);
+  assert.equal(menuItems(h).length, 9);
+  assert.ok(menuItems(h).slice(2).every(t => t.startsWith('Hermes ')));
+  h.api.history = async () => ({ source: 'hermes-transcript', text: '> Exact Hermes saved answer' });
+  await h.pick(2);
+  assert.ok(h.pages.at(-1).textObject.some(c => c.content.includes('Exact Hermes saved answer')));
+  h.press(); await h.flush(); h.audio(); h.release(); await h.flush();
+  assert.equal(h.sends.length, 0);
+  await h.tap();
+  assert.deepEqual(h.sends, [{ handle: 'hermes:0', text: 'A voice test.' }]);
+});
+
 test('phone message requires review and cannot be sent to a newly selected session', async () => {
   const h = await harness();
   await h.pick(2);
