@@ -1,20 +1,21 @@
 # Orca Glass TODOs
 Updated: 2026-11-04
 
-Current beta: **1.0.26**.101 tests/build/doctor passed for swipe-only menu paging.
+Current beta: **1.0.27**.107 tests/build/doctor passed for Usage reset-time modes.
 Workspace-filter preview approved, released and retired with merged worktree cleanup.
 Future visual changes require preview approval before beta upload.
 Completed/superseded release notes: [history](docs/todo-history.md).
 
 ## Open work
 
-- [ ] **Usage reset-time modes:** implemented; top native Click selector cycles
+- [ ] **Usage reset-time modes — G2 confirmation:** beta1.0.27 live; selector cycles
   Computer time / Phone time / Absolute time (remaining duration, e.g.2d5h12m).
   Selection persists; bridge retains exact reset instants and computer-local
   labels.107 tests/build/doctor pass; synthetic simulator checked day/zone
-  conversion and countdown, left OPEN on Absolute (8791/9900). Await preview
-  approval before beta app update + bridge restart. Installed beta1.0.26 unchanged;
-  physical phone/G2 time-zone verification pending. See [reader details](docs/session-reader.md).
+  conversion and countdown, left OPEN on Absolute (8791/9900). User
+  approved upload; beta channel verified (49,865 bytes), bridge restarted and
+  stableHTTPS usage has timestamps/computer labels for all four provider windows.
+  Physical phone/G2 time-zone verification pending. See [reader details](docs/session-reader.md).
 - [ ] **Swipe-only menu paging — G2 confirmation:** beta1.0.26 live;
   no Previous/Next rows. Swipe past last/first row changes pages and selects the
   opposite edge; outer ends clamp. Seven entries plus two controls per page.

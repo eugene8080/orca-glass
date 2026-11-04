@@ -50,6 +50,15 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-04 user approves Usage reset toggle beta.1.0.27 uploaded/promoted;
+beta channel verified (49,865 bytes), public remains1.0.23.107 tests/build/doctor
+passed for implementation; beta/prototype builds pass. Production bridge restarted
+after verified listener/supervisor ownership; new supervisor86600 recorded in
+.local/custom.pid. Local/stableHTTPS health pass; stableHTTPS usage supplies exact
+reset timestamps and computer labels for Codex weekly, Claude session/weekly and
+Cursor monthly. Physical phone/G2 timezone and toggle confirmation pending.
+Simulator remains OPEN. No provider prompts or public publication.
+
 2026-11-04 user requests Usage reset selector: computer local reset time,
 phone local reset time, and "absolute" meaning remaining duration (2d5h12m).
 Bridge now retains provider resetsAt epoch milliseconds and computes
