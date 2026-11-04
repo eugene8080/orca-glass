@@ -1,15 +1,21 @@
 # Orca Glass TODOs
 Updated: 2026-11-04
 
-Current beta: **1.0.26**.101 tests/build/doctor passed for swipe-only menu paging.
+Current beta: **1.0.27**.107 tests/build/doctor passed for Usage reset-time modes.
 Workspace-filter preview approved, released and retired with merged worktree cleanup.
 Future visual changes require preview approval before beta upload.
 Completed/superseded release notes: [history](docs/todo-history.md).
 
 ## Open work
 
-- [ ] **Hermes bridge review/deployment:** implemented in child `eugene8080/hermes-bridge`; all models group as Hermes, live/stored Desktop/profile sessions use exact reads and confirmed replies.107 tests/build/doctor and synthetic native checks pass; seven-Hermes preview LEFT OPEN on8795/9902. See [implementation status](docs/hermes-bridge.md). Production unchanged; coordinator review, preview approval, deployment and G2/real confirmed reply checks pending.
-
+- [ ] **Usage reset-time modes — G2 confirmation:** beta1.0.27 live; selector cycles
+  Computer time / Phone time / Absolute time (remaining duration, e.g.2d5h12m).
+  Selection persists; bridge retains exact reset instants and computer-local
+  labels.107 tests/build/doctor pass; synthetic simulator checked day/zone
+  conversion and countdown, left OPEN on Absolute (8791/9900). User
+  approved upload; beta channel verified (49,865 bytes), bridge restarted and
+  stableHTTPS usage has timestamps/computer labels for all four provider windows.
+  Physical phone/G2 time-zone verification pending. See [reader details](docs/session-reader.md).
 - [ ] **Swipe-only menu paging — G2 confirmation:** beta1.0.26 live;
   no Previous/Next rows. Swipe past last/first row changes pages and selects the
   opposite edge; outer ends clamp. Seven entries plus two controls per page.
@@ -20,26 +26,21 @@ Completed/superseded release notes: [history](docs/todo-history.md).
   Claude five-hour/weekly and Cursor monthly allowance alongside Codex. User
   approved simulator2026-11-03; beta channel verified, bridge restarted and
   local/stableHTTPS endpoints return ok for all three.79 tests/build/doctor pass.
-- [ ] **Public release preparation:** user requests profile and screenshots on
-  2026-11-03. CLI name/tagline/description saved; six native simulator captures
-  and reproducible sample-data preview prepared. See [store/listing.md](store/listing.md).
-  Public build still pins one private PC origin; general-user connection/setup,
-  fork privacy policy and on-glasses/portal name consistency remain open.
-  Five primary screenshots and Office cover saved in the portal; sixth screenshot
-  is local/supplemental. List shows fictional Cursor/Pi/Claude/Codex/OpenCode.
-  Original-author credit added; production build now carries original MIT license
-  and attribution (not yet uploaded). User requires preview before Publish.
-  User completed contact details; Quiet Signal and Personal Information now shown
-  complete. Portal generated/attached policy and all checklist items complete, but
-  template misstates developer collection/sharing and includes phone/address in
-  publicly retrievable PDF. Corrected store/Orca-Glass-Privacy-and-Terms.pdf ready;
-  user approved it and requested submission. Refreshed portal still points to old
-  PDF; replacement pending (only generator exposed). Submission held for corrected
-  attachment and public connection/setup (1.0.22 remains pinned to private PC).
-  AI category saved; description checklist
-  complete. User selected orca-glass-icon.png (earlier design);
-  matching24x24 orca-glass-icon.png saved and verified in portal. Preview in
-  store/gallery.html. No review/publication.
+- [ ] **Hermes PR preview/merge/deployment:** [PR #2](https://github.com/eugene8080/orca-glass/pull/2)
+  both P2 fixes implemented; current release branch integrated and shared note
+  conflicts resolved.113 combined tests (seven Python helper cases), build/doctor,
+  installed canonical projection synthetic smoke and three read-only stored reads
+  pass. Native synthetic interactions pass; preview LEFT OPEN on8795/9902.
+  Screenshot API returns solid green, so visual approval remains required.
+  See [review](docs/hermes-pr-review.md) and [implementation](docs/hermes-bridge.md).
+  Pending user preview approval, merge, approved beta/deployment and G2/real
+  user-confirmed reply checks. No real prompt/resume/reply; beta1.0.27 unchanged.
+- [ ] **General installation / public listing follow-up:** public1.0.23 is live;
+  beta1.0.27 is current. README/Even Hub description updated2026-11-04, saved and
+  verified after reload. Packaged origin is still one configured private PC, so
+  arbitrary-PC self-service setup remains open. Earlier submission/privacy notes
+  are historical; current PDF contents were not rechecked in this task. See
+  [listing status](store/listing.md).
 - [ ] **Monitor native popup request:** [GitHub #44](https://github.com/even-realities/everything-evenhub/issues/44)
   and [Discord thread](https://discord.com/channels/1301124787740868620/1484753075590664332/threads/1567124600658202754).
   Await maintainer response/API guidance. Primary use case: hold-to-talk with more
@@ -71,6 +72,9 @@ Completed/superseded release notes: [history](docs/todo-history.md).
 
 ## Completed / confirmed
 
+- [x] Even Hub description and repository README refreshed for beta1.0.27,
+  with public1.0.23 distinction; saved portal text verified after reload2026-11-04.
+  Hermes branch health/status checked without submitting agent input.
 - [x] Workspace multi-filter and [workspace/Agent] session labels — user confirms
   beta1.0.25 works on G2,2026-11-04. Follow-up removes paging rows; tracked above.
 - [x] Claude saved chat / blank-reader recovery, concise working progress and

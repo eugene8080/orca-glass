@@ -50,3 +50,22 @@ test('Codex fallback success or failure never removes other provider usage', asy
   assert.equal(failed.claude.status, 'ok');
   assert.ok(!JSON.stringify(failed).includes('private auth'));
 });
+
+test('provider reset instants survive sanitizing and computer labels use the bridge time zone', async () => {
+  const resetsAt = Date.UTC(2026, 10, 5, 8, 12);
+  const limits = Object.fromEntries(['codex', 'claude', 'cursor'].map(provider => [provider, {
+    status: 'ok', weekly: { usedPercent: 42, resetsAt, resetDescription: 'Original label', privateAccount: 'hidden' },
+  }]));
+  const result = await collectUsage(limits);
+  const expected = new Intl.DateTimeFormat('en-US', { weekday: 'short', hour: 'numeric', minute: '2-digit', hour12: true }).format(resetsAt).replace(',', '');
+  for (const provider of Object.keys(limits)) {
+    assert.equal(result[provider].weekly.resetsAt, resetsAt);
+    assert.equal(result[provider].weekly.computerResetDescription, expected);
+    assert.equal(result[provider].weekly.privateAccount, undefined);
+  }
+  const fallback = normalizeUsage({ rate_limit: { primary_window: { used_percent: 10, limit_window_seconds: 604800, reset_at: resetsAt / 1000 } } });
+  assert.equal(fallback.weekly.resetsAt, resetsAt);
+  const recovered = await collectUsage({}, async () => ({ ...fallback, account: 'hidden' }));
+  assert.equal(recovered.codex.weekly.resetsAt, resetsAt);
+  assert.equal(recovered.codex.account, undefined);
+});

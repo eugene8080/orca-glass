@@ -1,22 +1,20 @@
-Keep up with your coding agents from your G2 glasses.
+Read your Orca sessions. Speak your next step.
 
-Orca Glass connects to Orca on your Windows PC so you can read a conversation, check whether an agent is working or waiting, and speak your next instruction without returning to the keyboard.
+Orca Glass connects G2 glasses to agents running in Orca on your Windows PC. Read conversations, see working/waiting status, and review spoken replies before sending.
 
-• Browse connected agent sessions and filter by provider.
-• Read conversation text with native scrolling and live activity status.
-• Hold to speak, release to review the transcription, then click to send or double-click to cancel.
-• Keep the conversation visible while you review a voice reply.
-• Start a Codex session in an existing Orca workspace.
-• Check available usage limits from the session-list menu.
+Latest beta: 1.0.27
+- Filter by agent and one or more workspaces, with workspace/agent labels.
+- Swipe past the first or last menu row to change pages.
+- Read Codex and Claude conversations with concise Claude progress.
+- Hold to talk, release to review, click to send, double-click to cancel. Whisper transcription runs locally on your PC; chat stays visible during review.
+- For numbered prompts, click for choices or speak an option number, then confirm.
+- View available Codex, Claude and Cursor usage. Toggle resets between computer time, phone time and time remaining, e.g. 2d5h12m.
+- Start Codex in an existing Orca workspace.
 
-Requires G2 glasses, the Even Realities Android app, Orca running on Windows, and the open-source Orca Glass companion bridge on your PC. The Windows bridge source and setup notes are available on GitHub below. Voice transcription runs locally on your PC using Whisper. English only.
+Public build: 1.0.23. Newer features above require the beta. Other agent terminals may appear, but reader support depends on format. Hermes support is in development, not included in the current beta.
 
-Codex is the primary supported workflow. Other connected agents can appear in the session list; conversation support depends on their terminal format. This app controls agents running on your PC; it does not run a coding agent on the glasses.
+Requires G2, the Even Realities Android app, Orca and the companion Windows bridge. The packaged connection targets a configured private PC over Tailscale; arbitrary-PC setup is not yet self-service. Agents run on your PC, not the glasses. English only. Try the demo without a PC.
 
-Try the built-in demo to explore sample sessions without a PC connection.
-
-The current build uses a private Tailscale connection and requires access to the configured PC. It is not yet a self-service setup for arbitrary PCs.
-
-Windows bridge source and setup: https://github.com/eugene8080/orca-glass/tree/windows-android-codex
-Independent Windows/Android fork of Orca Glass by 2ero20ne, used under the MIT License.
-Original project: https://github.com/2ero20ne/orca-glass
+Source/setup: https://github.com/eugene8080/orca-glass/tree/windows-android-codex
+Independent Windows/Android fork of 2ero20ne's Orca Glass under MIT.
+Original: https://github.com/2ero20ne/orca-glass

@@ -50,6 +50,22 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-04 user authorizes Hermes PR fixes and conflict resolution. Feature branch
+now integrates current windows-android-codex c5d30c7 (including usage reset modes).
+Both P2 findings fixed: stored reads use installed canonical display projection,
+with hidden/model-only defensive exclusions and stdout restoration; compressed
+picker rows validate root timestamp plus exact compression tip/source. Replaced
+or newly compressed targets still fail closed.113 combined Node tests (including
+seven Python helper cases), build and doctor pass. Installed canonical projection
+synthetic smoke excludes hidden/model-only scaffolds; read-only discovery15,
+unavailableProfiles0, three stored reads succeed without exposing chat in logs.
+Native fixture interaction check passes on8795/9902 with synthetic confirmed send
+only. Preview restarted in its existing named Orca tabs and LEFT OPEN. Screenshot
+API returns solid green; capture is not visual/hardware proof. User visual review,
+PR merge and release remain pending; beta1.0.27/production unchanged. No real
+prompt/resume/reply or Hermes runtime/config changes. See docs/hermes-pr-review.md.
+
+
 2026-11-04 Hermes adapter implemented in child eugene8080/hermes-bridge from
 8caa276, pending coordinator review. Stable hermes/Hermes identity across models;
 installed authenticated gateway transport covers live and stored Desktop/profile
@@ -64,6 +80,70 @@ term_9eb00df6-46b1-4ce7-b587-b60b47e26e5b. Seven mixed-model Hermes sessions plu
 Codex/Claude; filter, reader and one exact confirmed synthetic reply verified.
 See docs/hermes-bridge.md for plan, limits and review steps. Main checkout's
 unrelated usage changes/screenshot untouched; G2 and real confirmed reply pending.
+
+2026-11-04 user requests Hermes PR creation during code review. Created
+https://github.com/eugene8080/orca-glass/pull/2 from eugene8080/hermes-bridge at
+d02caff into windows-android-codex; open, merge conflicts in shared notes/TODOs.
+Completed review finds two P2 issues: stored model-replay history renders
+hidden display_kind rows, and compressed picker parent timestamps fail physical
+child-row identity checks. Both synthetically reproduced against the helper;
+second uses installed gateway _picker_row mapping. Existing107 tests pass but
+miss these cases. Findings/reproduction recorded in docs/hermes-pr-review.md and
+PR body. No real prompt/reply/resume, code fix, merge or deployment. Beta1.0.27
+unchanged. Fixes and combined integration tests required before merge.
+
+2026-11-04 user requests Even Hub README refresh and Hermes-bridge status.
+Updated store description in dedicated Eugene Chrome's existing Even Hub tab,
+Store listing > Description > Edit > Confirm. Reload confirms persisted beta1.0.27
+text (1535 source characters), distinguishes public1.0.23, documents workspace
+multi-filter/labels, swipe paging, Claude reader/choices, voice and reset modes.
+Hermes explicitly marked development-only. No build promotion/review submission.
+README.md synchronized; historical1.0.21 screenshots labelled as historical.
+Portal currently confirms public1.0.23 live and beta1.0.27. Earlier listing
+preparation notes claiming no publication are historical, not current status.
+Browser connector failed; documented Orca computer-use operated the same verified
+Eugene Chrome window10228026 instead. Screenshot .local/evenhub-readme-updated.png.
+Hermes branch eugene8080/hermes-bridge atd02caff checked read-only in its worktree:
+107 tests/build/doctor pass, live discovery15 sessions/unavailableProfiles0;
+fixture8795 has9 synthetic rows, native automation9902 returns pong. Merge-tree
+check against current main reports conflicts only in CLAUDE.md/TODOS.md; source
+files auto-merge, but combined integration is not tested or approved. No PR exists.
+Existing worker preview remains open. No prompts/replies, merge, deployment,
+profile/runtime/config changes or model calls. Pending integration review and
+G2/user-confirmed reply testing; current beta has no Hermes support.
+
+2026-11-04 user approves Usage reset toggle beta.1.0.27 uploaded/promoted;
+beta channel verified (49,865 bytes), public remains1.0.23.107 tests/build/doctor
+passed for implementation; beta/prototype builds pass. Production bridge restarted
+after verified listener/supervisor ownership; new supervisor86600 recorded in
+.local/custom.pid. Local/stableHTTPS health pass; stableHTTPS usage supplies exact
+reset timestamps and computer labels for Codex weekly, Claude session/weekly and
+Cursor monthly. Physical phone/G2 timezone and toggle confirmation pending.
+Simulator remains OPEN. No provider prompts or public publication.
+
+2026-11-04 user requests Usage reset selector: computer local reset time,
+phone local reset time, and "absolute" meaning remaining duration (2d5h12m).
+Bridge now retains provider resetsAt epoch milliseconds and computes
+computerResetDescription in its own OS time zone (America/Whitehorse observed).
+Codex proxy fallback also retains reset instant; output remains allowlisted.
+Read-only Orca usage check: Codex1, Claude2, Cursor1 timestamp-bearing windows.
+Usage adds native top Reset selector; Click cycles Computer/Phone/Absolute,
+persists usage-reset-mode, and updates three text containers without rebuilding
+or re-fetching provider usage. Phone mode uses the WebView Intl local time zone;
+Absolute subtracts current time from the exact reset instant, rounded up to a
+minute/clamped0m. It refreshes every minute while the page is not being scrolled;
+scroll pauses refresh to preserve native position. Double-click returns home.
+Missing timestamps show Reset time unavailable in Phone/Absolute rather than
+parsing ambiguous weekday labels. Original labels remain computer fallback.
+107 tests/build/doctor pass. Synthetic native simulator verified all three modes,
+calendar-day difference (Hong Kong computer fixture vs Whitehorse simulator phone),
+remaining duration and unclipped top selector. Physical phone/G2 zone check pending.
+Preview LEFT OPEN on Absolute; fixture8791 in
+term_ef24fead-13e6-4db5-8c38-7e7ed00b332e, simulator9900 in
+term_34a87732-acb9-4933-9f39-8885dd5949e1. Previous preview tabs were closed per
+user request; these two named tabs are for this new feature's review.
+No production bridge restart or beta upload; beta1.0.26 unchanged. Next release
+requires both beta app update and bridge restart after user approval.
 
 2026-11-04 user requests unused-tab cleanup in this workspace. Closed completed
 G2 Menu Swipe Preview (term_ca89245d-e79b-4863-89c1-a65ddb9e8f8e) and isolated

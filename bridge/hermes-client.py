@@ -27,7 +27,10 @@ def identity(endpoint, row):
 def visible_messages(rows):
     out = []
     for row in rows:
-        if row.get("role") not in ("user", "assistant"):
+        if (row.get("role") not in ("user", "assistant")
+                or row.get("display_kind") == "hidden"
+                or (isinstance(row.get("display_metadata"), dict)
+                    and row["display_metadata"].get("model_only"))):
             continue
         # Display projections put visible text in `text`; stored DB uses `content`.
         content = row.get("text", row.get("content", ""))
@@ -80,16 +83,36 @@ def stored_history(home, row):
     from hermes_state import SessionDB
     db = SessionDB(db_path=home / "state.db", read_only=True)
     try:
+        logical_id = row.get("id", row["session_id"])
+        logical = db.get_session(logical_id)
         saved = db.get_session(row["session_id"])
-        if (not saved or saved.get("started_at") != row.get("started_at")
+        # The picker binds the root creation time to an explicitly resolved tip.
+        # Validate that exact link; never substitute a newly compressed descendant.
+        tip = db.get_compression_tip(logical_id) or logical_id
+        if (not logical or not saved or tip != row["session_id"]
+                or logical.get("started_at") != row.get("started_at")
+                or logical.get("hidden") or logical.get("archived")
                 or saved.get("source") != row.get("source")
                 or saved.get("hidden") or saved.get("archived")):
             raise StaleTarget("stored_session_changed")
         # This is the gateway-authorized exact row. Ancestors are explicit lineage,
         # not a filename/time heuristic; no latest-descendant search is performed.
-        return db.get_messages_as_conversation(row["session_id"], include_ancestors=True)
+        history = db.get_messages_as_conversation(row["session_id"], include_ancestors=True)
+        return stored_display(history, home)
     finally:
         db.close()
+
+
+def stored_display(history, home):
+    # Hermes owns compaction/steer/scaffold presentation. Its legacy sidecar
+    # import redirects stdout; restore the helper's JSON channel even on failure.
+    stdout, stderr = sys.stdout, sys.stderr
+    try:
+        sys.stdout = stderr
+        from gateway.session_controls import display_projection
+        return display_projection(history, home)
+    finally:
+        sys.stdout, sys.stderr = stdout, stderr
 
 
 def orca_bindings(home, session_ids):

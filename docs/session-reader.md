@@ -1,5 +1,38 @@
 # Session reader
 
+2026-11-04 user approves Usage reset toggle beta.1.0.27 uploaded/promoted;
+beta channel verified (49,865 bytes), public remains1.0.23.107 tests/build/doctor
+passed for implementation; beta/prototype builds pass. Production bridge restarted
+after verified listener/supervisor ownership; new supervisor86600 recorded in
+.local/custom.pid. Local/stableHTTPS health pass; stableHTTPS usage supplies exact
+reset timestamps and computer labels for Codex weekly, Claude session/weekly and
+Cursor monthly. Physical phone/G2 timezone and toggle confirmation pending.
+Simulator remains OPEN. No provider prompts or public publication.
+
+2026-11-04 user requests Usage reset selector: computer local reset time,
+phone local reset time, and "absolute" meaning remaining duration (2d5h12m).
+Bridge now retains provider resetsAt epoch milliseconds and computes
+computerResetDescription in its own OS time zone (America/Whitehorse observed).
+Codex proxy fallback also retains reset instant; output remains allowlisted.
+Read-only Orca usage check: Codex1, Claude2, Cursor1 timestamp-bearing windows.
+Usage adds native top Reset selector; Click cycles Computer/Phone/Absolute,
+persists usage-reset-mode, and updates three text containers without rebuilding
+or re-fetching provider usage. Phone mode uses the WebView Intl local time zone;
+Absolute subtracts current time from the exact reset instant, rounded up to a
+minute/clamped0m. It refreshes every minute while the page is not being scrolled;
+scroll pauses refresh to preserve native position. Double-click returns home.
+Missing timestamps show Reset time unavailable in Phone/Absolute rather than
+parsing ambiguous weekday labels. Original labels remain computer fallback.
+107 tests/build/doctor pass. Synthetic native simulator verified all three modes,
+calendar-day difference (Hong Kong computer fixture vs Whitehorse simulator phone),
+remaining duration and unclipped top selector. Physical phone/G2 zone check pending.
+Preview LEFT OPEN on Absolute; fixture8791 in
+term_ef24fead-13e6-4db5-8c38-7e7ed00b332e, simulator9900 in
+term_34a87732-acb9-4933-9f39-8885dd5949e1. Previous preview tabs were closed per
+user request; these two named tabs are for this new feature's review.
+No production bridge restart or beta upload; beta1.0.26 unchanged. Next release
+requires both beta app update and bridge restart after user approval.
+
 2026-11-04 user requests unused-tab cleanup in this workspace. Closed completed
 G2 Menu Swipe Preview (term_ca89245d-e79b-4863-89c1-a65ddb9e8f8e) and isolated
 fixture/Vite tab (term_fb9c320c-6a93-402e-b6bb-748a21072f5e). Orca confirms both

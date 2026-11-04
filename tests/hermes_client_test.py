@@ -4,6 +4,9 @@ import importlib.util
 from pathlib import Path
 from types import SimpleNamespace
 import unittest
+from unittest.mock import patch
+import sys
+import io
 import tempfile
 import sqlite3
 import json
@@ -79,6 +82,60 @@ class Guards(unittest.IsolatedAsyncioTestCase):
             {"role": "user", "content": [{"type": "text", "text": "question"}, {"type": "image", "text": "not text"}]},
             {"role": "system", "content": "system instructions"}])
         self.assertEqual(result["messages"], [{"role": "assistant", "text": "answer"}, {"role": "user", "text": "question"}])
+
+    def test_stored_compression_binding_and_display_projection(self):
+        rows = {"root": {"started_at": 100, "source": "desktop"},
+                "child": {"started_at": 200, "source": "desktop"}}
+        history = [{"role": "user", "content": "scaffold", "display_kind": "hidden"},
+                   {"role": "assistant", "content": "reply"}]
+        class DB:
+            def __init__(self, **kwargs):
+                self.closed = False
+                self.kwargs = kwargs
+                instances.append(self)
+            def get_session(self, sid): return rows.get(sid)
+            def get_compression_tip(self, sid): return tips.get(sid)
+            def get_messages_as_conversation(self, sid, **kwargs):
+                self.read = (sid, kwargs)
+                return history
+            def close(self): self.closed = True
+        instances, tips, projected = [], {"root": "child"}, []
+        def projection(raw, home):
+            projected.append((raw, home))
+            # Exercise the canonical adapter boundary, including the sidecar's
+            # stream mutation; no installed Hermes import or real DB is needed.
+            sys.stdout = io.StringIO()
+            return [{"role": "assistant", "text": "display reply"}]
+        row = {"id": "root", "session_id": "child", "started_at": 100, "source": "desktop"}
+        with patch.dict(sys.modules, {"hermes_state": SimpleNamespace(SessionDB=DB),
+                "gateway.session_controls": SimpleNamespace(display_projection=projection)}):
+            output = sys.stdout
+            self.assertEqual(bridge.stored_history(Path("synthetic"), row),
+                             [{"role": "assistant", "text": "display reply"}])
+            self.assertIs(sys.stdout, output)
+            self.assertEqual(projected, [(history, Path("synthetic"))])
+            self.assertEqual(instances[-1].read, ("child", {"include_ancestors": True}))
+            self.assertTrue(instances[-1].kwargs["read_only"])
+            for mutation in ("timestamp", "tip", "source", "hidden", "missing"):
+                with self.subTest(mutation=mutation):
+                    changed = dict(row)
+                    if mutation == "timestamp": changed["started_at"] = 200
+                    if mutation == "tip": tips["root"] = "new-child"
+                    if mutation == "source": changed["source"] = "different"
+                    if mutation == "hidden": rows["root"]["hidden"] = True
+                    if mutation == "missing": changed["id"] = "unknown"
+                    with self.assertRaises(bridge.StaleTarget):
+                        bridge.stored_history(Path("synthetic"), changed)
+                    tips["root"] = "child"
+                    rows["root"].pop("hidden", None)
+            self.assertTrue(all(db.closed for db in instances))
+
+    def test_hidden_and_model_only_rows_are_defensively_excluded(self):
+        self.assertEqual(bridge.visible_messages([
+            {"role": "user", "content": "hidden", "display_kind": "hidden"},
+            {"role": "user", "content": "merge", "display_metadata": {"model_only": True}},
+            {"role": "assistant", "text": "visible"}])["messages"],
+            [{"role": "assistant", "text": "visible"}])
 
     def test_profile_receipt_binding_reads_only_local_ownership_fields(self):
         with tempfile.TemporaryDirectory() as temp:

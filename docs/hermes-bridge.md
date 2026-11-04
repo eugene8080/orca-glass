@@ -49,3 +49,14 @@ Native simulator automation: `http://127.0.0.1:9902`, terminal `term_9eb00df6-46
 To reproduce, use named Orca-managed PowerShell terminals in this worktree: set `ORCA_GLASS_SIM_PORT=8795` and `ORCA_GLASS_SIM_SCENARIO=hermes`, run `node scripts/simulator-fixture.mjs`; in the other terminal run the installed `app/node_modules/@evenrealities/sim-win32-x64/bin/evenhub-simulator.exe` against the fixture URL with `--automation-port 9902`. Then run the check script. Do not start duplicate listeners.
 
 Awaiting coordinator review, user preview approval, approved deployment/restart, and physical G2/real user-confirmed Hermes reply validation. Main checkout's unrelated usage edits and screenshot were untouched. No merge, beta upload/promotion, publication or production configuration change occurred.
+
+## Integrated review fixes — 2026-11-04
+
+PR #2's two P2 findings are fixed; see [review evidence](hermes-pr-review.md).
+Stored history uses Hermes's canonical display projection and checks root/tip
+identity separately for compressed transcripts.113 combined tests pass after
+integrating current release branch c5d30c7, with seven Python helper cases;
+build/doctor and read-only stored-history smoke pass. Synthetic simulator
+interaction checks pass; preview remains open on8795/9902. Screenshot API capture
+is solid green, so user visual review is still required. Merge and deployment
+remain held; beta1.0.27/production unchanged. No real prompts/resumes/replies.

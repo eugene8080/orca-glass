@@ -48,11 +48,16 @@ export function demoCall(lang: Lang, method: string, path: string, body: unknown
       return { text: c.heard };
     case 'POST /api/say':
       return { sent: String(b.text ?? '') };
-    case 'GET /api/usage':
-      return {
-        claude: { provider: 'claude', status: 'ok', session: { usedPercent: 12, resetDescription: '3:00 PM' }, weekly: { usedPercent: 30, resetDescription: 'Sat' } },
-        codex: { provider: 'codex', status: 'ok', session: null, weekly: { usedPercent: 55, resetDescription: 'Mon' } },
+    case 'GET /api/usage': {
+      const limit = (usedPercent: number, minutes: number) => {
+        const resetsAt = Date.now() + minutes * 60000;
+        return { usedPercent, resetsAt, resetDescription: '', computerResetDescription: new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'short', hour: 'numeric', minute: '2-digit', hour12: true }).format(resetsAt).replace(',', '') };
       };
+      return {
+        claude: { provider: 'claude', status: 'ok', session: limit(12, 120), weekly: limit(30, 3192) },
+        codex: { provider: 'codex', status: 'ok', session: null, weekly: limit(55, 3192) },
+      };
+    }
     case 'GET /api/providers':
       return [
         { id: 'claude', models: ['default', 'opus', 'sonnet', 'haiku'], ok: true, note: `5h 12% ${c.week} 30%` },

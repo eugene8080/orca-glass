@@ -10,13 +10,15 @@ const statusExports = {};
 vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../app/src/reader-status.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, { exports: statusExports });
 const hintExports = {};
 vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../app/src/footer-hint.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, { exports: hintExports, document: { createElement: () => ({ getContext: () => ({ fillRect() {}, fillText() {}, getImageData: () => ({ data: new Uint8ClampedArray(280 * 28 * 4) }) }) }) } });
+const usageResetExports = {};
+vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../app/src/usage-reset.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, { exports: usageResetExports });
 
 const listExports = {};
 vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../app/src/session-list.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, { exports: listExports, __APP_VERSION__: '1.0.12', require: () => textExports, TextEncoder, document: { createElement: () => ({ getContext: () => ({ font: '', measureText: t => ({ width: t.length * 10 }) }) }) } });
 
 // Exercise the real controller with a simulated Even bridge: no agent input,
 // microphone access, network, or hardware claims.
-async function harness(count = 2, voice = false, mode = 'tap', savedView = '', startupResult = 0, rejectAlignedMenu = false, savedWorkspaces = '') {
+async function harness(count = 2, voice = false, mode = 'tap', savedView = '', startupResult = 0, rejectAlignedMenu = false, savedWorkspaces = '', savedUsage = '') {
   const elements = new Map();
   const element = id => {
     if (!elements.has(id)) elements.set(id, { value: '', hidden: false, textContent: '', listeners: {}, addEventListener(name, fn) { this.listeners[name] = fn; } });
@@ -39,7 +41,7 @@ async function harness(count = 2, voice = false, mode = 'tap', savedView = '', s
   };
   const bridge = {
     updateImageRawData: async value => { images.push(value); return 'success'; },
-    getLocalStorage: async key => key === 'code' ? 'demo' : key === 'recording-mode' ? mode : key === 'lang' ? 'en' : key === 'view-provider' ? savedView : key === 'view-workspaces' ? savedWorkspaces : '',
+    getLocalStorage: async key => key === 'code' ? 'demo' : key === 'recording-mode' ? mode : key === 'lang' ? 'en' : key === 'view-provider' ? savedView : key === 'view-workspaces' ? savedWorkspaces : key === 'usage-reset-mode' ? savedUsage : '',
     setLocalStorage: async () => {},
     createStartUpPageContainer: async p => { pages.push(p); return startupResult; },
     rebuildPageContainer: async p => { pages.push(p); return !(rejectAlignedMenu && p.textObject.some(c => c.containerName === 'menu-right') && (rejectAlignedMenu !== 'images' || !!p.imageObject)); },
@@ -57,6 +59,7 @@ async function harness(count = 2, voice = false, mode = 'tap', savedView = '', s
     './text': textExports,
     './reader-status': statusExports,
     './footer-hint': hintExports,
+    './usage-reset': usageResetExports,
     './session-list': listExports,
   };
   const source = ts.transpileModule(readFileSync(new URL('../app/src/main.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
@@ -1001,4 +1004,42 @@ test('an in-flight page fetch cannot reopen the glasses after system exit', asyn
   finish(h.threads); await h.flush();
   assert.equal(h.pages.length, count);
   assert.equal(h.timers.size, 0);
+});
+
+test('Usage top toggle cycles and persists three reset modes without re-fetching or rebuilding the page', async () => {
+  const h = await harness();
+  let requests = 0;
+  const saved = [];
+  h.bridge.setLocalStorage = async (key, value) => { saved.push([key, value]); };
+  h.api.usage = async () => { requests++; return { codex: { provider: 'codex', status: 'ok', weekly: {
+    usedPercent: 42, resetsAt: Date.now() + (2 * 1440 + 5 * 60 + 12) * 60000,
+    resetDescription: 'Original label', computerResetDescription: 'Thu 1:12 AM',
+  } } }; };
+  await h.menu(1003);
+  const page = h.pages.at(-1), count = h.pages.length;
+  assert.equal(page.containerTotalNum, 3);
+  const toggle = page.textObject.find(c => c.containerName === 'usage-reset');
+  assert.match(toggle.content, /Computer time/);
+  assert.ok(page.textObject.find(c => c.containerName === 'body').yPosition >= toggle.yPosition + toggle.height);
+  await h.tap();
+  assert.match(h.upgrades.findLast(u => u.containerName === 'usage-reset').content, /Phone time/);
+  await h.tap();
+  assert.match(h.upgrades.findLast(u => u.containerName === 'usage-reset').content, /Absolute time/);
+  assert.match(h.upgrades.findLast(u => u.containerName === 'body').content, /2d5h12m/);
+  await h.tap();
+  assert.match(h.upgrades.findLast(u => u.containerName === 'body').content, /Thu 1:12 AM/);
+  assert.deepEqual(saved, [['usage-reset-mode', 'phone'], ['usage-reset-mode', 'absolute'], ['usage-reset-mode', 'computer']]);
+  assert.equal(requests, 1);
+  assert.equal(h.pages.length, count);
+  for (const u of h.upgrades.filter(u => u.containerName === 'usage-reset')) assert.ok(!('xPosition' in u || 'width' in u));
+  await h.back();
+  assert.match(menuItems(h)[0], /Filter by Agent/);
+});
+
+test('Usage restores its saved reset mode', async () => {
+  const h = await harness(2, false, 'tap', '', 0, false, '', 'absolute');
+  h.api.usage = async () => ({ cursor: { provider: 'cursor', status: 'ok', monthly: { usedPercent: 2, resetsAt: Date.now() - 1000, resetDescription: 'Old label' } } });
+  await h.menu(1003);
+  assert.match(h.pages.at(-1).textObject.find(c => c.containerName === 'usage-reset').content, /Absolute time/);
+  assert.match(h.pages.at(-1).textObject.find(c => c.containerName === 'body').content, /Monthly 2% \(0m\)/);
 });

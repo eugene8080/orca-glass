@@ -9,13 +9,25 @@ const run = promisify(execFile);
 let cached;
 let pending;
 
+function resetFields(resetsAt, description = '') {
+  const valid = Number.isFinite(resetsAt) && resetsAt >= 0 && resetsAt <= 8.64e15;
+  return {
+    resetsAt: valid ? resetsAt : null,
+    // Format on the bridge, which uses the computer's local time zone. The
+    // original epoch is retained for the phone and remaining-duration modes.
+    computerResetDescription: valid ? new Intl.DateTimeFormat('en-US', {
+      weekday: 'short', hour: 'numeric', minute: '2-digit', hour12: true,
+    }).format(resetsAt).replace(',', '') : description,
+  };
+}
+
 export function normalizeUsage(data, now = Date.now()) {
   const windows = [data.rate_limit?.primary_window, data.rate_limit?.secondary_window].filter(Boolean);
   const window = seconds => {
     const value = windows.find(w => w.limit_window_seconds === seconds);
     if (!value || !Number.isFinite(value.used_percent) || !Number.isFinite(value.reset_at)) return null;
     const hours = Math.max(0, Math.ceil((value.reset_at * 1000 - now) / 3600000));
-    return { usedPercent: value.used_percent, resetDescription: hours >= 24
+    return { usedPercent: value.used_percent, ...resetFields(value.reset_at * 1000), resetDescription: hours >= 24
       ? `resets in ${Math.floor(hours / 24)}d ${hours % 24}h` : `resets in ${hours}h` };
   };
   const session = window(18000), weekly = window(604800);
@@ -55,7 +67,8 @@ export async function proxyUsage() {
 export async function collectUsage(rateLimits = {}, codexFallback = proxyUsage) {
   const output = {};
   const window = value => value && Number.isFinite(value.usedPercent) && value.usedPercent >= 0
-    ? { usedPercent: value.usedPercent, resetDescription: typeof value.resetDescription === 'string' ? value.resetDescription : '' }
+    ? { usedPercent: value.usedPercent, resetDescription: typeof value.resetDescription === 'string' ? value.resetDescription : '',
+      ...resetFields(value.resetsAt, typeof value.resetDescription === 'string' ? value.resetDescription : '') }
     : null;
   for (const provider of ['codex', 'claude', 'cursor']) {
     const value = rateLimits?.[provider];
@@ -65,7 +78,11 @@ export async function collectUsage(rateLimits = {}, codexFallback = proxyUsage) 
     };
   }
   if (output.codex.status !== 'ok') {
-    try { output.codex = await codexFallback(); }
+    try {
+      const value = await codexFallback();
+      output.codex = { provider: 'codex', status: value?.status === 'ok' ? 'ok' : 'unavailable',
+        session: window(value?.session), weekly: window(value?.weekly), monthly: window(value?.monthly) };
+    }
     catch { output.codex = { provider: 'codex', status: 'error', error: 'Codex usage unavailable through the selected proxy. Check routing and Codex login.' }; }
   }
   return output;
