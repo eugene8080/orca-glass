@@ -8,6 +8,7 @@ import { activityState, reportedElapsed } from './activity.mjs';
 import { terminalConversation } from './reader-text.mjs';
 import { terminalProvider } from './terminal-provider.mjs';
 import { progressSummary } from './progress.mjs';
+import { workspaceLabels } from './workspace-label.mjs';
 
 const run = promisify(execFile);
 const ORCA = orcaExecutable();
@@ -48,6 +49,9 @@ export async function listThreads() {
       handle: t.handle,
       title: sessionTitle(t, names),
       agent: provider,
+      workspaceId: t.worktreeId,
+      workspaceName: workspaceLabels(workspace).name,
+      workspaceLabel: workspaceLabels(workspace).label,
       state: (() => {
         const workspace = worktrees.find(w => w.worktreeId === t.worktreeId);
         const agent = workspace?.agents?.find(a => a.paneKey === `${t.tabId}:${t.leafId}`);

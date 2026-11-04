@@ -56,7 +56,7 @@ async function call<T>(method: 'GET' | 'POST', path: string, body?: unknown): Pr
   return data as T;
 }
 
-export type Thread = { handle: string; title: string; agent: string; state: 'idle' | 'busy' | 'unknown' };
+export type Thread = { handle: string; title: string; agent: string; state: 'idle' | 'busy' | 'unknown'; workspaceId?: string; workspaceName?: string; workspaceLabel?: string };
 export type ChoiceMenu = { id: string; question: string; options: { value: string; label: string; description?: string }[] };
 export type Provider = { id: string; models: string[]; ok: boolean; note: string };
 export type Workspace = { id: string; name: string };

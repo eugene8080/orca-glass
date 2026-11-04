@@ -1,5 +1,27 @@
 # Session reader
 
+2026-11-04 workspace-filter feature is isolated in Orca child worktree
+C:/Users/eugen/orca/workspaces/orca-glass/workspace-filter on feature/workspace-filter,
+based on windows-android-codex984ddbd. User requests a second session-list row
+Filter by Workspace, multi-selection [x]/[ ], and right labels [workspace/Agent].
+Implemented native text picker with Done/All workspaces and five workspace rows
+per page. Toggles retain cursor position, persist exact Orca IDs, combine with
+agent filter, and keep unavailable selections visible for clearing. All mode is
+separate from explicit selection; explicit empty selection shows None. Child
+worktrees remain distinct in picker; session labels use compact project names.
+Thread API adds workspaceId/workspaceName/workspaceLabel. Metadata right column
+widened to248px atx328; session titles use measured native width to prevent wraps.
+Session paging reserves both filter rows (six first-page/five later sessions).
+97 tests/build/doctor pass. Read-only live discovery identifies all14 sessions
+across5 workspaces. Synthetic native preview verifies row placement, two checked
+workspaces, unchanged toggle cursor and filtered rows with porttracker/Claude and
+orca-glass/Codex labels. No live provider input, production restart or beta upload.
+Beta1.0.24 remains live; feature branch not merged. Preview approval/G2 test pending.
+Old approved-preview simulator closed; new preview LEFT OPEN in this worktree:
+fixture8793 term_738e43fc-73ef-4113-85d5-2948b8812a54;
+simulator9900 term_2f02b678-1002-4d32-bc22-74f64a7aeb5d.
+app/node_modules is an ignored junction to the main worktree's installed deps.
+
 2026-11-04 user confirms beta1.0.24 works on G2 after upload. Claude saved-chat /
 blank-reader fix, concise progress and numbered-input feature group accepted;
 move those items to Completed in TODOS.md. This is overall release confirmation,
