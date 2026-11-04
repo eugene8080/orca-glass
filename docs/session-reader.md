@@ -1,5 +1,12 @@
 # Session reader
 
+2026-11-04 user requests unused-tab cleanup in this workspace. Closed completed
+G2 Menu Swipe Preview (term_ca89245d-e79b-4863-89c1-a65ddb9e8f8e) and isolated
+fixture/Vite tab (term_fb9c320c-6a93-402e-b6bb-748a21072f5e). Orca confirms both
+PTYs killed; two Codex agent sessions retained. No embedded browser tabs existed.
+Production bridge health remains ok. Preview is now CLOSED at user's request;
+recreate named Orca-managed preview processes when needed for the next change.
+
 2026-11-04 user explicitly approves swipe-only paging beta after observing old
 Previous/Next rows on installed1.0.25. Beta1.0.26 uploaded/promoted and channel
 verified (49,179 bytes); public remains1.0.23.101 tests/build/doctor passed for

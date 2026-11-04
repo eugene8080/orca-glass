@@ -12,8 +12,8 @@ Completed/superseded release notes: [history](docs/todo-history.md).
   no Previous/Next rows. Swipe past last/first row changes pages and selects the
   opposite edge; outer ends clamp. Seven entries plus two controls per page.
  101 tests/build/doctor pass, native simulator forward/reverse checks pass.
-  User approved upload; beta channel verified (49,179 bytes). Preview OPEN
-  (fixture8791/simulator9900); stableHTTPS health ok. Awaiting G2 check on1.0.26. See [reader details](docs/session-reader.md).
+  User approved upload; beta channel verified (49,179 bytes). Completed preview closed at user request
+  after beta upload; stableHTTPS health ok. Awaiting G2 check on1.0.26. See [reader details](docs/session-reader.md).
 - [ ] **Claude/Cursor usage:** beta1.0.23 live; G2 confirmation pending. Shows
   Claude five-hour/weekly and Cursor monthly allowance alongside Codex. User
   approved simulator2026-11-03; beta channel verified, bridge restarted and
