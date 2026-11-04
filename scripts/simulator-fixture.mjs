@@ -3,6 +3,10 @@ import { createServer } from '../app/node_modules/vite/dist/node/index.js';
 import { fileURLToPath } from 'node:url';
 
 const port = Number(process.env.ORCA_GLASS_SIM_PORT || 8791);
+const limit = (usedPercent, minutes) => {
+  const resetsAt = Date.now() + minutes * 60000;
+  return { usedPercent, resetsAt, resetDescription: '', computerResetDescription: new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Hong_Kong', weekday: 'short', hour: 'numeric', minute: '2-digit', hour12: true }).format(resetsAt).replace(',', '') };
+};
 const fixture = {
   state: 'working', source: 'claude-transcript', progress: 'Reading files', menu: null,
   text: Array.from({ length: 35 }, (_, i) => `Chat line ${i + 1}: native reader scroll retention check.`).join('\n'),
@@ -15,9 +19,9 @@ const fixture = {
   workspaces: [{ id: 'ws-port', name: 'porttracker' }, { id: 'ws-glass', name: 'orca-glass' }, { id: 'ws-pc', name: 'pc-settings' }],
   sends: [],
   usage: {
-    codex: { provider: 'codex', status: 'ok', weekly: { usedPercent: 63, resetDescription: 'Thursday' } },
-    claude: { provider: 'claude', status: 'ok', session: { usedPercent: 3, resetDescription: '9:50 AM' }, weekly: { usedPercent: 2, resetDescription: '1:00 PM' } },
-    cursor: { provider: 'cursor', status: 'ok', monthly: { usedPercent: 2.02, resetDescription: 'Nov 5' } },
+    codex: { provider: 'codex', status: 'ok', weekly: limit(63, 3192) },
+    claude: { provider: 'claude', status: 'ok', session: limit(3, 120), weekly: limit(2, 3192) },
+    cursor: { provider: 'cursor', status: 'ok', monthly: limit(2.02, 4320) },
   },
 };
 const api = `

@@ -16,12 +16,13 @@ import {
   type EvenAppBridge,
   type EvenHubEvent,
 } from '@evenrealities/even_hub_sdk';
-import { api, currentBase, setApiLang, setConnection, setDemo, type ChoiceMenu, type Provider, type Thread, type Workspace } from './api';
+import { api, currentBase, setApiLang, setConnection, setDemo, type ChoiceMenu, type Provider, type Thread, type Usage, type Workspace } from './api';
 import { parseCode, resolveBase } from './pairing';
 import { applyPage, detectLang, setLang, t as tr } from './i18n';
 import { clipBytes, textSections, choiceNumber, readerContent } from './text';
 import { readerStatus, statusPixels, voiceBorderPixels, SPINNER } from './reader-status';
 import { footerHint } from './footer-hint';
+import { formatReset, RESET_MODES, resetModeLabel, type ResetMode } from './usage-reset';
 import { agentLabel, sessionRow, sessionListTitle, sessionHeading, MENU_LEFT, MENU_RIGHT, MENU_CURSOR, sessionAgentLabel, menuNativeText, menuCursorText, nativeRight, compactSessionTitle, type SessionColumns } from './session-list';
 
 // 画面 576x288。上に見出し(テキスト)、下に本文(リスト or テキスト)の2段構成で統一する。
@@ -36,6 +37,7 @@ const HINT = { containerID: 6, containerName: 'hint', xPosition: 280, yPosition:
 const STATUS_ICON = { containerID: 7, containerName: 'status-icon', xPosition: 16, yPosition: 202, width: 20, height: 28 };
 const VOICE_BORDER_LEFT = { containerID: 8, containerName: 'voice-border-l', xPosition: 8, yPosition: 200, width: 280, height: 84 };
 const VOICE_BORDER_RIGHT = { containerID: 9, containerName: 'voice-border-r', xPosition: 288, yPosition: 200, width: 280, height: 84 };
+const USAGE_RESET = { containerID: 3, containerName: 'usage-reset', xPosition: 0, yPosition: 28, width: 576, height: 28 };
 const READER_HEIGHT = 162;
 const LIST_ITEM_BYTES = 63;
 const LIST_MAX = 20;
@@ -44,7 +46,7 @@ const POLL_MS = 1000;
 
 type Screen =
   | { kind: 'list'; title: string; items: string[]; sessionList?: boolean; workspacePicker?: boolean; menuActions?: { id: number; label: string; run: () => unknown }[]; compat?: boolean; columns?: SessionColumns[]; connectedCount?: number; selected?: number; paintedSelection?: number; menuFrame?: number; paintedCursor?: string; cursorWriting?: boolean; paging?: boolean; onPreviousPage?: () => unknown; onNextPage?: () => unknown; onPick: (i: number) => void; onBack?: () => void }
-  | { kind: 'text'; title: string; text: string; conversationText?: string; choiceMenu?: ChoiceMenu | null; tail?: boolean; offset?: number; reading?: boolean; activityLabel?: string; activityState?: string; reportedSeconds?: number | null; statusFrame?: number; statusStartedAt?: number; savedHistory?: boolean; reader?: Thread; onClick?: () => void; onBack?: () => void; onHold?: () => void; };
+  | { kind: 'text'; title: string; text: string; usageMode?: ResetMode; conversationText?: string; choiceMenu?: ChoiceMenu | null; tail?: boolean; offset?: number; reading?: boolean; activityLabel?: string; activityState?: string; reportedSeconds?: number | null; statusFrame?: number; statusStartedAt?: number; savedHistory?: boolean; reader?: Thread; onClick?: () => void; onBack?: () => void; onHold?: () => void; };
 
 let bridge: EvenAppBridge;
 let current: Screen | null = null;
@@ -62,6 +64,7 @@ let sending = false;
 let holding = false;
 let releaseCapture: (() => void) | null = null;
 let viewProvider = 'all';
+let usageResetMode: ResetMode = 'computer';
 let viewWorkspaces: Set<string> | null = null;
 let workspaceNames = new Map<string, string>();
 const providerName = agentLabel;
@@ -148,7 +151,7 @@ async function show(s: Screen, reloadText = false) {
   voiceBorderVisible = false;
   const content = s.kind === 'text' ? bodyText(s) : '';
   const uploadText = reloadText || (s.kind === 'text' && !!s.reader && s.text.length > 900) || new TextEncoder().encode(content).length > 999;
-  const head = new TextContainerProperty({ ...HEAD, ...(s.kind === 'text' && s.reader ? { xPosition: 16, yPosition: 2, width: 544, height: 28, zOrderIndex: 1 } : {}), content: s.kind === 'list' && s.sessionList ? sessionHeading() : clipBytes(screenTitle(s), TEXT_BYTES), isEventCapture: 0 });
+  const head = new TextContainerProperty({ ...HEAD, ...(s.kind === 'text' && s.usageMode ? { height: 28 } : {}), ...(s.kind === 'text' && s.reader ? { xPosition: 16, yPosition: 2, width: 544, height: 28, zOrderIndex: 1 } : {}), content: s.kind === 'list' && s.sessionList ? sessionHeading() : clipBytes(screenTitle(s), TEXT_BYTES), isEventCapture: 0 });
   // Firmware retains Display off, Brightness and Close alongside these actions.
   const menu = s.kind === 'list' && s.sessionList ? { menuObject: new MenuContainerProperty({
     menuItems: s.menuActions!.map(action => new MenuItemProperty({ itemID: action.id, itemName: action.label })),
@@ -178,8 +181,9 @@ async function show(s: Screen, reloadText = false) {
           ] }),
         }
       : {
-          containerTotalNum: s.reader ? 9 : 2,
-          textObject: [head, new TextContainerProperty({ ...BODY, ...(s.reader ? { xPosition: 8, yPosition: 32, width: 560, paddingLength: 0, zOrderIndex: 2, height: READER_HEIGHT } : {}), content: uploadText ? '' : content, isEventCapture: 1 }),
+          containerTotalNum: s.reader ? 9 : s.usageMode ? 3 : 2,
+          textObject: [head, new TextContainerProperty({ ...BODY, ...(s.usageMode ? { yPosition: 64, height: 224 } : {}), ...(s.reader ? { xPosition: 8, yPosition: 32, width: 560, paddingLength: 0, zOrderIndex: 2, height: READER_HEIGHT } : {}), content: uploadText ? '' : content, isEventCapture: 1 }),
+            ...(s.usageMode ? [new TextContainerProperty({ ...USAGE_RESET, content: `Reset: ${resetModeLabel(s.usageMode)}  (Click to change)`, isEventCapture: 0 })] : []),
             ...(s.reader ? [
               new TextContainerProperty({ ...HINT, content: nativeRight(footerHint(s.reportedSeconds, !!s.choiceMenu), HINT.width), textColor: 4, isEventCapture: 0, zOrderIndex: 8 }),
               new TextContainerProperty({ ...VOICE, content: s.activityLabel![0] === '/' ? s.activityLabel : '    ' + s.activityLabel!.slice(2), textColor: 4, isEventCapture: 0, zOrderIndex: 7 }),
@@ -720,22 +724,54 @@ async function record(t: Thread, hold = false) {
   }, 1500);
 }
 
+function usageText(u: Usage, mode: ResetMode) {
+  const all = Object.entries(u).filter(([, v]) => v && typeof v === 'object' && 'provider' in v);
+  const ok = all.filter(([, v]) => v.status === 'ok');
+  const ng = all.filter(([, v]) => v.status !== 'ok').map(([name]) => name);
+  const lines = ok.map(([name, v]) => {
+    const percent = (value: number) => Math.round(value * 10) / 10;
+    const s = v.session ? `5h ${percent(v.session.usedPercent)}% (${formatReset(v.session, mode)})` : '';
+    const w = v.weekly ? `${tr('weekly')} ${percent(v.weekly.usedPercent)}% (${formatReset(v.weekly, mode)})` : '';
+    const m = v.monthly ? `Monthly ${percent(v.monthly.usedPercent)}% (${formatReset(v.monthly, mode)})` : '';
+    return `${providerName(v.provider || name)}\n  ${[s, w, m].filter(Boolean).join(' / ') || tr('noInfo')}`;
+  });
+  if (ng.length) lines.push(tr('unavailable', ng.join(', ')));
+  return lines.join('\n');
+}
+
 function usage() {
   return guard(tr('usageTitle'), async () => {
     const u = await api.usage();
-    // rateLimits には設定フラグ等も混ざるので provider を持つ項目だけ使う
-    const all = Object.entries(u).filter(([, v]) => v && typeof v === 'object' && 'provider' in v);
-    const ok = all.filter(([, v]) => v.status === 'ok');
-    const ng = all.filter(([, v]) => v.status !== 'ok').map(([name]) => name);
-    const lines = ok.map(([name, v]) => {
-      const percent = (value: number) => Math.round(value * 10) / 10;
-      const s = v.session ? `5h ${percent(v.session.usedPercent)}% (${v.session.resetDescription})` : '';
-      const w = v.weekly ? `${tr('weekly')} ${percent(v.weekly.usedPercent)}% (${v.weekly.resetDescription})` : '';
-      const m = v.monthly ? `Monthly ${percent(v.monthly.usedPercent)}% (${v.monthly.resetDescription})` : '';
-      return `${providerName(v.provider || name)}\n  ${[s, w, m].filter(Boolean).join(' / ') || tr('noInfo')}`;
-    });
-    if (ng.length) lines.push(tr('unavailable', ng.join(', ')));
-    await show({ kind: 'text', title: tr('usageTitle'), text: lines.join('\n'), onBack: home, onClick: home });
+    let writing = false;
+    const screen: Extract<Screen, { kind: 'text' }> = { kind: 'text', title: tr('usageTitle'),
+      usageMode: usageResetMode, text: usageText(u, usageResetMode), onBack: home,
+      onClick: () => { void update(true); } };
+    const update = async (cycle = false) => {
+      if (current !== screen || writing || (!cycle && screen.reading)) return;
+      writing = true;
+      try {
+        if (cycle) {
+          const next = RESET_MODES[(RESET_MODES.indexOf(usageResetMode) + 1) % RESET_MODES.length];
+          await bridge.setLocalStorage('usage-reset-mode', next);
+          usageResetMode = next;
+          screen.usageMode = next;
+          if (current !== screen) return;
+          await bridge.textContainerUpgrade(new TextContainerUpgrade({ containerID: USAGE_RESET.containerID, containerName: USAGE_RESET.containerName,
+            content: `Reset: ${resetModeLabel(next)}  (Click to change)` }));
+        }
+        if (current !== screen) return;
+        const text = usageText(u, usageResetMode);
+        if (text !== screen.text) {
+          screen.offset = undefined;
+          await updateText(screen.title, text);
+        }
+      } catch (e) { diag((e as Error).message); }
+      finally { writing = false; }
+    };
+    await show(screen);
+    if (current === screen) poll = setInterval(() => {
+      if (usageResetMode === 'absolute') void update();
+    }, 60000);
   }, home);
 }
 
@@ -960,6 +996,8 @@ async function main() {
   const pref = 'en';
   await bridge.setLocalStorage('lang', 'en');
   viewProvider = (await bridge.getLocalStorage('view-provider')) || 'all';
+  const resetMode = await bridge.getLocalStorage('usage-reset-mode');
+  if (RESET_MODES.includes(resetMode as ResetMode)) usageResetMode = resetMode as ResetMode;
   try {
     const stored = JSON.parse(await bridge.getLocalStorage('view-workspaces') || 'null');
     if (Array.isArray(stored) && stored.every(id => typeof id === 'string')) viewWorkspaces = new Set(stored);

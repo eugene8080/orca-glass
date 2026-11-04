@@ -8,6 +8,13 @@ Completed/superseded release notes: [history](docs/todo-history.md).
 
 ## Open work
 
+- [ ] **Usage reset-time modes:** implemented; top native Click selector cycles
+  Computer time / Phone time / Absolute time (remaining duration, e.g.2d5h12m).
+  Selection persists; bridge retains exact reset instants and computer-local
+  labels.107 tests/build/doctor pass; synthetic simulator checked day/zone
+  conversion and countdown, left OPEN on Absolute (8791/9900). Await preview
+  approval before beta app update + bridge restart. Installed beta1.0.26 unchanged;
+  physical phone/G2 time-zone verification pending. See [reader details](docs/session-reader.md).
 - [ ] **Swipe-only menu paging — G2 confirmation:** beta1.0.26 live;
   no Previous/Next rows. Swipe past last/first row changes pages and selects the
   opposite edge; outer ends clamp. Seven entries plus two controls per page.
