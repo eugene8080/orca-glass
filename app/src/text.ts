@@ -1,6 +1,21 @@
 // グラスの表示上限はバイト数で決まる(リスト項目 63B / テキスト 999B)。日本語は1文字3バイト。
 const enc = new TextEncoder();
 
+// Match a reviewed spoken number only, never infer approval from a sentence
+// that happens to contain one. The server still revalidates the captured menu.
+export function choiceNumber(text: string): string | null {
+  const value = text.trim().toLowerCase().replace(/[.!?,]+$/g, '').replace(/^(?:option|number|choose|select)\s+/, '');
+  const words = ['one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
+  if (/^[1-9]$/.test(value)) return value;
+  const index = words.indexOf(value);
+  return index >= 0 ? String(index + 1) : null;
+}
+
+export function readerContent(text: string, menu?: { question: string; options: { value: string; label: string }[] } | null, progress = '', working = false): string {
+  if (menu) return [text.trim(), menu.question, ...menu.options.map(o => `${o.value}. ${o.label}`), 'Click for choices. Hold to speak a number.'].filter(Boolean).join('\n');
+  return [text.trim(), working ? `~ ${progress || 'Working…'}` : ''].filter(Boolean).join('\n');
+}
+
 export function clipBytes(s: string, max: number): string {
   if (enc.encode(s).length <= max) return s;
   let out = '';

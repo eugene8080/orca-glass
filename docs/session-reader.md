@@ -1,5 +1,28 @@
 # Session reader
 
+2026-11-04 user requests short Claude thinking/progress and numbered prompt
+controls with voice remaining default. Existing Claude session reading plus
+user-initiated G2 selection/voice are authorized; no autonomous Claude prompts,
+launches or live choice submissions for testing. readThread now returns a brief
+public terminal activity summary (tool category or harness status word), never
+tool arguments/results or transcript thinking. Saved chat stays visible; blank
+live frames retain prior reply. Only Claude Working readers append one progress
+line; native swipe still freezes body writes.
+Claude AskUserQuestion parser supports wrapped descriptions, divider before the
+final Chat about this option and native Enter-to-select footer. Full question +
+options fingerprint invalidates stale choices, ignoring cursor movement. Reader
+Click opens choices only while a current prompt exists; pick then Click confirms,
+double cancels. Hold remains voice; reviewed spoken digits/one-nine/option N go
+through captured menu ID and server revalidation, never free-text fallback. To
+write a custom response, select Type something first, then use normal voice.
+91 tests/build/doctor pass. Native simulator verified retained reply + Reading
+files, five choices, full selected description, and native/voice option2 sends
+only to synthetic fixture. Live screenshot's Campaign prompt had cleared at
+read-only check (no live choice sent). User says Even Terminal chat presentation
+is better; structural saved chat remains preferred, SDK auto-follow gap persists.
+Simulator LEFT OPEN for review; production bridge and beta1.0.23 unchanged.
+Preview approval required before next beta; G2 checks pending.
+
 2026-11-03 Claude blank-reader diagnosis: user-directed read-only inspection of
 LGT archive Retrieval in porttracker found terminal buffer occupied by filtered
 tools and current Claude reply marker U+25CF unsupported by the old parser.

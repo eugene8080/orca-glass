@@ -7,6 +7,7 @@ import { sessionTitles, sessionTitle } from './session-titles.mjs';
 import { activityState, reportedElapsed } from './activity.mjs';
 import { terminalConversation } from './reader-text.mjs';
 import { terminalProvider } from './terminal-provider.mjs';
+import { progressSummary } from './progress.mjs';
 
 const run = promisify(execFile);
 const ORCA = orcaExecutable();
@@ -168,7 +169,9 @@ export async function readThread(handle) {
   const bottom = lines.slice(-12);
   const inputReady = bottom.some(l => /^\s*›(?:\s|$)/.test(l)) &&
     !bottom.slice(-4).some(l => /^\s*(?:PS\s+.+>|[A-Za-z]:\\[^>]*>)/.test(l));
-  return { text: menu ? lines.join('\n') : answer || (['codex', 'claude'].includes(agent) ? '' : '> Conversation-only text is unavailable for this terminal format.'), menu, inputReady };
+  // The selected ❯ 1. row is a menu cursor, not a new user message. Deliver
+  // the prompt structurally and retain saved/previous chat in the reader.
+  return { text: menu ? '' : answer || (['codex', 'claude'].includes(agent) ? '' : '> Conversation-only text is unavailable for this terminal format.'), menu, progress: menu ? '' : progressSummary(lines, agent), inputReady };
 }
 
 export async function readHistory(handle) {

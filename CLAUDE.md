@@ -1,14 +1,15 @@
 # Orca Glass fork
-Updated: 2026-11-03
+Updated: 2026-11-04
 
 Read the machine-level instructions first. This fork targets Windows desktop
 Orca, the Even Realities Android app, and G2 glasses.
 
 ## Explicit user constraint
 
-Codex only. Do not launch, test, or interact with Claude until Eugene explicitly
-authorizes it. Keep server-side provider restrictions in place. Historical
-upstream Claude code is not evidence of authorization to test it.
+New agent launches remain Codex-only.2026-11-04 Eugene authorizes reading his
+existing Claude sessions and user-initiated G2 numbered/voice input. Do not
+autonomously prompt, launch or submit live Claude choices for tests. Use synthetic
+fixtures for interaction tests. Historical upstream code grants no broader scope.
 
 ## Terminal policy
 
@@ -48,6 +49,29 @@ with GitHub/Discord open. Confirm the dedicated profile from fresh browser inven
 do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
+
+2026-11-04 user requests short Claude thinking/progress and numbered prompt
+controls with voice remaining default. Existing Claude session reading plus
+user-initiated G2 selection/voice are authorized; no autonomous Claude prompts,
+launches or live choice submissions for testing. readThread now returns a brief
+public terminal activity summary (tool category or harness status word), never
+tool arguments/results or transcript thinking. Saved chat stays visible; blank
+live frames retain prior reply. Only Claude Working readers append one progress
+line; native swipe still freezes body writes.
+Claude AskUserQuestion parser supports wrapped descriptions, divider before the
+final Chat about this option and native Enter-to-select footer. Full question +
+options fingerprint invalidates stale choices, ignoring cursor movement. Reader
+Click opens choices only while a current prompt exists; pick then Click confirms,
+double cancels. Hold remains voice; reviewed spoken digits/one-nine/option N go
+through captured menu ID and server revalidation, never free-text fallback. To
+write a custom response, select Type something first, then use normal voice.
+91 tests/build/doctor pass. Native simulator verified retained reply + Reading
+files, five choices, full selected description, and native/voice option2 sends
+only to synthetic fixture. Live screenshot's Campaign prompt had cleared at
+read-only check (no live choice sent). User says Even Terminal chat presentation
+is better; structural saved chat remains preferred, SDK auto-follow gap persists.
+Simulator LEFT OPEN for review; production bridge and beta1.0.23 unchanged.
+Preview approval required before next beta; G2 checks pending.
 
 2026-11-03 Claude blank-reader diagnosis: user-directed read-only inspection of
 LGT archive Retrieval in porttracker found terminal buffer occupied by filtered

@@ -6,20 +6,42 @@ export function parseChoices(lines) {
   const selected = lines.findLastIndex((line) => /^\s*[›❯]\s*\d+[.)]\s+\S/.test(line));
   if (selected < 0) return null;
   const pattern = /^\s*(?:[›❯]\s*)?(\d+)[.)]\s+(.+?)\s*$/;
+  // Claude's AskUserQuestion has wrapped descriptions and a separate final
+  // "Chat about this" row. Its native footer proves these are interactive rows.
+  const footer = lines.findIndex((line, i) => i > selected && /Enter to select.*Esc to cancel/i.test(line));
   let start = selected;
   while (start > 0 && pattern.test(lines[start - 1])) start--;
+  if (footer >= 0) {
+    for (let i = selected; i >= 0; i--) {
+      if (pattern.exec(lines[i])?.[1] === '1') { start = i; break; }
+      if (i < selected && lines[i].trim() && !/^\s/.test(lines[i]) && !/^─{3,}/.test(lines[i]) && !pattern.test(lines[i])) break;
+    }
+  }
   let end = selected + 1;
   while (end < lines.length && pattern.test(lines[end])) end++;
-  const options = lines.slice(start, end).map((line) => {
+  if (footer >= 0) end = footer;
+  const options = [];
+  for (const line of lines.slice(start, end)) {
     const match = line.match(pattern);
-    return { value: match[1], label: match[2] };
-  });
+    if (match) options.push({ value: match[1], label: match[2] });
+    else if (footer >= 0 && line.trim() && !/^\s*─{3,}/.test(line)) {
+      // Only indented continuation text belongs to an option. Unexpected rows
+      // invalidate the layout instead of becoming an accidental approval.
+      if (!options.length || !/^\s+\S/.test(line)) return null;
+      options.at(-1).description = [options.at(-1).description, line.trim()].filter(Boolean).join(' ');
+    }
+  }
   if (options.length < 2 || options.length > 9 || options.some((o, i) => Number(o.value) !== i + 1)) return null;
   // Include the screen context to invalidate an old selection even if the next
   // question reuses exactly the same option labels. Ignore cursor movement.
-  const context = lines.map((line) => line.replace(/^(\s*)[›❯](\s*\d+[.)])/, '$1 $2').trimEnd()).join('\n');
+  let questionLines = lines.slice(0, start);
+  const divider = questionLines.findLastIndex(line => /^\s*─{3,}/.test(line));
+  if (divider >= 0) questionLines = questionLines.slice(divider + 1);
+  questionLines = questionLines.map(line => line.replace(/^\s*[│|]\s?/, '').trim());
+  const question = questionLines.slice(-8).join('\n').trim();
+  const context = JSON.stringify({ question: questionLines.join('\n'), options });
   const id = createHash('sha256').update(context).digest('hex');
-  return { id, options, question: lines.slice(Math.max(0, start - 8), start).join('\n').trim() };
+  return { id, options, question };
 }
 
 export function validateChoice(menu, id, value) {

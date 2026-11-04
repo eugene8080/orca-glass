@@ -16,10 +16,10 @@ import {
   type EvenAppBridge,
   type EvenHubEvent,
 } from '@evenrealities/even_hub_sdk';
-import { api, currentBase, setApiLang, setConnection, setDemo, type Provider, type Thread, type Workspace } from './api';
+import { api, currentBase, setApiLang, setConnection, setDemo, type ChoiceMenu, type Provider, type Thread, type Workspace } from './api';
 import { parseCode, resolveBase } from './pairing';
 import { applyPage, detectLang, setLang, t as tr } from './i18n';
-import { clipBytes, textSections } from './text';
+import { clipBytes, textSections, choiceNumber, readerContent } from './text';
 import { readerStatus, statusPixels, voiceBorderPixels, SPINNER } from './reader-status';
 import { footerHint } from './footer-hint';
 import { agentLabel, sessionRow, sessionListTitle, sessionHeading, MENU_LEFT, MENU_CURSOR, menuNativeText, menuCursorText, nativeRight, compactSessionTitle, type SessionColumns } from './session-list';
@@ -44,7 +44,7 @@ const POLL_MS = 1000;
 
 type Screen =
   | { kind: 'list'; title: string; items: string[]; sessionList?: boolean; menuActions?: { id: number; label: string; run: () => unknown }[]; compat?: boolean; columns?: SessionColumns[]; connectedCount?: number; selected?: number; paintedSelection?: number; menuFrame?: number; paintedCursor?: string; cursorWriting?: boolean; onPick: (i: number) => void; onBack?: () => void }
-  | { kind: 'text'; title: string; text: string; tail?: boolean; offset?: number; reading?: boolean; activityLabel?: string; activityState?: string; reportedSeconds?: number | null; statusFrame?: number; statusStartedAt?: number; savedHistory?: boolean; reader?: Thread; onClick?: () => void; onBack?: () => void; onHold?: () => void; };
+  | { kind: 'text'; title: string; text: string; conversationText?: string; choiceMenu?: ChoiceMenu | null; tail?: boolean; offset?: number; reading?: boolean; activityLabel?: string; activityState?: string; reportedSeconds?: number | null; statusFrame?: number; statusStartedAt?: number; savedHistory?: boolean; reader?: Thread; onClick?: () => void; onBack?: () => void; onHold?: () => void; };
 
 let bridge: EvenAppBridge;
 let current: Screen | null = null;
@@ -129,7 +129,7 @@ async function inputHint(visible: boolean) {
   const write = panelWrites.then(async () => {
     if (visible && current !== owner) return;
     await bridge.textContainerUpgrade(new TextContainerUpgrade({ containerID: HINT.containerID, containerName: HINT.containerName,
-      content: visible ? nativeRight(footerHint(seconds), HINT.width) : ' ', textColor: 4 }));
+      content: visible ? nativeRight(footerHint(seconds, owner?.kind === 'text' && !!owner.choiceMenu), HINT.width) : ' ', textColor: 4 }));
   });
   panelWrites = write.then(() => {}, () => {});
   await write;
@@ -179,7 +179,7 @@ async function show(s: Screen, reloadText = false) {
           containerTotalNum: s.reader ? 9 : 2,
           textObject: [head, new TextContainerProperty({ ...BODY, ...(s.reader ? { xPosition: 8, yPosition: 32, width: 560, paddingLength: 0, zOrderIndex: 2, height: READER_HEIGHT } : {}), content: uploadText ? '' : content, isEventCapture: 1 }),
             ...(s.reader ? [
-              new TextContainerProperty({ ...HINT, content: nativeRight(footerHint(s.reportedSeconds), HINT.width), textColor: 4, isEventCapture: 0, zOrderIndex: 8 }),
+              new TextContainerProperty({ ...HINT, content: nativeRight(footerHint(s.reportedSeconds, !!s.choiceMenu), HINT.width), textColor: 4, isEventCapture: 0, zOrderIndex: 8 }),
               new TextContainerProperty({ ...VOICE, content: s.activityLabel![0] === '/' ? s.activityLabel : '    ' + s.activityLabel!.slice(2), textColor: 4, isEventCapture: 0, zOrderIndex: 7 }),
               new TextContainerProperty({ ...FRAME, content: ' ', textColor: 4, borderWidth: 2, borderColor: 15, borderRadius: 0, isEventCapture: 0, zOrderIndex: 0 }),
               new TextContainerProperty({ ...DIVIDER, content: ' ', textColor: 4, borderWidth: 2, borderColor: 15, isEventCapture: 0, zOrderIndex: 3 }),
@@ -377,14 +377,16 @@ function thread(t: Thread, note = '') {
   return guard(t.title, async () => {
     const title = () => `${t.title}${note ? `  ${note}` : ''}`;
     const snapshot = await api.thread(t.handle);
-    const saved = !snapshot.menu ? await api.history(t.handle).catch(() => null) : null;
+    const saved = await api.history(t.handle).catch(() => null);
     const useSaved = ['codex-transcript', 'claude-transcript'].includes(saved?.source || '');
-    const text = useSaved ? saved!.text : snapshot.text;
+    const conversationText = useSaved ? saved!.text : snapshot.text;
     const state = await api.activity(t.handle).catch(e => {
       diag(`Activity request failed: ${(e as Error).message}`);
       return { state: 'unknown', elapsedSeconds: null };
     });
-    await show({ kind: 'text', title: title(), text, tail: true, activityState: state.state, reportedSeconds: state.state === 'working' ? state.elapsedSeconds ?? null : null, activityLabel: activityLabel(state.state), savedHistory: useSaved, reader: t, onBack: home,
+    const text = readerContent(conversationText, snapshot.menu, snapshot.progress, t.agent === 'claude' && state.state === 'working');
+    await show({ kind: 'text', title: title(), text, conversationText, choiceMenu: snapshot.menu, tail: true, activityState: state.state, reportedSeconds: state.state === 'working' ? state.elapsedSeconds ?? null : null, activityLabel: activityLabel(state.state), savedHistory: useSaved, reader: t, onBack: home,
+      onClick: () => { if (current?.kind === 'text' && current.choiceMenu) void replies(t); },
       onHold: () => { void record(t, true); } });
     startReaderUpdates(current);
   }, home);
@@ -433,18 +435,32 @@ function startReaderUpdates(screen: Screen | null) {
         if (accepted && current === screen) screen.activityLabel = label;
       } catch (e) { diag((e as Error).message); }
     }
-    if (current !== screen || screen.reading) { reading = false; return; }
-    let r = await (screen.savedHistory ? api.history(t.handle) : api.thread(t.handle)).catch(() => null);
+    if (current !== screen) { reading = false; return; }
+    // Choice prompts live in the terminal UI, not saved chat. Check them even
+    // when history is selected, without rebuilding or moving a paused reader.
+    const snapshot = await api.thread(t.handle).catch(() => null);
+    if (current !== screen) { reading = false; return; }
+    if (snapshot && screen.choiceMenu?.id !== snapshot.menu?.id) {
+      screen.choiceMenu = snapshot.menu;
+      await inputHint(true).catch(e => diag((e as Error).message));
+    }
+    if (screen.reading) { reading = false; return; }
+    let r = await (screen.savedHistory ? api.history(t.handle) : Promise.resolve(snapshot)).catch(() => null);
     if (screen.savedHistory && (!r || !('source' in r) || !['codex-transcript', 'claude-transcript'].includes(r.source || ''))) {
-      r = await api.thread(t.handle).catch(() => null);
+      r = snapshot;
       // Stay on live output after losing the verified saved-history association.
       if (r && current === screen) screen.savedHistory = false;
     }
     // A pending old-session read must never overwrite another screen or draft.
-    if (r && r.text.trim() && current === screen && r.text !== screen.text && !screen.reading) {
-      screen.offset = undefined;
-      try { await updateText(screen.title, r.text); }
-      catch (e) { diag((e as Error).message); }
+    if (r && current === screen && !screen.reading) {
+      // An empty live tool frame must not erase the last public reply.
+      if (r.text.trim()) screen.conversationText = r.text;
+      const text = readerContent(screen.conversationText || '', screen.choiceMenu, snapshot?.progress, t.agent === 'claude' && screen.activityState === 'working');
+      if (text.trim() && text !== screen.text) {
+        screen.offset = undefined;
+        try { await updateText(screen.title, text); }
+        catch (e) { diag((e as Error).message); }
+      }
     }
     reading = false;
   }, POLL_MS);
@@ -473,7 +489,7 @@ function replies(t: Thread) {
           const option = menu.options[i];
           if (!option) return;
           show({ kind: 'text', title: 'Click to choose / Double-click to cancel',
-            text: `${menu.question}\n\n${option.value}. ${option.label}`,
+            text: `${menu.question}\n\n${option.value}. ${option.label}${option.description ? '\n' + option.description : ''}`,
             onBack: () => replies(t),
             onClick: () => guard(t.title, async () => {
               if (sending) return;
@@ -505,6 +521,7 @@ async function record(t: Thread, hold = false) {
   diag('Hold received. Opening voice panel…');
   const background = current;
   if (background?.kind !== 'text' || !background.reader) return;
+  const choiceMenu = background.choiceMenu;
   // Keep the mounted reader and its firmware scroll position untouched throughout
   // capture, transcription and review. Only a successful Send resumes updates.
   background.reading = true;
@@ -571,7 +588,11 @@ async function record(t: Thread, hold = false) {
     cancelCapture = null;
     try {
       await voiceShow({ kind: 'text', title: t.title, text: 'Sending…' });
-      await api.say(t.handle, text);
+      if (choiceMenu) {
+        const value = choiceNumber(text);
+        if (!value || !choiceMenu.options.some(o => o.value === value)) throw new Error('Say one of the displayed option numbers. Nothing sent.');
+        await api.choice(t.handle, choiceMenu.id, value);
+      } else await api.say(t.handle, text);
       await closeVoice();
       if (current === background) {
         background.reading = false;
@@ -602,7 +623,8 @@ async function record(t: Thread, hold = false) {
         await voiceShow({ kind: 'text', title: tr('voiceTitle'), text: tr('notHeard'), onClick: () => closeVoice(), onBack: () => closeVoice() });
       } else {
         cancelCapture = cancel;
-        await voiceShow({ kind: 'text', title: '', text,
+        const choice = choiceMenu?.options.find(o => o.value === choiceNumber(text));
+        await voiceShow({ kind: 'text', title: '', text: choice ? `${choice.value}. ${choice.label}` : text,
           onClick: () => { void sendText(text); }, onBack: () => { cancel(); void closeVoice(); } });
       }
     } catch (e) {

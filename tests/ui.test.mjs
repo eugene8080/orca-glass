@@ -23,7 +23,7 @@ async function harness(count = 2, voice = false, mode = 'tap', savedView = '', s
     return elements.get(id);
   };
   const threads = Array.from({ length: count }, (_, i) => ({ handle: `terminal-${i}`, title: `Session ${i}`, agent: 'codex', state: 'unknown' }));
-  const pages = [], sends = [], timers = new Map(), mic = [], upgrades = [], transcriptions = [], images = [];
+  const pages = [], sends = [], choices = [], timers = new Map(), mic = [], upgrades = [], transcriptions = [], images = [];
   const animations = new Map();
   let timerId = 0, event;
   const api = {
@@ -34,6 +34,7 @@ async function harness(count = 2, voice = false, mode = 'tap', savedView = '', s
     capabilities: async () => ({ voice }),
     transcribe: async pcm => { transcriptions.push(pcm); return { text: 'A voice test.' }; },
     say: async (handle, text) => { sends.push({ handle, text }); return { sent: text }; },
+    choice: async (handle, menuId, value) => { choices.push({ handle, menuId, value }); return { sent: value }; },
   };
   const bridge = {
     updateImageRawData: async value => { images.push(value); return 'success'; },
@@ -66,7 +67,7 @@ async function harness(count = 2, voice = false, mode = 'tap', savedView = '', s
   });
   const flush = () => new Promise(resolve => setImmediate(resolve));
   await flush();
-  return { api, bridge, elements, pages, sends, timers, animations, mic, upgrades, images, transcriptions, flush,
+  return { api, bridge, elements, pages, sends, choices, threads, timers, animations, mic, upgrades, images, transcriptions, flush,
     menu: async id => { event({ menuItemClickEvent: { itemID: id } }); await flush(); },
     system: async type => { event({ sysEvent: { eventType: type } }); await flush(); },
     press: () => { event({ sysEvent: { eventType: 9 } }); },
@@ -505,7 +506,7 @@ test('a rejected live text update is retried instead of marking unseen text as d
   assert.equal(h.upgrades.at(-1).content, 'Fresh reply');
 });
 
- test('session click does nothing, including when terminal has numbered choices', async () => {
+ test('session click does nothing without a detected numbered prompt', async () => {
   const h = await harness();
   await h.pick(1);
   const count = h.pages.length;
@@ -739,4 +740,83 @@ test('Claude verified saved chat opens and polls even when the live tool screen 
   h.api.history = async () => ({ text: '/ Question\n> Earlier answer\n> Latest answer', source: 'claude-transcript' });
   for (const fn of h.timers.values()) await fn();
   assert.ok(h.upgrades.some(u => u.content.includes('Latest answer')));
+});
+
+const prompt = { id: 'question-a', question: 'Which test approach?', options: [
+  { value: '1', label: 'First approach', description: 'Detailed first approach.' },
+  { value: '2', label: 'Second approach' }, { value: '3', label: 'Type something.' },
+] };
+
+test('Claude progress keeps the public reply visible and freezes body updates on swipe', async () => {
+  const h = await harness();
+  h.threads[0].agent = 'claude';
+  h.api.activity = async () => ({ state: 'working' });
+  h.api.thread = async () => ({ text: '', progress: 'Reading files' });
+  h.api.history = async () => ({ source: 'claude-transcript', text: '> Earlier reply' });
+  await h.pick(1);
+  assert.ok(h.pages.at(-1).textObject.some(c => c.content.includes('> Earlier reply\n~ Reading files')));
+  h.api.thread = async () => ({ text: '', progress: 'Running a command' });
+  await [...h.timers.values()][0]();
+  assert.ok(h.upgrades.some(u => u.containerName === 'body' && u.content.includes('Earlier reply\n~ Running a command')));
+  await h.scroll('up');
+  const writes = h.upgrades.filter(u => u.containerName === 'body').length;
+  h.api.thread = async () => ({ text: '', progress: 'Editing a file' });
+  await [...h.timers.values()][0]();
+  assert.equal(h.upgrades.filter(u => u.containerName === 'body').length, writes);
+});
+
+test('a newly detected prompt enables Click choices and confirmation sends only the selected number', async () => {
+  const h = await harness();
+  await h.pick(1);
+  h.api.thread = async () => ({ text: 'Public reply', menu: prompt });
+  await [...h.timers.values()][0]();
+  await h.tap();
+  assert.deepEqual([...h.pages.at(-1).listObject[0].itemContainer.itemName], ['1. First approach', '2. Second approach', '3. Type something.']);
+  await h.pick(0);
+  assert.ok(h.pages.at(-1).textObject.some(c => c.content.includes('Detailed first approach.')));
+  assert.equal(h.choices.length, 0);
+  h.api.thread = async () => ({ text: 'Reply after choice', menu: null });
+  await h.tap();
+  await h.flush();
+  assert.deepEqual(h.choices, [{ handle: 'terminal-0', menuId: 'question-a', value: '1' }]);
+  assert.equal(h.sends.length, 0);
+  const count = h.pages.length;
+  await h.tap();
+  assert.equal(h.pages.length, count);
+});
+
+test('spoken choice is reviewed, then validated against the captured prompt without a free-text send', async () => {
+  const h = await harness(2, true, 'hold');
+  h.api.thread = async () => ({ text: '', menu: prompt });
+  h.api.transcribe = async () => ({ text: 'Option two.' });
+  await h.pick(1);
+  h.press(); await h.flush(); h.audio(); h.release();
+  await h.flush(); await h.flush();
+  assert.ok(h.upgrades.some(u => u.containerName === 'voice' && u.content === '2. Second approach'));
+  assert.equal(h.choices.length, 0);
+  await h.tap(); await h.flush();
+  assert.deepEqual(h.choices, [{ handle: 'terminal-0', menuId: 'question-a', value: '2' }]);
+  assert.equal(h.sends.length, 0);
+});
+
+test('stale spoken choices fail without sending a sentence or automatically retrying', async () => {
+  const h = await harness(2, true, 'hold');
+  h.api.thread = async () => ({ text: '', menu: prompt });
+  h.api.transcribe = async () => ({ text: 'One' });
+  let attempts = 0;
+  h.api.choice = async () => { attempts++; throw new Error('Question changed. Reopen the thread before choosing.'); };
+  await h.pick(1);
+  h.press(); await h.flush(); h.audio(); h.release();
+  await h.flush(); await h.flush();
+  await h.tap(); await h.flush();
+  assert.equal(attempts, 1);
+  assert.ok(h.upgrades.some(u => u.content.includes('Question changed')));
+  assert.equal(h.sends.length, 0);
+});
+
+test('spoken option matching never infers a choice from a sentence containing a number', () => {
+  assert.equal(textExports.choiceNumber('Option four.'), '4');
+  assert.equal(textExports.choiceNumber('2'), '2');
+  assert.equal(textExports.choiceNumber('I have one more question'), null);
+  assert.equal(textExports.choiceNumber('not one'), null);
 });

@@ -1,5 +1,5 @@
 # Orca Glass TODOs
-Updated: 2026-11-03
+Updated: 2026-11-04
 
 Current beta: **1.0.23**.79 tests/build/doctor passed for multi-provider usage. Simulator stays
 open for user review; visual changes require preview approval before beta upload.
@@ -7,6 +7,14 @@ Completed/superseded release notes: [history](docs/todo-history.md).
 
 ## Open work
 
+- [ ] **Claude progress and numbered prompts:** candidate prepared2026-11-04;
+ 91 tests/build/doctor pass. One brief public activity line retains previous chat;
+ wrapped native choices detected, Click opens choices only during a prompt,
+ confirmation and reviewed spoken numbers use stale-question validation. Native
+ simulator verified five choices, descriptions and native/voice fixture sends;
+ left OPEN for user preview. No live Claude prompts/choices submitted. Next beta
+ and G2 confirmation pending preview approval. Type something first for a custom
+ voice answer. See [reader details](docs/session-reader.md).
 - [ ] **Claude saved conversation / blank reader:** fix prepared; preview approval
   pending before beta. Exact live pane binding now loads saved Claude chat while
   the terminal is filled with tools; current solid-circle reply marker supported.
@@ -48,7 +56,9 @@ Completed/superseded release notes: [history](docs/todo-history.md).
 
 - [ ] **Main-response-only filtering:** tool records/internal reasoning and terminal
   footer chrome are filtered, but public assistant progress commentary remains.
-  Final-only filtering was requested earlier and is not implemented. See
+  Final-only filtering was requested earlier and is not implemented.2026-11-04
+  user now requests some progress; a compact live activity line is prepared, while
+  broader assistant-commentary condensation remains open. See
   [reader details](docs/session-reader.md).
 
 ## Optional verification / known limitations

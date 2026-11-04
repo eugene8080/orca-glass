@@ -3,7 +3,7 @@ import { createServer } from '../app/node_modules/vite/dist/node/index.js';
 import { fileURLToPath } from 'node:url';
 
 const fixture = {
-  state: 'working', source: 'codex-transcript',
+  state: 'working', source: 'claude-transcript', progress: 'Reading files', menu: null,
   text: Array.from({ length: 35 }, (_, i) => `Chat line ${i + 1}: native reader scroll retention check.`).join('\n'),
   transcript: Array.from({ length: 30 }, (_, i) => `Draft line ${i + 1}: review this transcription.`).join('\n'),
   sends: [],
@@ -18,12 +18,13 @@ const request=async()=>{const r=await fetch('/__fixture');return r.json();};
 export const setDemo=()=>{},setApiLang=()=>{},setConnection=()=>{};
 export const currentBase=()=> 'isolated simulator';
 export const api={
-  threads:async()=>[{handle:'fixture',title:'Simulator conversation',agent:'codex',state:'busy'}],
-  thread:async()=>({text:(await request()).text}),history:async()=>{const s=await request();return {text:s.text,source:s.source};},
+  threads:async()=>[{handle:'fixture',title:'Simulator conversation',agent:'claude',state:'busy'}],
+  thread:async()=>{const s=await request();return {text:s.text,menu:s.menu,progress:s.progress};},history:async()=>{const s=await request();return {text:s.text,source:s.source};},
   activity:async()=>({state:(await request()).state}),
   health:async()=>({ok:true}),capabilities:async()=>({voice:true}),
   usage:async()=>(await request()).usage,
   transcribe:async()=>({text:(await request()).transcript}),
+  choice:async(handle,menuId,value)=>{const r=await fetch('/__fixture/choice',{method:'POST',body:JSON.stringify({handle,menuId,value})});const data=await r.json();if(!r.ok)throw new Error(data.error);return data;},
   say:async(handle,text)=>{await fetch('/__fixture/send',{method:'POST',body:JSON.stringify({handle,text})});return {sent:text};}
 };`;
 const shim = `<script>
@@ -58,10 +59,20 @@ const server = await createServer({
           if (req.method === 'POST') {
             let body = ''; for await (const part of req) body += part;
             const data = JSON.parse(body);
-            if (req.url === '/__fixture/send') fixture.sends.push(data);
+            if (req.url === '/__fixture/choice') {
+              if (fixture.menu?.id !== data.menuId || !fixture.menu.options.some(o => o.value === data.value)) throw new Error('Question changed. Nothing sent.');
+              const sent = fixture.menu.options.find(o => o.value === data.value).label;
+              fixture.sends.push({ ...data, kind: 'choice' });
+              fixture.menu = null;
+              fixture.state = 'working';
+              res.setHeader('content-type', 'application/json');
+              res.end(JSON.stringify({ sent }));
+              return;
+            } else if (req.url === '/__fixture/send') fixture.sends.push(data);
             else {
+              if ('menu' in data) fixture.menu = data.menu;
               if (data.usage && typeof data.usage === 'object') fixture.usage = data.usage;
-              for (const key of ['state', 'text', 'source', 'transcript']) {
+              for (const key of ['state', 'text', 'source', 'transcript', 'progress']) {
                 if (typeof data[key] === 'string') fixture[key] = data[key];
               }
             }

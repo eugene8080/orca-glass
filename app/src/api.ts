@@ -57,7 +57,7 @@ async function call<T>(method: 'GET' | 'POST', path: string, body?: unknown): Pr
 }
 
 export type Thread = { handle: string; title: string; agent: string; state: 'idle' | 'busy' | 'unknown' };
-export type ChoiceMenu = { id: string; question: string; options: { value: string; label: string }[] };
+export type ChoiceMenu = { id: string; question: string; options: { value: string; label: string; description?: string }[] };
 export type Provider = { id: string; models: string[]; ok: boolean; note: string };
 export type Workspace = { id: string; name: string };
 export type Activity = 'working' | 'waiting' | 'attention' | 'unknown';
@@ -70,7 +70,7 @@ export const api = {
   threads: () => call<Thread[]>('GET', '/api/threads'),
   activity: (handle: string) => call<{ state: Activity; elapsedSeconds?: number | null }>('GET', `/api/activity?handle=${encodeURIComponent(handle)}`),
   history: (handle: string) => call<{ text: string; source?: string; limited?: boolean; messageCount?: number; reason?: string }>('GET', `/api/history?handle=${encodeURIComponent(handle)}`),
-  thread: (handle: string) => call<{ text: string; menu?: ChoiceMenu | null }>('GET', `/api/thread?handle=${encodeURIComponent(handle)}`),
+  thread: (handle: string) => call<{ text: string; menu?: ChoiceMenu | null; progress?: string }>('GET', `/api/thread?handle=${encodeURIComponent(handle)}`),
   choice: (handle: string, menuId: string, value: string) => call<{ sent: string }>('POST', '/api/choice', { handle, menuId, value }),
   replies: () => call<string[]>('GET', '/api/replies'),
   reply: (handle: string, index: number) => call<{ sent: string }>('POST', '/api/reply', { handle, index }),
