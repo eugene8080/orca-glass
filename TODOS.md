@@ -1,19 +1,19 @@
 # Orca Glass TODOs
 Updated: 2026-11-04
 
-Current beta: **1.0.24**.91 tests/build/doctor passed for Claude reader/progress/choices. Simulator stays
-open for user review; visual changes require preview approval before beta upload.
+Current beta: **1.0.25**.97 tests/build/doctor passed for workspace filtering.
+Workspace-filter preview approved, released and retired with merged worktree cleanup.
+Future visual changes require preview approval before beta upload.
 Completed/superseded release notes: [history](docs/todo-history.md).
 
 ## Open work
 
-- [ ] **Workspace multi-filter / workspace-agent row labels:** implemented in
-  feature/workspace-filter (separate Orca worktree). Filter by Workspace is directly
-  below Filter by Agent; native [x]/[ ] selections persist, combine with agent
-  filter and retain cursor. Session labels include [porttracker/Claude] and
-  [orca-glass/Codex].97 tests/build/doctor pass, native simulator verified two
-  selected workspaces and filtered results; preview OPEN on8793/9900. Await user
-  preview approval before beta/release integration. Production beta1.0.24 unchanged.
+- [ ] **Workspace multi-filter / workspace-agent row labels — G2 confirmation:**
+  beta1.0.25 live2026-11-04. Native [x]/[ ] selections persist and combine with
+  agent filtering; session labels show [workspace/Agent].97 tests/build/doctor
+  and native simulator checks pass; user approved upload. Bridge restarted;
+  local/stableHTTPS health and live workspace metadata verified. PR #1 merged;
+  feature worktree/local/origin branch removed after merge verification.
   See [reader details](docs/session-reader.md).
 - [ ] **Claude/Cursor usage:** beta1.0.23 live; G2 confirmation pending. Shows
   Claude five-hour/weekly and Cursor monthly allowance alongside Codex. User

@@ -1,5 +1,20 @@
 # Session reader
 
+2026-11-04 user approves workspace-filter beta and requests local/origin branch
+cleanup after PR completion. PR https://github.com/eugene8080/orca-glass/pull/1
+merged into windows-android-codex as653b005 (merge preserves feature commits).
+Beta1.0.25 uploaded/promoted and channel verified (49,081 bytes); public remains
+1.0.23.97 tests/build/doctor passed for feature; beta/prototype builds pass.
+Production scheduled bridge restarted after verifying listener/supervisor; new
+supervisor55188 recorded in .local/custom.pid. Local/stableHTTPS health pass;
+14 live sessions all include workspaceId/workspaceName metadata. G2 test pending.
+Verified feature HEAD fully merged and worktree clean. Saved synthetic reviewed
+captures under main .local/workspace-filter-reviewed-preview. Closed two feature
+preview tabs plus verified empty default pwsh. Unlinked dependency junction without
+following it; Orca removed feature worktree and local branch, origin branch deleted.
+Verified feature path/local/origin branch absent and main dependencies intact.
+No live provider input or public-channel change. User screenshot remains untouched.
+
 2026-11-04 workspace-filter feature is isolated in Orca child worktree
 C:/Users/eugen/orca/workspaces/orca-glass/workspace-filter on feature/workspace-filter,
 based on windows-android-codex984ddbd. User requests a second session-list row
