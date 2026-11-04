@@ -1,19 +1,19 @@
 # Orca Glass TODOs
 Updated: 2026-11-04
 
-Current beta: **1.0.25**.97 tests/build/doctor passed for workspace filtering.
+Current beta: **1.0.26**.101 tests/build/doctor passed for swipe-only menu paging.
 Workspace-filter preview approved, released and retired with merged worktree cleanup.
 Future visual changes require preview approval before beta upload.
 Completed/superseded release notes: [history](docs/todo-history.md).
 
 ## Open work
 
-- [ ] **Swipe-only menu paging:** prepared for sessions and workspace picker;
+- [ ] **Swipe-only menu paging — G2 confirmation:** beta1.0.26 live;
   no Previous/Next rows. Swipe past last/first row changes pages and selects the
   opposite edge; outer ends clamp. Seven entries plus two controls per page.
  101 tests/build/doctor pass, native simulator forward/reverse checks pass.
-  Preview OPEN (fixture8791/simulator9900); awaiting approval before beta upload.
-  Installed beta1.0.25 unchanged. See [reader details](docs/session-reader.md).
+  User approved upload; beta channel verified (49,179 bytes). Preview OPEN
+  (fixture8791/simulator9900); stableHTTPS health ok. Awaiting G2 check on1.0.26. See [reader details](docs/session-reader.md).
 - [ ] **Claude/Cursor usage:** beta1.0.23 live; G2 confirmation pending. Shows
   Claude five-hour/weekly and Cursor monthly allowance alongside Codex. User
   approved simulator2026-11-03; beta channel verified, bridge restarted and

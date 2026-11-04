@@ -1,5 +1,12 @@
 # Session reader
 
+2026-11-04 user explicitly approves swipe-only paging beta after observing old
+Previous/Next rows on installed1.0.25. Beta1.0.26 uploaded/promoted and channel
+verified (49,179 bytes); public remains1.0.23.101 tests/build/doctor passed for
+implementation; beta and restored prototype builds pass. StableHTTPS health ok.
+App-only update; no bridge restart required. Simulator remains OPEN for review.
+G2 paging confirmation pending; user must install1.0.26 in the Even app.
+
 2026-11-04 user confirms workspace filter beta1.0.25 works on G2, then requests
 removal of Previous/Next rows from main sessions and workspace checkbox picker.
 Both now page on a swipe beyond the last/first row; next page selects first row,
