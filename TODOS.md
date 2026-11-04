@@ -26,13 +26,14 @@ Completed/superseded release notes: [history](docs/todo-history.md).
   Claude five-hour/weekly and Cursor monthly allowance alongside Codex. User
   approved simulator2026-11-03; beta channel verified, bridge restarted and
   local/stableHTTPS endpoints return ok for all three.79 tests/build/doctor pass.
-- [ ] **Hermes integration review/deployment:** worker branch
-  eugene8080/hermes-bridge atd02caff implemented, not in beta1.0.27.2026-11-04
-  recheck:107 tests/build/doctor pass;15 live-discovered sessions, zero unavailable
-  profiles; isolated fixture8795/native9902 healthy. Merge-tree reports only shared
-  notes/TODO conflicts; combined source integration remains untested. No live
-  prompts, merge, config change or deployment. See the worker branch's
-  docs/hermes-bridge.md; user preview/G2/real confirmed reply checks remain pending.
+- [ ] **Hermes PR fixes/integration:** [PR #2](https://github.com/eugene8080/orca-glass/pull/2)
+  created from eugene8080/hermes-bridge atd02caff. Review found two P2 bugs: hidden
+  model-facing rows rendered in stored history, and valid compressed stored reads
+  rejected by parent/child timestamp mismatch. Both reproduced synthetically;
+  existing107 tests pass but lack these cases. See [review](docs/hermes-pr-review.md).
+  Resolve fixes and shared notes/TODO conflicts, then test combined integration.
+  No live prompt/reply, merge or release; beta1.0.27 unchanged. G2/real confirmed
+  reply verification remains pending after approved deployment.
 - [ ] **General installation / public listing follow-up:** public1.0.23 is live;
   beta1.0.27 is current. README/Even Hub description updated2026-11-04, saved and
   verified after reload. Packaged origin is still one configured private PC, so

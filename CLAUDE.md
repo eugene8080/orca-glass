@@ -50,6 +50,17 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-04 user requests Hermes PR creation during code review. Created
+https://github.com/eugene8080/orca-glass/pull/2 from eugene8080/hermes-bridge at
+d02caff into windows-android-codex; open, merge conflicts in shared notes/TODOs.
+Completed review finds two P2 issues: stored model-replay history renders
+hidden display_kind rows, and compressed picker parent timestamps fail physical
+child-row identity checks. Both synthetically reproduced against the helper;
+second uses installed gateway _picker_row mapping. Existing107 tests pass but
+miss these cases. Findings/reproduction recorded in docs/hermes-pr-review.md and
+PR body. No real prompt/reply/resume, code fix, merge or deployment. Beta1.0.27
+unchanged. Fixes and combined integration tests required before merge.
+
 2026-11-04 user requests Even Hub README refresh and Hermes-bridge status.
 Updated store description in dedicated Eugene Chrome's existing Even Hub tab,
 Store listing > Description > Edit > Confirm. Reload confirms persisted beta1.0.27
