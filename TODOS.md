@@ -8,6 +8,8 @@ Completed/superseded release notes: [history](docs/todo-history.md).
 
 ## Open work
 
+- [ ] **Hermes bridge review/deployment:** implemented in child `eugene8080/hermes-bridge`; all models group as Hermes, live/stored Desktop/profile sessions use exact reads and confirmed replies.107 tests/build/doctor and synthetic native checks pass; seven-Hermes preview LEFT OPEN on8795/9902. See [implementation status](docs/hermes-bridge.md). Production unchanged; coordinator review, preview approval, deployment and G2/real confirmed reply checks pending.
+
 - [ ] **Swipe-only menu paging — G2 confirmation:** beta1.0.26 live;
   no Previous/Next rows. Swipe past last/first row changes pages and selects the
   opposite edge; outer ends clamp. Seven entries plus two controls per page.

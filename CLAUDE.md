@@ -50,6 +50,21 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-04 Hermes adapter implemented in child eugene8080/hermes-bridge from
+8caa276, pending coordinator review. Stable hermes/Hermes identity across models;
+installed authenticated gateway transport covers live and stored Desktop/profile
+sessions without another installation or runtime. Exact profile/session/owner
+checks protect reads and confirmed replies; reciprocal Orca pane/profile receipts
+assign workspaces, otherwise explicit Hermes profile groups.107 tests/build/doctor
+pass; read-only discovery found15 Hermes sessions, including both live/stored
+Desktop history. No live prompts, production restart/config change or beta upload.
+Native synthetic preview LEFT OPEN in child workspace: fixture8795
+term_9c62e87a-7074-4277-ba84-08ec0d2facde; simulator9902
+term_9eb00df6-46b1-4ce7-b587-b60b47e26e5b. Seven mixed-model Hermes sessions plus
+Codex/Claude; filter, reader and one exact confirmed synthetic reply verified.
+See docs/hermes-bridge.md for plan, limits and review steps. Main checkout's
+unrelated usage changes/screenshot untouched; G2 and real confirmed reply pending.
+
 2026-11-04 user requests unused-tab cleanup in this workspace. Closed completed
 G2 Menu Swipe Preview (term_ca89245d-e79b-4863-89c1-a65ddb9e8f8e) and isolated
 fixture/Vite tab (term_fb9c320c-6a93-402e-b6bb-748a21072f5e). Orca confirms both

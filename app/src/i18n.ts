@@ -4,7 +4,7 @@ export type Lang = 'en';
 const dict = {
   en: {
     error: 'Error: {0}',
-    homeTitle: 'Orca · {0} connected terminals',
+    homeTitle: 'Orca · {0} sessions',
     newSession: '＋ New session',
     usage: '◇ Usage',
     replyTitle: 'Reply → {0}',
