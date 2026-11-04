@@ -1,5 +1,11 @@
 # Session reader
 
+2026-11-04 user confirms beta1.0.24 works on G2 after upload. Claude saved-chat /
+blank-reader fix, concise progress and numbered-input feature group accepted;
+move those items to Completed in TODOS.md. This is overall release confirmation,
+not separate evidence for every native/voice edge case. Usage confirmation and
+SDK popup/auto-follow requests remain open. Documentation only; no runtime change.
+
 2026-11-04 user approves upload of the Claude reader/progress/numbered-input
 preview. Beta1.0.24 uploaded/promoted; channel verified (48,244 bytes), public
 channel remains1.0.23.91 tests/build/doctor passed for implementation; beta package
