@@ -3,12 +3,35 @@ Updated: 2026-11-05
 
 ## Current status
 
-2026-11-05: user asks to publish 1.0.36 publicly (option chosen: refresh store text,
-recheck privacy attachment, then submit after confirmation). description.txt rewritten
-for 1.0.36 (1,630 characters) but NOT yet saved in the portal; no review submitted.
-Blocked: Claude-in-Chrome lists no connected browser, so the dedicated Eugene Chrome
-profile is unreachable from this session. Public publishing is portal-only (the CLI
-promote command accepts beta only).
+2026-11-05: public-release preparation now completed in dedicated Eugene Chrome
+(window10228026), reached through Orca computer-use after browser connector error.
+Saved the exact1,630-character store/description.txt through Description > Edit >
+Confirm. Reload readback matches the source after whitespace normalization; the
+configured-private-PC/Tailscale and non-self-service limitation remains explicit.
+Selected v1.0.36 through Publish to hub > Select build > Confirm. Portal now shows
+v1.0.36 as the candidate and Submit for review. FINAL SUBMIT NOT CLICKED: Eugene
+explicitly requires confirmation after the description/privacy recheck.
+Read-only CLI confirms1.0.36 on beta,51,971bytes; public remains1.0.23.
+
+Opened the CURRENT attached PDF through its portal attachment button. Chrome's
+PDF viewer exposes three pages, effective November4,2026. It is the generated
+policy, not store/Orca-Glass-Privacy-and-Terms.pdf. Header says AI Used: No and
+Location Tracked: No; lists glasses microphone/local-network permissions and no
+third-party services. Specific collection categories and sharing paragraph are
+absent, but template still describes developer collection/retention, uninstall
+stopping collection, safeguards, and deletion of children's data from our servers.
+Phone/address appear in header and contact sections (values/attachment URL not
+copied here). Terms cover lawful use/account responsibility, prohibit reverse
+engineering/bypassing restrictions, claim developer/licensor ownership, disclaim
+warranties and indirect liability, and permit changed terms. These points still
+conflict with the documented user-controlled processing/MIT model. Corrected repo
+PDF remains unattached; no policy replacement or contact/profile edit performed.
+
+Waiting on Eugene's explicit choice to submit1.0.36 with this attachment or hold
+for corrected policy. No review submitted, public publication, beta change,
+app/bridge edit, or message to anyone. Source description unchanged. Screenshots
+and full browser trees remain ignored local evidence only; do not commit the
+original PDF, its CDN URL or personal phone/address.
 
 2026-11-04 later release: beta **1.0.28** promoted and CLI channel verified;
 public remains1.0.23. Hermes support is now in beta. The portal description below

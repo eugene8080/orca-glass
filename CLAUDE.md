@@ -50,6 +50,20 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-05 public-release handoff: reached dedicated Eugene Chrome/window10228026
+through Orca computer-use (browser getTab fails timeoutMs). Saved exact1630-char
+store/description.txt and verified normalized persisted text after reload. Selected
+v1.0.36 in Publish to hub > Select build, confirmed selection only. FINAL Submit
+for review NOT clicked; user explicitly asks confirmation after description and
+privacy inspection. Current attached generated PDF opened in Chrome:3 pages,
+effectiveNov4, AI Used: No, phone/address, developer retention/uninstall/server-
+deletion language, reverse-engineering ban; specific data categories/sharing text
+absent. Corrected repo policy remains unattached. Details in store/listing.md and
+TODOS.md. User decision pending: submit with current attachment or hold/correct.
+Read-only CLI beta1.0.36=51,971bytes, public1.0.23 unchanged. No app/bridge/beta
+change, final review submission or messages. PDF/URL/personal contacts not committed.
+Portal left on selected1.0.36 and Submit for review; PDF tab remains open.
+
 2026-11-05 user approves 1.0.36 (separate Hermes/Orca filters + Hermes Bots/Sessions/
 Scheduled jobs). Beta1.0.36 uploaded/promoted51,971bytes, public1.0.23.132 tests pass.
 Bridge restarted (old5356/81532/70068; new55704/80588/10560 --vad); healthz ok.
