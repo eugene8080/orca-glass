@@ -1090,3 +1090,23 @@ test('Usage restores its saved reset mode', async () => {
   assert.match(h.pages.at(-1).textObject.find(c => c.containerName === 'usage-reset').content, /Absolute time/);
   assert.match(h.pages.at(-1).textObject.find(c => c.containerName === 'body').content, /Monthly 2% \(0m\)/);
 });
+
+test('native text widths use measured firmware advances so rows reach the right edge', () => {
+  // Values measured in the native simulator; Arial 21px would report ~10-15% more.
+  assert.equal(textExports.glassTextWidth('Page 2 of 2'), 98);
+  assert.equal(textExports.glassTextWidth('[Tap & hold to input]'), 177);
+  assert.equal(textExports.glassTextWidth('…', () => 9), 9);
+  const prose = 'The reader now wraps every row with the measured firmware glyph widths instead of the wider browser Arial estimate, so each row runs close to the frame.';
+  const rows = textExports.readerPages(prose, t => textExports.glassTextWidth(t), 552)[0].split('\n');
+  assert.ok(rows.every(row => textExports.glassTextWidth(row) <= 552));
+  assert.ok(textExports.glassTextWidth(rows[0]) > 500, 'first row should fill most of the 560px body');
+  // Right-aligned labels keep 3px slack: a 278px line wrapped in a 280px container.
+  const padded = listExports.nativeRight('Page 2 of 2', 280);
+  assert.ok(textExports.glassTextWidth(padded) <= 277 && textExports.glassTextWidth(padded) > 270);
+});
+
+test('session titles extend to their own label and keep the handle suffix', () => {
+  const title = listExports.menuTitle('Campaign A50 exception loads and remaining scope review · a1b2c3', 300);
+  assert.ok(title.endsWith('… · a1b2c3'), title);
+  assert.equal(listExports.menuTitle('Short title · a1b2c3', 300), 'Short title · a1b2c3');
+});

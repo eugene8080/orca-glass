@@ -8,6 +8,15 @@ Completed/superseded release notes: [history](docs/todo-history.md).
 
 ## Open work
 
+- [ ] **Full-width text (firmware font widths) — preview approval, then G2:** user
+  reported session screens stop 8-10 letters short of the right edge. Cause: reader
+  wrap, list titles and right-aligned labels measured with browser Arial 21px, ~10-15%
+  wider than the native font. Glyph advances for ASCII measured in the native simulator
+  (.local/glyph-calibration); reader wraps at552 of560px, list titles extend to their
+  own label (handle suffix kept), labels/hint keep3px slack (278px wrapped in280px).
+  118 tests/build/doctor pass. Preview OPEN in simulator9900/fixture8791. Not uploaded;
+  beta1.0.29 unchanged. Hardware font fidelity unverified until G2 check.
+
 - [ ] **Book-style reader — G2 confirmation:** native six-row whole-page
   swipes; bottom Page X of Y, latest page on open, frozen snapshot while browsing.
   Preserves source nested lists and complete two-digit numbers. Resolves previously

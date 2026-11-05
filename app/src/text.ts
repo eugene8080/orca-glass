@@ -1,6 +1,21 @@
 // グラスの表示上限はバイト数で決まる(リスト項目 63B / テキスト 999B)。日本語は1文字3バイト。
 const enc = new TextEncoder();
 
+// Pixel advances of the native G2 text font for printable ASCII (space..~), measured
+// 2026-11-04 in the official native simulator from synthetic bar-delimited rows of
+// 13 and 26 repeated glyphs. Browser 21px Arial is ~10-15% wider, which wrapped
+// reader rows and clipped list labels about 8-10 letters short of the right edge.
+// Other characters fall back to the caller's measure (Arial overestimates, so safe).
+const GLASS_ADVANCE = [5,4,6,14,12,14,15,4,6,6,8,10,5,10,5,5,12,7,11,12,12,12,12,12,12,12,4,5,10,10,10,12,17,13,12,11,12,10,10,12,12,5,8,12,9,16,12,12,12,12,12,11,10,12,13,16,13,13,12,7,5,7,10,9,4,11,11,10,11,10,7,11,11,5,5,9,4,16,11,10,11,11,7,10,6,11,11,15,11,11,9,8,4,8,16];
+export function glassTextWidth(text: string, fallback: (ch: string) => number = () => 21): number {
+  let width = 0;
+  for (const ch of text) {
+    const code = ch.codePointAt(0)! - 32;
+    width += code >= 0 && code < GLASS_ADVANCE.length ? GLASS_ADVANCE[code] : fallback(ch);
+  }
+  return width;
+}
+
 // Match a reviewed spoken number only, never infer approval from a sentence
 // that happens to contain one. The server still revalidates the captured menu.
 export function choiceNumber(text: string): string | null {

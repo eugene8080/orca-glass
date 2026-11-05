@@ -380,3 +380,16 @@ Live bridge selected Codex session returned working with1282 seconds. Hardware
 G2 rendering/voice checks remain pending; simulator screenshots are not proof of
 hardware optical depth. Filter Agents retains its existing normal-distance page;
 the SDK has no supported nested near-field submenu API.
+
+## Firmware font widths (2026-11-04, unreleased)
+
+Reader pages, session-list titles and right-aligned labels now use measured native
+glyph advances (`glassTextWidth` in `app/src/text.ts`) instead of browser Arial 21px,
+which over-measured by ~10-15% and stopped rows 8-10 letters short. Advances for
+printable ASCII were measured in the official native simulator from bar-delimited
+rows of 13 and 26 repeated glyphs; other characters still use Arial (an overestimate).
+560px rows render on one line in the simulator; the reader wraps at 552px for slack.
+A right-padded 278px line wrapped in a 280px hint container while 277px fit, so
+`nativeRight` keeps 3px slack. List titles share the full width under the label column
+and are fitted per row to end 8px before their own label. Hardware font fidelity is
+not yet confirmed on G2.

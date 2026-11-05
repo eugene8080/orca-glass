@@ -50,6 +50,14 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-04 user reports session screens stop8-10 letters short of right edge.
+Cause: Arial21px measurement wider than native font. Measured ASCII advances in
+native simulator; reader wraps at552/560px, list titles fill to own label, labels/
+hint keep3px slack.118 tests/build/doctor pass. Simulator restarted twice in its
+existing tab (Vite reload returned app home; double-click exited); preview LEFT OPEN
+on synthetic reader page1of2 (9900/8791). No beta upload; 1.0.29 unchanged.
+Preview approval and G2 check pending.
+
 2026-11-04 user approves book-reader beta upload. Beta1.0.29 uploaded/promoted;
 channel verified50,436bytes, public remains1.0.23.116 tests pass; beta package
 and restored prototype builds pass. StableHTTPS health ok. App-only release,

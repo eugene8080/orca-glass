@@ -19,7 +19,7 @@ import {
 import { api, currentBase, setApiLang, setConnection, setDemo, type ChoiceMenu, type Provider, type Thread, type Usage, type Workspace } from './api';
 import { parseCode, resolveBase } from './pairing';
 import { applyPage, detectLang, setLang, t as tr } from './i18n';
-import { clipBytes, textSections, readerPages, choiceNumber, readerContent } from './text';
+import { clipBytes, textSections, readerPages, choiceNumber, readerContent, glassTextWidth } from './text';
 import { readerStatus, statusPixels, voiceBorderPixels, SPINNER } from './reader-status';
 import { footerHint } from './footer-hint';
 import { formatReset, RESET_MODES, resetModeLabel, type ResetMode } from './usage-reset';
@@ -81,12 +81,16 @@ function selectThread(t: Thread | null) {
   document.getElementById('reply-target')!.textContent = t ? `Reply to: ${t.title} (${t.handle.slice(-8)})` : '';
 }
 
+// Reader body is 560px wide with no padding. 560px rows fit in the simulator; keep
+// 8px (under one glyph) in case hardware rendering differs slightly.
+const READER_WRAP_WIDTH = 552;
 type TextScreen = Extract<Screen, { kind: 'text' }>;
 function readerLayout(s: TextScreen) {
   if (s.pageText !== s.text || !s.pages) {
     const ctx = document.createElement?.('canvas').getContext('2d');
     if (ctx) ctx.font = '21px Arial';
-    s.pages = readerPages(s.text, text => ctx ? ctx.measureText(text).width : [...text].length * 12);
+    // Wrap with the measured firmware font; Arial only sizes non-ASCII glyphs.
+    s.pages = readerPages(s.text, text => glassTextWidth(text, ch => ctx ? ctx.measureText(ch).width : 21), READER_WRAP_WIDTH);
     s.pageText = s.text;
   }
   return s.pages;
