@@ -116,3 +116,34 @@ export function textSections(text: string, limit = 900): string[] {
   sections.push(section);
   return sections.reverse();
 }
+
+// Explicit six-row pages fit above the voice panel. Keep every source character
+// and the hardware-proven byte budget; page boundaries never slice list numbers.
+export function readerPages(text: string, measure: (text: string) => number, width = 550, rowsPerPage = 6, byteLimit = 900): string[] {
+  const rows: string[] = [];
+  for (const line of text.split('\n')) {
+    if (!line) { rows.push(''); continue; }
+    let row = '';
+    for (const token of line.match(/\s+|\S+/gu) || []) {
+      if (measure(row + token) <= width && enc.encode(row + token).length <= byteLimit) { row += token; continue; }
+      if (row) { rows.push(row); row = ''; }
+      for (const ch of token) {
+        if (row && (measure(row + ch) > width || enc.encode(row + ch).length > byteLimit)) {
+          rows.push(row); row = '';
+        }
+        row += ch;
+      }
+    }
+    rows.push(row);
+  }
+  const pages: string[] = [];
+  let page: string[] = [];
+  for (const row of rows) {
+    if (page.length && (page.length === rowsPerPage || enc.encode([...page, row].join('\n')).length > byteLimit)) {
+      pages.push(page.join('\n')); page = [];
+    }
+    page.push(row);
+  }
+  if (page.length) pages.push(page.join('\n'));
+  return pages.length ? pages : [''];
+}

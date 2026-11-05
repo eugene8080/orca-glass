@@ -42,3 +42,9 @@ test('Claude solid-circle replies are recognized while tool-only screens stay fi
   assert.equal(terminalConversation(['❯ Question', '● Update(file.txt)', '  hidden diff', '● Visible answer', '  continuation', '❯ ', '? for shortcuts'], 'claude'), '/ Question\n> Visible answer\n  continuation');
   assert.equal(terminalConversation(['● Update(file.txt)', '  hidden diff', '⎿ Allowed by auto', '✻ Thinking'], 'claude'), '');
 });
+
+test('nested bullets and two-digit list numbers remain literal in conversation display', () => {
+  const source = 'Open:\n- Group\n  - Nested bullet\n  1. Nested ordered\n  2. Second\n\n11. Eleven\n12. Twelve\n13. Thirteen\n14. Fourteen\n15. Fifteen\n19. Nineteen';
+  assert.equal(formatMessages([{ role: 'assistant', text: source }]),
+    source.split('\n').map((line, i) => (i ? '  ' : '> ') + line).join('\n'));
+});

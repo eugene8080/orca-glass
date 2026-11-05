@@ -288,21 +288,30 @@ test('text pages preserve long Unicode output within row and byte limits', () =>
   assert.ok(pages.every(p => new TextEncoder().encode(p).length <= 999 && p.split('\n').length <= 8));
 });
 
-test('firmware gets overflowing text; scroll does not replace content and pauses polls', async () => {
+test('reader flips six-row pages, shows position, clamps ends and freezes incoming text', async () => {
   const h = await harness();
   const output = Array.from({ length: 20 }, (_, i) => `Line ${i}`).join('\n');
   h.api.thread = async () => ({ text: output });
   await h.pick(2);
-  assert.equal(h.pages.at(-1).textObject[1].content, output);
-  assert.equal(h.pages.at(-1).textObject[1].isEventCapture, 1);
-  await h.scroll('up'); await h.scroll('down');
+  assert.equal(h.pages.at(-1).textObject[1].content, 'Line 18\nLine 19');
+  assert.match(h.pages.at(-1).textObject.find(c => c.containerName === 'hint').content.trim(), /Page 4 of 4$/);
+  const body = () => h.upgrades.findLast(u => u.containerName === 'body')?.content;
+  await h.scroll('up');
+  assert.equal(body(), 'Line 12\nLine 13\nLine 14\nLine 15\nLine 16\nLine 17');
+  assert.match(h.upgrades.findLast(u => u.containerName === 'hint').content.trim(), /Page 3 of 4/);
+  await h.scroll('up'); await h.scroll('up');
+  assert.match(h.upgrades.findLast(u => u.containerName === 'hint').content.trim(), /Page 1 of 4/);
+  const writes = h.upgrades.length;
+  await h.scroll('up');
   h.api.thread = async () => ({ text: 'Updated output' });
   await [...h.timers.values()][0]();
-  assert.equal(h.upgrades.length, 0);
+  assert.equal(h.upgrades.length, writes);
   const count = h.pages.length;
   await h.tap();
   assert.equal(h.pages.length, count);
-  assert.equal(h.upgrades.length, 0);
+  assert.equal(h.upgrades.length, writes);
+  await h.scroll('down');
+  assert.equal(body(), 'Line 6\nLine 7\nLine 8\nLine 9\nLine 10\nLine 11');
 });
 
 test('Unicode sections preserve all text within native update limit', () => {
@@ -349,20 +358,59 @@ test('cancel during preview prevents late captions and input', async () => {
   assert.equal(h.sends.length, 0);
 });
 
-test('saved conversation stays intact through repeated scroll gestures and pauses polling', async () => {
+test('saved history is reachable in both directions without dropped or renumbered nested items', async () => {
   const h = await harness();
-  const text = 'First conversation message '.repeat(200) + 'Newest answer';
-  h.api.history = async () => ({ text, source: 'codex-transcript', messageCount: 20 });
+  const text = '> Open items:\n' + Array.from({ length: 19 }, (_, i) => `  ${i + 1}. Item ${i + 1}`).join('\n') + '\n  - Group\n    1. Nested one\n    2. Nested two';
+  h.api.history = async () => ({ text, source: 'claude-transcript' });
   await h.pick(2);
-  assert.equal(h.pages.at(-1).textObject[1].content, '');
-  assert.equal(h.upgrades.at(-1).content, text.slice(-900));
-  const count = h.upgrades.length, pages = h.pages.length;
-  for (let i = 0; i < 20; i++) { await h.scroll('up'); await h.scroll('down'); }
-  h.api.history = async () => ({ text: text + 'new output', source: 'codex-transcript' });
-  for (const timer of h.timers.values()) await timer();
-  assert.equal(h.upgrades.length, count);
-  assert.equal(h.pages.length, pages);
+  const expected = [...textExports.readerPages(text, t => [...t].length * 12)];
+  const seen = [h.pages.at(-1).textObject[1].content];
+  const pageCount = h.pages.length;
+  for (let i = 1; i < expected.length; i++) {
+    await h.scroll('up');
+    seen.unshift(h.upgrades.findLast(u => u.containerName === 'body').content);
+  }
+  assert.deepEqual(seen, expected);
+  assert.equal(seen.join('\n'), text);
+  for (let i = 1; i <= 19; i++) assert.ok(seen.join('\n').includes(`  ${i}. Item ${i}`));
+  for (let i = 1; i < expected.length; i++) await h.scroll('down');
+  assert.equal(h.upgrades.findLast(u => u.containerName === 'body').content, expected.at(-1));
+  const writes = h.upgrades.length;
+  h.api.history = async () => ({ text: text + '\nNew output', source: 'claude-transcript' });
+  await [...h.timers.values()][0]();
+  assert.equal(h.upgrades.length, writes);
+  assert.equal(h.pages.length, pageCount);
   assert.equal(h.sends.length, 0);
+});
+
+test('rapid reader swipes serialize writes and never rebuild the page or send input', async () => {
+  const h = await harness();
+  h.api.thread = async () => ({ text: Array.from({ length: 30 }, (_, i) => `Line ${i}`).join('\n') });
+  await h.pick(2);
+  let release;
+  const original = h.bridge.textContainerUpgrade;
+  h.bridge.textContainerUpgrade = value => {
+    if (value.containerName !== 'body') return original(value);
+    h.bridge.textContainerUpgrade = original;
+    return new Promise(resolve => { release = () => { original(value); resolve(true); }; });
+  };
+  const rebuilds = h.pages.length;
+  await h.scroll('up'); await h.scroll('up'); await h.scroll('up');
+  release(); await h.flush();
+  assert.equal(h.upgrades.findLast(u => u.containerName === 'body').content, 'Line 6\nLine 7\nLine 8\nLine 9\nLine 10\nLine 11');
+  assert.match(h.upgrades.findLast(u => u.containerName === 'hint').content.trim(), /Page 2 of 5/);
+  assert.equal(h.pages.length, rebuilds);
+  assert.equal(h.sends.length, 0);
+});
+
+test('reader page wrapping retains every character with proportional widths and Unicode budgets', () => {
+  const measure = t => [...t].reduce((n, c) => n + (c === 'W' ? 24 : 9), 0);
+  const text = Array.from({ length: 19 }, (_, i) => `  ${i + 1}. WWW item ${i + 1} with wide words and punctuation; ` + '🙂'.repeat(100)).join('\n');
+  const pages = [...textExports.readerPages(text, measure)];
+  assert.equal(pages.join('').replaceAll('\n', ''), text.replaceAll('\n', ''));
+  assert.ok(pages.every(page => page.split('\n').length <= 6 && new TextEncoder().encode(page).length <= 900));
+  assert.ok(pages.every(page => page.split('\n').every(row => measure(row) <= 550)));
+  assert.ok(pages.some(page => page.includes('19.')));
 });
 
 test('hold starts directly from chat even with a saved tap preference, without menu checks', async () => {
@@ -432,8 +480,7 @@ test('capture and bottom-panel review never rebuild or rewrite the chat on send 
     if (send) {
       h.api.history = async () => ({ text: 'New response after voice send', source: 'codex-transcript' });
       await [...h.timers.values()][0]();
-      assert.equal(h.upgrades.at(-1).containerName, 'body');
-      assert.equal(h.upgrades.at(-1).content, 'New response after voice send');
+      assert.equal(h.upgrades.findLast(u => u.containerName === 'body').content, 'New response after voice send');
       assert.equal(h.pages.length, restoredPages);
       await h.scroll('up');
       const pausedWrites = h.upgrades.length;
@@ -509,11 +556,11 @@ test('saved history losing its association falls back to live output and keeps u
   h.api.history = async () => ({ text: 'Raw buffer', source: 'terminal-buffer' });
   h.api.thread = async () => ({ text: 'New live reply' });
   await [...h.timers.values()][0]();
-  assert.equal(h.upgrades.at(-1).content, 'New live reply');
+  assert.equal(h.upgrades.findLast(u => u.containerName === 'body').content, 'New live reply');
   h.api.history = async () => { throw new Error('Must stay on the live source'); };
   h.api.thread = async () => ({ text: 'Next live reply' });
   await [...h.timers.values()][0]();
-  assert.equal(h.upgrades.at(-1).content, 'Next live reply');
+  assert.equal(h.upgrades.findLast(u => u.containerName === 'body').content, 'Next live reply');
 });
 
 test('a rejected live text update is retried instead of marking unseen text as displayed', async () => {
@@ -530,7 +577,7 @@ test('a rejected live text update is retried instead of marking unseen text as d
   assert.match(h.elements.get('diag').textContent, /Retrying/);
   await [...h.timers.values()][0]();
   assert.equal(attempts, 2);
-  assert.equal(h.upgrades.at(-1).content, 'Fresh reply');
+  assert.equal(h.upgrades.findLast(u => u.containerName === 'body').content, 'Fresh reply');
 });
 
  test('session click does nothing without a detected numbered prompt', async () => {

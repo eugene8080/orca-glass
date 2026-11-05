@@ -50,6 +50,25 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-04 user reports Campaign list numbering/missing items and requests Books-style
+reader pages. Read-only saved Claude history matches source nested bullets plus
+1-5 sublist; user corrected initial1-19 claim after supplying actual terminal
+screenshot. Preserve source list structure; no numbering rewrite. Existing reader
+loaded only the final900-byte section and never changed sections on swipe, making
+older sections unreachable. Reader now builds measured native six-row/900-byte
+pages, opens latest, swipes whole pages with clamped ends and Page X of Y in the
+bottom hint's third row. No extra containers or image-rendered text. Browsing
+freezes text/page count; status/choice detection continues. Send or reopening
+resumes live latest pages. Voice hides hint/counter, retains three input rows,
+and restores exact page after cancel. Page/body writes serialize with live writes;
+rapid gestures coalesce; hold waits for pending page writes and checks release.
+116 tests/build/doctor pass. Native synthetic8791/9900 check traverses8 pages both
+directions, retains every character/nested bullet/two-digit item1-19, clamps first
+page, and verifies recording/cancel never rewrites body or rebuilds. Preview LEFT
+OPEN on Page6of8 in existing root fixture/simulator tabs. Screenshot API remains
+solid green, so capture is not visual proof. User visual approval/G2 pending;
+no beta upload/bridge restart/live prompt. Beta1.0.28 unchanged.
+
 2026-11-04 user approves Hermes beta and requests worktree/branch cleanup.
 PR #2 merged as5a48a6f; beta1.0.28 uploaded/promoted, channel verified49,867bytes;
 public remains1.0.23.113 tests/doctor and beta/prototype builds pass. Scheduled

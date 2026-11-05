@@ -19,7 +19,7 @@ import {
 import { api, currentBase, setApiLang, setConnection, setDemo, type ChoiceMenu, type Provider, type Thread, type Usage, type Workspace } from './api';
 import { parseCode, resolveBase } from './pairing';
 import { applyPage, detectLang, setLang, t as tr } from './i18n';
-import { clipBytes, textSections, choiceNumber, readerContent } from './text';
+import { clipBytes, textSections, readerPages, choiceNumber, readerContent } from './text';
 import { readerStatus, statusPixels, voiceBorderPixels, SPINNER } from './reader-status';
 import { footerHint } from './footer-hint';
 import { formatReset, RESET_MODES, resetModeLabel, type ResetMode } from './usage-reset';
@@ -33,7 +33,7 @@ const BODY = { containerID: 2, containerName: 'body', xPosition: 0, yPosition: 4
 const VOICE = { containerID: 3, containerName: 'voice', xPosition: 16, yPosition: 202, width: 544, height: 81 };
 const FRAME = { containerID: 4, containerName: 'frame', xPosition: 0, yPosition: 0, width: 576, height: 288 };
 const DIVIDER = { containerID: 5, containerName: 'divider', xPosition: 16, yPosition: 198, width: 544, height: 2 };
-const HINT = { containerID: 6, containerName: 'hint', xPosition: 280, yPosition: 202, width: 280, height: 28 };
+const HINT = { containerID: 6, containerName: 'hint', xPosition: 280, yPosition: 202, width: 280, height: 81 };
 const STATUS_ICON = { containerID: 7, containerName: 'status-icon', xPosition: 16, yPosition: 202, width: 20, height: 28 };
 const VOICE_BORDER_LEFT = { containerID: 8, containerName: 'voice-border-l', xPosition: 8, yPosition: 200, width: 280, height: 84 };
 const VOICE_BORDER_RIGHT = { containerID: 9, containerName: 'voice-border-r', xPosition: 288, yPosition: 200, width: 280, height: 84 };
@@ -46,7 +46,7 @@ const POLL_MS = 1000;
 
 type Screen =
   | { kind: 'list'; title: string; items: string[]; sessionList?: boolean; workspacePicker?: boolean; menuActions?: { id: number; label: string; run: () => unknown }[]; compat?: boolean; columns?: SessionColumns[]; connectedCount?: number; selected?: number; paintedSelection?: number; menuFrame?: number; paintedCursor?: string; cursorWriting?: boolean; paging?: boolean; onPreviousPage?: () => unknown; onNextPage?: () => unknown; onPick: (i: number) => void; onBack?: () => void }
-  | { kind: 'text'; title: string; text: string; usageMode?: ResetMode; conversationText?: string; choiceMenu?: ChoiceMenu | null; tail?: boolean; offset?: number; reading?: boolean; activityLabel?: string; activityState?: string; reportedSeconds?: number | null; statusFrame?: number; statusStartedAt?: number; savedHistory?: boolean; reader?: Thread; onClick?: () => void; onBack?: () => void; onHold?: () => void; };
+  | { kind: 'text'; title: string; text: string; usageMode?: ResetMode; conversationText?: string; choiceMenu?: ChoiceMenu | null; tail?: boolean; offset?: number; pageText?: string; pages?: string[]; pageTarget?: number; pageWriting?: boolean; reading?: boolean; activityLabel?: string; activityState?: string; reportedSeconds?: number | null; statusFrame?: number; statusStartedAt?: number; savedHistory?: boolean; reader?: Thread; onClick?: () => void; onBack?: () => void; onHold?: () => void; };
 
 let bridge: EvenAppBridge;
 let current: Screen | null = null;
@@ -56,6 +56,7 @@ let poll: ReturnType<typeof setInterval> | undefined;
 let menuPoll: ReturnType<typeof setInterval> | undefined;
 let menuAnimation: ReturnType<typeof setInterval> | undefined;
 let statusAnimation: ReturnType<typeof setInterval> | undefined;
+let readerWrites: Promise<void> = Promise.resolve();
 let panelWrites: Promise<void> = Promise.resolve();
 let sessionCursorWrites: Promise<void> = Promise.resolve();
 let voiceBorderVisible = false;
@@ -80,15 +81,50 @@ function selectThread(t: Thread | null) {
   document.getElementById('reply-target')!.textContent = t ? `Reply to: ${t.title} (${t.handle.slice(-8)})` : '';
 }
 
-// Send overflowing text intact; the G2 firmware owns movement within a section.
-function bodyText(s: { text: string; tail?: boolean; offset?: number }) {
-  const sections = textSections(s.text);
+type TextScreen = Extract<Screen, { kind: 'text' }>;
+function readerLayout(s: TextScreen) {
+  if (s.pageText !== s.text || !s.pages) {
+    const ctx = document.createElement?.('canvas').getContext('2d');
+    if (ctx) ctx.font = '21px Arial';
+    s.pages = readerPages(s.text, text => ctx ? ctx.measureText(text).width : [...text].length * 12);
+    s.pageText = s.text;
+  }
+  return s.pages;
+}
+
+function bodyText(s: TextScreen) {
+  const sections = s.reader ? readerLayout(s) : textSections(s.text);
   s.offset = Math.max(0, Math.min(s.offset ?? (s.tail ? sections.length - 1 : 0), sections.length - 1));
   return sections[s.offset];
 }
 
-function screenTitle(s: Screen) {
-  return s.title;
+function screenTitle(s: Screen) { return s.title; }
+
+function readerHint(s: TextScreen, seconds: number | null | undefined) {
+  bodyText(s);
+  return nativeRight(footerHint(seconds, !!s.choiceMenu), HINT.width) + '\n\n' +
+    nativeRight(`Page ${s.offset! + 1} of ${s.pages!.length}`, HINT.width);
+}
+
+function flipReader(s: TextScreen, delta: number) {
+  s.reading = true; // Freeze this snapshot and its page count while browsing.
+  const pages = readerLayout(s);
+  s.pageTarget = Math.max(0, Math.min(pages.length - 1, (s.pageTarget ?? s.offset ?? 0) + delta));
+  if (s.pageWriting) return;
+  s.pageWriting = true;
+  const write = readerWrites.then(async () => {
+    while (current === s && s.pageTarget !== s.offset) {
+      const target = s.pageTarget!;
+      const next = { ...s, offset: target };
+      const content = bodyText(next);
+      if (!await bridge.textContainerUpgrade(new TextContainerUpgrade({ containerID: BODY.containerID, containerName: BODY.containerName, content }))) throw new Error('Glasses rejected the page. Swipe to retry.');
+      if (current !== s) return;
+      s.offset = target;
+      await inputHint(true);
+      if (current !== s) return;
+    }
+  });
+  readerWrites = write.catch(e => diag((e as Error).message)).finally(() => { s.pageWriting = false; s.pageTarget = undefined; });
 }
 
 function activityLabel(state: string) {
@@ -134,7 +170,7 @@ async function inputHint(visible: boolean) {
   const write = panelWrites.then(async () => {
     if (visible && current !== owner) return;
     await bridge.textContainerUpgrade(new TextContainerUpgrade({ containerID: HINT.containerID, containerName: HINT.containerName,
-      content: visible ? nativeRight(footerHint(seconds, owner?.kind === 'text' && !!owner.choiceMenu), HINT.width) : ' ', textColor: 4 }));
+      content: visible && owner?.kind === 'text' && owner.reader ? readerHint(owner, seconds) : visible ? nativeRight(footerHint(seconds, false), HINT.width) : ' ', textColor: 4 }));
   });
   panelWrites = write.then(() => {}, () => {});
   await write;
@@ -185,7 +221,7 @@ async function show(s: Screen, reloadText = false) {
           textObject: [head, new TextContainerProperty({ ...BODY, ...(s.usageMode ? { yPosition: 64, height: 224 } : {}), ...(s.reader ? { xPosition: 8, yPosition: 32, width: 560, paddingLength: 0, zOrderIndex: 2, height: READER_HEIGHT } : {}), content: uploadText ? '' : content, isEventCapture: 1 }),
             ...(s.usageMode ? [new TextContainerProperty({ ...USAGE_RESET, content: `Reset: ${resetModeLabel(s.usageMode)}  (Click to change)`, isEventCapture: 0 })] : []),
             ...(s.reader ? [
-              new TextContainerProperty({ ...HINT, content: nativeRight(footerHint(s.reportedSeconds, !!s.choiceMenu), HINT.width), textColor: 4, isEventCapture: 0, zOrderIndex: 8 }),
+              new TextContainerProperty({ ...HINT, content: readerHint(s, s.reportedSeconds), textColor: 4, isEventCapture: 0, zOrderIndex: 8 }),
               new TextContainerProperty({ ...VOICE, content: s.activityLabel![0] === '/' ? s.activityLabel : '    ' + s.activityLabel!.slice(2), textColor: 4, isEventCapture: 0, zOrderIndex: 7 }),
               new TextContainerProperty({ ...FRAME, content: ' ', textColor: 4, borderWidth: 2, borderColor: 15, borderRadius: 0, isEventCapture: 0, zOrderIndex: 0 }),
               new TextContainerProperty({ ...DIVIDER, content: ' ', textColor: 4, borderWidth: 2, borderColor: 15, isEventCapture: 0, zOrderIndex: 3 }),
@@ -242,17 +278,23 @@ async function show(s: Screen, reloadText = false) {
 async function updateText(title: string, text: string) {
   if (current?.kind !== 'text') return;
   const screen = current;
-  const next = { ...screen, title, text };
-  const { containerID: hid, containerName: hname } = HEAD;
-  const { containerID: bid, containerName: bname } = BODY;
-  if (title !== screen.title) {
-    const accepted = await bridge.textContainerUpgrade(new TextContainerUpgrade({ containerID: hid, containerName: hname, content: clipBytes(title, TEXT_BYTES) }));
-    if (!accepted) throw new Error('Glasses rejected the title update.');
-  }
-  if (current !== screen) return;
-  const accepted = await bridge.textContainerUpgrade(new TextContainerUpgrade({ containerID: bid, containerName: bname, content: bodyText(next) }));
-  if (!accepted) throw new Error('Glasses rejected the live text update. Retrying.');
-  if (current === screen) { screen.title = title; screen.text = text; }
+  const write = async () => {
+    if (current !== screen || (screen.reader && screen.reading)) return;
+    const next = { ...screen, title, text };
+    if (screen.reader) next.offset = undefined; // Live mode follows the newest page.
+    const content = bodyText(next);
+    if (screenTitle(next) !== screenTitle(screen)) {
+      if (!await bridge.textContainerUpgrade(new TextContainerUpgrade({ containerID: HEAD.containerID, containerName: HEAD.containerName, content: clipBytes(screenTitle(next), TEXT_BYTES) }))) throw new Error('Glasses rejected the title update.');
+    }
+    if (current !== screen || (screen.reader && screen.reading)) return;
+    if (!await bridge.textContainerUpgrade(new TextContainerUpgrade({ containerID: BODY.containerID, containerName: BODY.containerName, content }))) throw new Error('Glasses rejected the live text update. Retrying.');
+    if (current === screen && !(screen.reader && screen.reading)) { screen.title = title; screen.text = text; screen.offset = next.offset; screen.pages = next.pages; screen.pageText = next.pageText; if (screen.reader) await inputHint(true); }
+  };
+  if (screen.reader) {
+    const work = readerWrites.then(write);
+    readerWrites = work.catch(() => {});
+    await work;
+  } else await write();
 }
 
 async function guard(title: string, f: () => Promise<void>, back: () => void) {
@@ -504,7 +546,6 @@ function startReaderUpdates(screen: Screen | null) {
       if (r.text.trim()) screen.conversationText = r.text;
       const text = readerContent(screen.conversationText || '', screen.choiceMenu, snapshot?.progress, t.agent === 'claude' && screen.activityState === 'working');
       if (text.trim() && text !== screen.text) {
-        screen.offset = undefined;
         try { await updateText(screen.title, text); }
         catch (e) { diag((e as Error).message); }
       }
@@ -568,6 +609,8 @@ async function record(t: Thread, hold = false) {
   diag('Hold received. Opening voice panel…');
   const background = current;
   if (background?.kind !== 'text' || !background.reader) return;
+  await readerWrites;
+  if (current !== background || (hold && !holding)) return;
   const choiceMenu = background.choiceMenu;
   // Keep the mounted reader and its firmware scroll position untouched throughout
   // capture, transcription and review. Only a successful Send resumes updates.
@@ -644,7 +687,6 @@ async function record(t: Thread, hold = false) {
       if (current === background) {
         background.reading = false;
         background.tail = true;
-        background.offset = undefined;
         startReaderUpdates(background);
       }
     } catch (e) {
@@ -896,11 +938,8 @@ function onEvent(e: EvenHubEvent) {
     return;
   }
   if (s.kind === 'text' && (type === OsEventTypeList.SCROLL_TOP_EVENT || type === OsEventTypeList.SCROLL_BOTTOM_EVENT)) {
-    // Firmware scrolls overflowing text. Replacing content here causes visible jumps.
-    // Pause polling so incoming output cannot reset the reader's scroll position.
-    s.reading = true;
-    // These events also report gestures, not reliably just boundaries. Never
-    // replace the block on a swipe.
+    if (s.reader) flipReader(s, type === OsEventTypeList.SCROLL_TOP_EVENT ? -1 : 1);
+    else s.reading = true;
     return;
   }
   if (type === OsEventTypeList.LONG_PRESS_EVENT) {
