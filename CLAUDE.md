@@ -50,6 +50,11 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-04 user approves open-at-latest-response. Beta1.0.33 uploaded/promoted;
+channel verified50,898bytes, public remains1.0.23.123 tests pass; prototype dist
+restored. App-only, no bridge restart. Orca CLI briefly returned runtime_unavailable
+after the previous commit; reconnected by this release. G2 check pending.
+
 2026-11-04 user requests opening a session at the top of the latest LLM response.
 Reader pages break before the last assistant message after the last user line and
 open there once; live/refresh still follow newest page.123 tests/build pass;

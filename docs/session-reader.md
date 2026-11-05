@@ -411,7 +411,7 @@ in the page-counter row, runs one poll tick at once (`startReaderUpdates` return
 tick) and restores `Page X of Y`. New output jumps to the newest page; live polling
 then continues. Repeated swipes during a refresh are ignored.
 
-## Open at the top of the latest response (2026-11-04, unreleased)
+## Open at the top of the latest response (2026-11-04, beta 1.0.33)
 
 Reader text marks turns with `/ ` (user) and `> ` (assistant). A turn can contain
 several assistant messages (progress notes, then the final answer), so
