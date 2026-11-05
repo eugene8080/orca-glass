@@ -50,6 +50,11 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-05 user approves picker (Recent first, no title) plus Hermes-only workspace list.
+Beta1.0.35 uploaded/promoted51,570bytes, public1.0.23.129 tests pass. Bridge restarted
+(old supervisor33692/server21376/whisper84936; new5356/81532/70068 --vad); local/
+stableHTTPS healthz ok. G2 check pending.
+
 2026-11-05 user confirms Whisper VAD fix on G2 and marks swipe-down refresh, usage
 reset modes, swipe-only paging and Claude/Cursor usage done (TODOS rows closed). User
 requests workspace picker without title and with Recent workspaces first; implemented,

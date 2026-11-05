@@ -1,15 +1,14 @@
 # Orca Glass TODOs
 Updated: 2026-11-05
 
-Current beta: **1.0.34** — user confirms the reader/status/full-screen voice release works on G2 (2026-11-05).
+Current beta: **1.0.35** (workspace picker: Recent first, Hermes-only list).
 Workspace-filter preview approved, released and retired with merged worktree cleanup.
 Future visual changes require preview approval before beta upload.
 Completed/superseded release notes: [history](docs/todo-history.md).
 
 ## Open work
 
-- [ ] **Workspace picker: no title, Recent workspaces first — preview approval, then
-  release (beta AND bridge restart), then G2:** user request 2026-11-05. Ten rows, no
+- [ ] **Workspace picker: no title, Recent workspaces first — G2 confirmation:** user request 2026-11-05. Ten rows, no
   title. Page 1: Done, [x] All workspaces, 'Recent workspaces' heading, four most
   recently active (Orca worktree lastActivityAt, or newer session output), 'Other
   workspaces' heading, alphabetical rows to fill the page. Later pages: Done, All, eight
@@ -21,7 +20,9 @@ Completed/superseded release notes: [history](docs/todo-history.md).
   Hermes filter (user 2026-11-05): with the agent filter on Hermes, the picker lists
   only Hermes sessions' workspaces (Orca pane workspace or Hermes profile group), not
   the Orca catalogue; earlier Orca selections stay visible to clear. 129 tests pass.
-  User approved upload.
+  User approved; beta1.0.35 uploaded/promoted (51,570 bytes), public remains1.0.23;
+  bridge restarted (supervisor5356, server81532, whisper70068 with --vad), local/
+  stableHTTPS healthz ok; all 58 workspaces carry lastActivityAt.
 
 - [ ] **Hermes — G2 confirmation:** PR #2 merged as5a48a6f; beta1.0.28 live
   (49,867 bytes), bridge restarted and stableHTTPS lists15 Hermes sessions.

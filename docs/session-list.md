@@ -93,7 +93,7 @@ pagination and long Unicode title suffix retention. Native simulator shows list
 and opens selected session. G2 speed confirmation pending. English-only settings
 and root /images ignore remain.
 
-## Workspace picker: no title, Recent workspaces first (2026-11-05, unreleased)
+## Workspace picker: no title, Recent workspaces first (2026-11-05, beta 1.0.35)
 
 The picker drops its title row and shows ten 27px rows from y4. Page 1: `Done`,
 `[x] All workspaces`, a `Recent workspaces` heading with the four most recently
