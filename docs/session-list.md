@@ -92,3 +92,14 @@ the separate reader footer spinner is unchanged.
 pagination and long Unicode title suffix retention. Native simulator shows list
 and opens selected session. G2 speed confirmation pending. English-only settings
 and root /images ignore remain.
+
+## Workspace picker: no title, Recent workspaces first (2026-11-05, unreleased)
+
+The picker drops its title row and shows ten 27px rows from y4. Page 1: `Done`,
+`[x] All workspaces`, a `Recent workspaces` heading with the four most recently
+active workspaces, an `Other workspaces` heading and alphabetical rows to fill the
+page. Later pages show `Done`, `All workspaces` and eight more alphabetical rows.
+Recency is Orca's worktree `lastActivityAt` (passed through `listWorkspaces`) or a
+newer `lastOutputAt` of a session in that workspace. Headings are flush left, carry
+no cursor column and are skipped by swipes; a recent workspace is not repeated in
+the alphabetical list.

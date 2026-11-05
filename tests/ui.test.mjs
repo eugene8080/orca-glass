@@ -947,7 +947,7 @@ test('workspace picker pages reach every entry and saved unavailable workspaces 
   for (let page = 0; page < 5; page++) {
     const items = menuItems(h);
     items.filter(s => s.includes('Workspace ')).forEach(s => seen.add(s));
-    assert.ok(items.length <= 9);
+    assert.ok(items.length <= 10);
     assert.ok(!items.some(s => /^(Next|Previous) page$/.test(s)));
     if (seen.size === 15) break;
     for (let row = 0; row < items.length; row++) await h.scroll('down');
@@ -998,18 +998,20 @@ test('workspace edge swipes retain checks and reverse to the last row of the pre
   const h = await harness(0);
   h.api.workspaces = async () => Array.from({ length: 10 }, (_, i) => ({ id: `w${i}`, name: `Workspace ${String(i).padStart(2, '0')}` }));
   await h.pick(1);
-  for (let i = 0; i < 8; i++) await h.scroll('down');
+  // No activity times: no headings; Done, All and eight workspaces fill ten rows.
+  assert.equal(menuItems(h).length, 10);
+  for (let i = 0; i < 9; i++) await h.scroll('down');
   await h.tap();
-  assert.equal(menuItems(h)[8], '[x] Workspace 06');
+  assert.equal(menuItems(h)[9], '[x] Workspace 07');
   await h.scroll('down');
-  assert.equal(menuItems(h)[2], '[ ] Workspace 07');
+  assert.equal(menuItems(h)[2], '[ ] Workspace 08');
   assert.match(h.pages.at(-1).textObject.find(c => c.containerName === 'body').content, /^> Done/);
   await h.scroll('up');
-  assert.equal(menuItems(h)[8], '[x] Workspace 06');
-  assert.match(h.pages.at(-1).textObject.find(c => c.containerName === 'body').content.split('\n')[8], /^>/);
+  assert.equal(menuItems(h)[9], '[x] Workspace 07');
+  assert.match(h.pages.at(-1).textObject.find(c => c.containerName === 'body').content.split('\n')[9], /^>/);
   await h.scroll('down');
   await h.pick(2);
-  assert.equal(menuItems(h)[2], '[x] Workspace 07');
+  assert.equal(menuItems(h)[2], '[x] Workspace 08');
   await h.pick(0);
   assert.match(h.pages.at(-1).textObject.find(c => c.containerName === 'menu-right').content, /2 selected/);
 });
@@ -1173,4 +1175,31 @@ test('four-digit page counters shrink the hint instead of wrapping the status ro
   const w = t => textExports.glassTextWidth(t, () => 12);
   const left = Math.max(...statusExports.WORKING_LABELS.map(word => w(`    ${word}... GPT-6-Astra med`)));
   assert.ok(left + 10 + w(right) <= 538 && w(right) <= 274, `${left} + ${w(right)}`);
+});
+
+test('workspace picker has no title, lists four recent workspaces first and the cursor skips headings', async () => {
+  const h = await harness(0);
+  const names = ['zeta', 'ai-family-office', 'porttracker', 'ai-stock-picker-and-alerts-app', 'orca-glass', 'pc-settings', 'bamboa', 'desk', 'market-sessions', 'union-mq'];
+  // Activity order (newest first): porttracker, orca-glass, pc-settings, zeta, then older.
+  const times = { porttracker: 900, 'orca-glass': 800, 'pc-settings': 700, zeta: 600, desk: 100 };
+  h.api.workspaces = async () => names.map(name => ({ id: name, name, lastActivityAt: times[name] }));
+  await h.pick(1);
+  const page = h.pages.at(-1);
+  assert.equal(page.textObject.find(c => c.containerName === 'head').content, ' ');
+  const body = page.textObject.find(c => c.containerName === 'body');
+  assert.equal(body.yPosition, 4);
+  assert.ok(body.height >= 270);
+  assert.equal(JSON.stringify([...menuItems(h)]), JSON.stringify(['Done', '[x] All workspaces', 'Recent workspaces',
+    '[ ] porttracker', '[ ] orca-glass', '[ ] pc-settings', '[ ] zeta', 'Other workspaces',
+    '[ ] ai-family-office', '[ ] ai-stock-picker-and-alerts-app']));
+  const rows = body.content.split('\n');
+  assert.equal(rows[2], 'Recent workspaces');                 // Headings carry no cursor column.
+  await h.scroll('down'); await h.scroll('down');             // All -> skips heading -> porttracker.
+  assert.match(h.upgrades.at(-1).content.split('\n')[3], /^> \[ \] porttracker/);
+  for (let i = 0; i < 4; i++) await h.scroll('down');         // zeta -> skips heading -> ai-family-office.
+  assert.match(h.upgrades.at(-1).content.split('\n')[8], /^> \[ \] ai-family-office/);
+  await h.scroll('down'); await h.scroll('down');             // Past the last row: next page.
+  assert.equal(JSON.stringify([...menuItems(h)]), JSON.stringify(['Done', '[x] All workspaces', '[ ] bamboa', '[ ] desk', '[ ] market-sessions', '[ ] union-mq']));
+  await h.scroll('up');                                       // Back: previous page, last row.
+  assert.match(h.pages.at(-1).textObject.find(c => c.containerName === 'body').content.split('\n')[9], /^> \[ \] ai-stock/);
 });

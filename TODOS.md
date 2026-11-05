@@ -8,45 +8,18 @@ Completed/superseded release notes: [history](docs/todo-history.md).
 
 ## Open work
 
-- [ ] **Silent hold transcribed as 'you' / 'Thank you' — G2 confirmation:**
-  user report 2026-11-05. Reproduced: synthetic quiet noise (RMS 60) -> ' you'; the old
-  guard only drops digital silence (RMS<30) and Whisper's no_speech_prob is useless
-  (0.000005 on the hallucination, 0.85 on real speech). Fix: whisper-server --vad with
-  Silero ggml-silero-v5.1.2.bin (885,098 bytes, SHA-256 29940d98…a2cf, matches the
-  Hugging Face LFS hash), downloaded to .local/voice and added to
-  scripts/setup-voice.ps1. Bridge transcribe(): noise RMS 60/120/300 -> '', JFK sample
-  unchanged. Empty result shows the existing 'not heard' message. 127 tests pass.
-  User approved; bridge restarted 2026-11-05 after verifying ownership (old supervisor
-  33076/server49736/whisper62748); new supervisor33692, server21376, whisper84936
-  running with --vad. Local/stableHTTPS healthz ok. No app/beta change.
+- [ ] **Workspace picker: no title, Recent workspaces first — preview approval, then
+  release (beta AND bridge restart), then G2:** user request 2026-11-05. Ten rows, no
+  title. Page 1: Done, [x] All workspaces, 'Recent workspaces' heading, four most
+  recently active (Orca worktree lastActivityAt, or newer session output), 'Other
+  workspaces' heading, alphabetical rows to fill the page. Later pages: Done, All, eight
+  alphabetical rows. Headings are flush left, not selectable; the cursor skips them.
+  Recent workspaces are not repeated in the alphabetical list. Bridge now passes
+  lastActivityAt from 'orca worktree list' (needs restart; until then recency uses
+  session output only). 128 tests pass; simulator verified page 1 layout, heading
+  skip and page 2. Real Orca session workspaceId equals worktree id (checked).
+  Preview OPEN on page 1.
 
-- [ ] **Swipe down on last page refreshes the reader — G2 confirmation:**
-  user reports sessions sometimes stop auto-refreshing. Cause: any page swipe freezes
-  the snapshot until send/reopen, while the 1s poll skips frozen readers. Swipe down
-  on the last page now unfreezes, shows Refreshing… in the counter row, polls at once
-  and jumps to the newest page; live polling continues. 122 tests/build pass;
-  simulator: frozen Page3of3 -> swipe -> Page5of5 with new lines. User approved;
-  beta1.0.32 uploaded/promoted, channel verified (50,727 bytes), public remains1.0.23.
-  App-only; no bridge restart. G2 check pending.
-
-- [ ] **Usage reset-time modes â€” G2 confirmation:** beta1.0.27 live; selector cycles
-  Computer time / Phone time / Absolute time (remaining duration, e.g.2d5h12m).
-  Selection persists; bridge retains exact reset instants and computer-local
-  labels.107 tests/build/doctor pass; synthetic simulator checked day/zone
-  conversion and countdown, left OPEN on Absolute (8791/9900). User
-  approved upload; beta channel verified (49,865 bytes), bridge restarted and
-  stableHTTPS usage has timestamps/computer labels for all four provider windows.
-  Physical phone/G2 time-zone verification pending. See [reader details](docs/session-reader.md).
-- [ ] **Swipe-only menu paging â€” G2 confirmation:** beta1.0.26 live;
-  no Previous/Next rows. Swipe past last/first row changes pages and selects the
-  opposite edge; outer ends clamp. Seven entries plus two controls per page.
- 101 tests/build/doctor pass, native simulator forward/reverse checks pass.
-  User approved upload; beta channel verified (49,179 bytes). Completed preview closed at user request
-  after beta upload; stableHTTPS health ok. Awaiting G2 check on1.0.26. See [reader details](docs/session-reader.md).
-- [ ] **Claude/Cursor usage:** beta1.0.23 live; G2 confirmation pending. Shows
-  Claude five-hour/weekly and Cursor monthly allowance alongside Codex. User
-  approved simulator2026-11-03; beta channel verified, bridge restarted and
-  local/stableHTTPS endpoints return ok for all three.79 tests/build/doctor pass.
 - [ ] **Hermes — G2 confirmation:** PR #2 merged as5a48a6f; beta1.0.28 live
   (49,867 bytes), bridge restarted and stableHTTPS lists15 Hermes sessions.
  113 tests/build/doctor and synthetic native interaction checks pass. Worktree
@@ -91,6 +64,16 @@ Completed/superseded release notes: [history](docs/todo-history.md).
 
 ## Completed / confirmed
 
+- [x] Silent hold no longer transcribed as 'you' (Whisper Silero VAD) — user confirms
+  on G2 'Could not hear anything' for silence and normal transcription, 2026-11-05.
+- [x] Swipe down on the last page refreshes the reader (beta1.0.32) — user confirmed
+  done, 2026-11-05.
+- [x] Usage reset-time modes Computer/Phone/Absolute (beta1.0.27) — user confirmed
+  done, 2026-11-05.
+- [x] Swipe-only menu paging, no Previous/Next rows (beta1.0.26) — user confirmed
+  done, 2026-11-05.
+- [x] Claude five-hour/weekly and Cursor monthly usage (beta1.0.23) — user confirmed
+  done, 2026-11-05.
 - [x] Open a session at the top of the latest response — user confirms beta1.0.33
   works on G2, 2026-11-05.
 - [x] Typed '❯ 1) / 2)' message no longer shown as Claude choices (bridge/choices.mjs

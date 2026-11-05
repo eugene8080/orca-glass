@@ -53,7 +53,7 @@ const TEXT_BYTES = 999;
 const POLL_MS = 1000;
 
 type Screen =
-  | { kind: 'list'; title: string; items: string[]; sessionList?: boolean; workspacePicker?: boolean; menuActions?: { id: number; label: string; run: () => unknown }[]; compat?: boolean; columns?: SessionColumns[]; connectedCount?: number; selected?: number; paintedSelection?: number; menuFrame?: number; paintedCursor?: string; cursorWriting?: boolean; paging?: boolean; onPreviousPage?: () => unknown; onNextPage?: () => unknown; onPick: (i: number) => void; onBack?: () => void }
+  | { kind: 'list'; title: string; items: string[]; sessionList?: boolean; workspacePicker?: boolean; headings?: number[]; menuActions?: { id: number; label: string; run: () => unknown }[]; compat?: boolean; columns?: SessionColumns[]; connectedCount?: number; selected?: number; paintedSelection?: number; menuFrame?: number; paintedCursor?: string; cursorWriting?: boolean; paging?: boolean; onPreviousPage?: () => unknown; onNextPage?: () => unknown; onPick: (i: number) => void; onBack?: () => void }
   | { kind: 'text'; title: string; text: string; usageMode?: ResetMode; conversationText?: string; choiceMenu?: ChoiceMenu | null; tail?: boolean; offset?: number; pageText?: string; pages?: string[]; pageTarget?: number; pageWriting?: boolean; reading?: boolean; refreshing?: boolean; responsePage?: number; openAtResponse?: boolean; model?: string; voice?: boolean; voiceHint?: string; voiceTail?: boolean; activityLabel?: string; activityState?: string; reportedSeconds?: number | null; statusFrame?: number; statusStartedAt?: number; savedHistory?: boolean; reader?: Thread; onClick?: () => void; onBack?: () => void; onHold?: () => void; };
 
 let bridge: EvenAppBridge;
@@ -377,15 +377,18 @@ async function guard(title: string, f: () => Promise<void>, back: () => void) {
 
 type SessionMenuScreen = Extract<Screen, { kind: 'list' }>;
 function compatibilityMenu(screen: SessionMenuScreen, menu: object) {
+  // The workspace picker has no title row: its ten 27px rows start at the top.
+  const picker = !!screen.workspacePicker;
   return { containerTotalNum: 3, ...menu, textObject: [
-    new TextContainerProperty({ ...HEAD, height: 28, content: screen.title, isEventCapture: 0 }),
-    new TextContainerProperty({ ...BODY, yPosition: 28, height: 260, content: compatibilityText(screen), isEventCapture: 0 }),
+    new TextContainerProperty({ ...HEAD, height: 28, content: picker ? ' ' : screen.title, isEventCapture: 0 }),
+    new TextContainerProperty({ ...BODY, yPosition: picker ? 4 : 28, height: picker ? 280 : 260, content: compatibilityText(screen), isEventCapture: 0 }),
     new TextContainerProperty({ containerID: 3, containerName: 'menu-input', xPosition: 0, yPosition: 0,
       width: 576, height: 288, content: ' ', isEventCapture: 1 }),
   ] };
 }
 function compatibilityText(screen: SessionMenuScreen, selected = screen.selected || 0) {
-  return screen.items.map((item, i) => `${i === selected ? '>' : ' '} ${clipBytes(item, 48)}`).join('\n');
+  // Section headings sit flush left without a cursor column.
+  return screen.items.map((item, i) => screen.headings?.includes(i) ? clipBytes(item, 48) : `${i === selected ? '>' : ' '} ${clipBytes(item, 48)}`).join('\n');
 }
 function startMenuSpinner(screen: SessionMenuScreen) {
   let polling = false;
@@ -496,6 +499,11 @@ function viewOptions(page = 0) {
 
 // null means all workspaces; an explicit empty set means none. Keep each
 // toggle selected in a native text page so multiple picks do not jump to row 1.
+// Ten rows, no title. Page 1: Done, All, Recent workspaces (four most recently
+// active), Other workspaces (alphabetical) to fill the page; later pages: Done,
+// All, then eight more alphabetical rows. Headings are not selectable.
+const PICKER_ROWS = 10;
+const RECENT_WORKSPACES = 4;
 function workspaceOptions(page = 0, selected = 0) {
   return guard('Filter by Workspace', async () => {
     const owner = current;
@@ -504,27 +512,45 @@ function workspaceOptions(page = 0, selected = 0) {
     const choices = new Map(catalog.map(w => [w.id, w.name]));
     for (const t of threads) if (t.workspaceId) choices.set(t.workspaceId, t.workspaceLabel || t.workspaceName || 'Workspace');
     for (const id of viewWorkspaces || []) if (!choices.has(id)) choices.set(id, `${workspaceNames.get(id) || id.replaceAll('\\', '/').split('/').pop() || 'Workspace'} (unavailable)`);
-    const rows = [...choices].sort((a, b) => a[1].localeCompare(b[1]));
-    const size = 7; // Done/All plus seven checkboxes; no navigation rows.
-    page = Math.max(0, Math.min(page, Math.max(0, Math.ceil(rows.length / size) - 1)));
+    // Recency: Orca's workspace activity time, or a newer session output in it.
+    const activity = new Map<string, number>();
+    for (const w of catalog) if (w.lastActivityAt) activity.set(w.id, w.lastActivityAt);
+    for (const t of threads) if (t.workspaceId && t.lastOutputAt) activity.set(t.workspaceId, Math.max(activity.get(t.workspaceId) || 0, t.lastOutputAt));
+    const recent = [...choices].filter(([id]) => activity.has(id))
+      .sort((a, b) => activity.get(b[0])! - activity.get(a[0])! || a[1].localeCompare(b[1])).slice(0, RECENT_WORKSPACES);
+    const recentIds = new Set(recent.map(([id]) => id));
+    const others = [...choices].filter(([id]) => !recentIds.has(id)).sort((a, b) => a[1].localeCompare(b[1]));
+    const later = PICKER_ROWS - 2;
+    const first = recent.length ? Math.max(0, later - recent.length - 1 - (others.length ? 1 : 0)) : later;
+    const pageCount = 1 + Math.ceil(Math.max(0, others.length - first) / later);
+    page = Math.max(0, Math.min(page, pageCount - 1));
     const save = async () => bridge.setLocalStorage('view-workspaces', viewWorkspaces === null ? 'all' : JSON.stringify([...viewWorkspaces]));
     const actions: { label: string; run: () => unknown }[] = [
       { label: 'Done', run: () => home() },
       { label: `[${viewWorkspaces === null ? 'x' : ' '}] All workspaces`, run: async () => { const owner = current; viewWorkspaces = null; await save(); if (current === owner) await workspaceOptions(page, 1); } },
     ];
-    for (const [id, name] of rows.slice(page * size, (page + 1) * size)) {
+    const headings: number[] = [];
+    const heading = (label: string) => { headings.push(actions.length); actions.push({ label, run: () => {} }); };
+    const checkbox = ([id, name]: [string, string]) => {
       const index = actions.length;
       actions.push({ label: `[${viewWorkspaces?.has(id) ? 'x' : ' '}] ${name}`, run: async () => {
         viewWorkspaces ??= new Set();
         if (viewWorkspaces.has(id)) viewWorkspaces.delete(id); else viewWorkspaces.add(id);
         const owner = current; await save(); if (current === owner) await workspaceOptions(page, index);
       } });
+    };
+    if (page === 0 && recent.length) {
+      heading('Recent workspaces');
+      recent.forEach(checkbox);
+      if (others.length) heading('Other workspaces');
     }
-    const selection = selected < 0 ? actions.length - 1 : Math.min(selected, actions.length - 1);
-    await show({ kind: 'list', workspacePicker: true, title: 'Filter by Workspace', items: actions.map(a => a.label), selected: selection,
+    (page === 0 ? others.slice(0, first) : others.slice(first + (page - 1) * later, first + page * later)).forEach(checkbox);
+    let selection = selected < 0 ? actions.length - 1 : Math.min(selected, actions.length - 1);
+    while (headings.includes(selection)) selection--;
+    await show({ kind: 'list', workspacePicker: true, title: 'Filter by Workspace', items: actions.map(a => a.label), headings, selected: selection,
       onPreviousPage: page > 0 ? () => workspaceOptions(page - 1, -1) : undefined,
-      onNextPage: (page + 1) * size < rows.length ? () => workspaceOptions(page + 1) : undefined,
-      onPick: i => { void actions[i]?.run(); }, onBack: () => home() });
+      onNextPage: page + 1 < pageCount ? () => workspaceOptions(page + 1) : undefined,
+      onPick: i => { if (!headings.includes(i)) void actions[i]?.run(); }, onBack: () => home() });
   }, home);
 }
 
@@ -1001,7 +1027,9 @@ function onEvent(e: EvenHubEvent) {
   // exactly one page and cannot activate a row from the page being replaced.
   if (s.kind === 'list' && s.paging) return;
   if (s.kind === 'list' && (s.sessionList || s.workspacePicker) && (type === OsEventTypeList.SCROLL_TOP_EVENT || type === OsEventTypeList.SCROLL_BOTTOM_EVENT)) {
-    const next = (s.selected || 0) + (type === OsEventTypeList.SCROLL_TOP_EVENT ? -1 : 1);
+    const step = type === OsEventTypeList.SCROLL_TOP_EVENT ? -1 : 1;
+    let next = (s.selected || 0) + step;
+    while (s.headings?.includes(next)) next += step; // Headings are not selectable.
     const changePage = next < 0 ? s.onPreviousPage : next >= s.items.length ? s.onNextPage : undefined;
     if (changePage) {
       s.paging = true;

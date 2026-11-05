@@ -50,6 +50,12 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-05 user confirms Whisper VAD fix on G2 and marks swipe-down refresh, usage
+reset modes, swipe-only paging and Claude/Cursor usage done (TODOS rows closed). User
+requests workspace picker without title and with Recent workspaces first; implemented,
+128 tests pass, simulator verified, preview LEFT OPEN. Release needs beta upload AND
+bridge restart (lastActivityAt) after approval.
+
 2026-11-05 user approves bridge restart for Whisper VAD. Verified supervisor33076/
 server49736/whisper62748, stopped task and tree, restarted. New supervisor33692,
 server21376, whisper84936 with --vad; local/stableHTTPS healthz ok. G2 check pending.

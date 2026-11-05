@@ -267,6 +267,8 @@ export async function listWorkspaces() {
     .map((w) => ({
       id: w.id,
       name: w.path.split(/[\\/]/).pop() + (w.isMainWorktree ? '' : `:${w.displayName}`),
+      // Orca's own last-activity time orders the picker's Recent workspaces.
+      lastActivityAt: Number.isFinite(w.lastActivityAt) ? w.lastActivityAt : undefined,
     }));
 }
 
