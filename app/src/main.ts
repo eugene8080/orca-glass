@@ -49,7 +49,7 @@ const POLL_MS = 1000;
 
 type Screen =
   | { kind: 'list'; title: string; items: string[]; sessionList?: boolean; workspacePicker?: boolean; menuActions?: { id: number; label: string; run: () => unknown }[]; compat?: boolean; columns?: SessionColumns[]; connectedCount?: number; selected?: number; paintedSelection?: number; menuFrame?: number; paintedCursor?: string; cursorWriting?: boolean; paging?: boolean; onPreviousPage?: () => unknown; onNextPage?: () => unknown; onPick: (i: number) => void; onBack?: () => void }
-  | { kind: 'text'; title: string; text: string; usageMode?: ResetMode; conversationText?: string; choiceMenu?: ChoiceMenu | null; tail?: boolean; offset?: number; pageText?: string; pages?: string[]; pageTarget?: number; pageWriting?: boolean; reading?: boolean; activityLabel?: string; activityState?: string; reportedSeconds?: number | null; statusFrame?: number; statusStartedAt?: number; savedHistory?: boolean; reader?: Thread; onClick?: () => void; onBack?: () => void; onHold?: () => void; };
+  | { kind: 'text'; title: string; text: string; usageMode?: ResetMode; conversationText?: string; choiceMenu?: ChoiceMenu | null; tail?: boolean; offset?: number; pageText?: string; pages?: string[]; pageTarget?: number; pageWriting?: boolean; reading?: boolean; refreshing?: boolean; activityLabel?: string; activityState?: string; reportedSeconds?: number | null; statusFrame?: number; statusStartedAt?: number; savedHistory?: boolean; reader?: Thread; onClick?: () => void; onBack?: () => void; onHold?: () => void; };
 
 let bridge: EvenAppBridge;
 let current: Screen | null = null;
@@ -111,12 +111,14 @@ function screenTitle(s: Screen) { return s.kind === 'text' && s.reader ? ' ' : s
 function readerHint(s: TextScreen, seconds: number | null | undefined) {
   bodyText(s);
   return nativeRight(footerHint(seconds, !!s.choiceMenu), HINT.width) + '\n\n' +
-    nativeRight(`Page ${s.offset! + 1} of ${s.pages!.length}`, HINT.width);
+    nativeRight(s.refreshing ? 'Refreshing…' : `Page ${s.offset! + 1} of ${s.pages!.length}`, HINT.width);
 }
 
 function flipReader(s: TextScreen, delta: number) {
-  s.reading = true; // Freeze this snapshot and its page count while browsing.
   const pages = readerLayout(s);
+  // Swiping down past the last page resumes live updates and fetches now.
+  if (delta > 0 && !s.pageWriting && (s.offset ?? 0) >= pages.length - 1) { void refreshReader(s); return; }
+  s.reading = true; // Freeze this snapshot and its page count while browsing.
   s.pageTarget = Math.max(0, Math.min(pages.length - 1, (s.pageTarget ?? s.offset ?? 0) + delta));
   if (s.pageWriting) return;
   s.pageWriting = true;
@@ -133,6 +135,24 @@ function flipReader(s: TextScreen, delta: number) {
     }
   });
   readerWrites = write.catch(e => diag((e as Error).message)).finally(() => { s.pageWriting = false; s.pageTarget = undefined; });
+}
+
+// Unfreeze a browsed snapshot, show Refreshing… in the counter row, run one poll
+// immediately, then restore the counter. Polling continues live afterwards.
+async function refreshReader(s: TextScreen) {
+  if (s.refreshing || current !== s) return;
+  s.refreshing = true;
+  s.reading = false;
+  s.tail = true;
+  try {
+    await inputHint(true);
+    if (current !== s) return;
+    await startReaderUpdates(s)?.();
+  } catch (e) { diag((e as Error).message); }
+  finally {
+    s.refreshing = false;
+    if (current === s) await inputHint(true).catch(e => diag((e as Error).message));
+  }
 }
 
 function activityLabel(state: string) {
@@ -491,7 +511,7 @@ function thread(t: Thread, note = '') {
 
 
 // Restart live updates without rebuilding the mounted chat after a successful send.
-function startReaderUpdates(screen: Screen | null) {
+function startReaderUpdates(screen: Screen | null): (() => Promise<void>) | undefined {
   clearInterval(poll);
   clearInterval(statusAnimation);
   if (screen?.kind !== 'text' || !screen.reader) return;
@@ -509,7 +529,7 @@ function startReaderUpdates(screen: Screen | null) {
     finally { animating = false; }
   }, 200);
   let reading = false;
-  poll = setInterval(async () => {
+  const tick = async () => {
     if (reading || current !== screen) return;
     reading = true;
     const activity = await api.activity(t.handle).catch(e => {
@@ -559,7 +579,9 @@ function startReaderUpdates(screen: Screen | null) {
       }
     }
     reading = false;
-  }, POLL_MS);
+  };
+  poll = setInterval(tick, POLL_MS);
+  return tick;
 }
 
 function history(t: Thread) {

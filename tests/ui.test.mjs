@@ -1112,3 +1112,28 @@ test('session titles extend to their own label and keep the handle suffix', () =
   assert.ok(title.endsWith('… · a1b2c3'), title);
   assert.equal(listExports.menuTitle('Short title · a1b2c3', 300), 'Short title · a1b2c3');
 });
+
+test('swiping down on the last page resumes live updates and refreshes at once', async () => {
+  const h = await harness();
+  h.api.thread = async () => ({ text: Array.from({ length: 8 }, (_, i) => `Line ${i}`).join('\n') });
+  await h.pick(2);
+  const hint = () => h.upgrades.findLast(u => u.containerName === 'hint').content.trim();
+  const body = () => h.upgrades.findLast(u => u.containerName === 'body')?.content;
+  await h.scroll('up');                       // Browsing freezes the snapshot.
+  await h.scroll('down');                     // Back on the last page: still frozen.
+  assert.match(hint(), /Page 2 of 2$/);
+  h.api.thread = async () => ({ text: Array.from({ length: 16 }, (_, i) => `Line ${i}`).join('\n') });
+  await [...h.timers.values()][0]();
+  assert.equal(body(), 'Line 7');             // Frozen poll ignored the new output.
+  const rebuilds = h.pages.length;
+  await h.scroll('down');                     // Swipe past the last page: refresh.
+  await h.flush();
+  assert.ok(h.upgrades.some(u => u.containerName === 'hint' && /Refreshing…$/.test(u.content.trim())));
+  assert.equal(body(), 'Line 14\nLine 15');
+  assert.match(hint(), /Page 3 of 3$/);
+  assert.equal(h.pages.length, rebuilds);
+  assert.equal(h.sends.length, 0);
+  h.api.thread = async () => ({ text: Array.from({ length: 17 }, (_, i) => `Line ${i}`).join('\n') });
+  await [...h.timers.values()].at(-1)();      // Live polling continues afterwards.
+  assert.equal(body(), 'Line 14\nLine 15\nLine 16');
+});

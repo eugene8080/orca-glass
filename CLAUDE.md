@@ -50,6 +50,11 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-04 user confirms typed-list fix on G2 (this Claude session); row closed.
+User requests swipe-down refresh: on the reader's last page it unfreezes, shows
+Refreshing…, polls at once, jumps to newest page.122 tests/build pass; simulator
+verified frozen Page3of3 -> Page5of5. Preview LEFT OPEN; no beta upload.
+
 2026-11-04 user approves bridge restart for choice-parser fix. Verified scheduled
 task supervisor85400/server82304 owned8787, stopped task and tree, restarted task.
 New supervisor48356 (.local/custom.pid), server35092; local/stableHTTPS healthz ok.

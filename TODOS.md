@@ -1,22 +1,20 @@
 # Orca Glass TODOs
 Updated: 2026-11-04
 
-Current beta: **1.0.31** (G2-confirmed). Bridge choice-parser fix live since restart.
+Current beta: **1.0.31** (G2-confirmed). Swipe-down refresh preview pending.
 Workspace-filter preview approved, released and retired with merged worktree cleanup.
 Future visual changes require preview approval before beta upload.
 Completed/superseded release notes: [history](docs/todo-history.md).
 
 ## Open work
 
-- [ ] **Typed numbered list mistaken for a Claude choice menu — G2 confirmation:**
-  user's sent message '❯ 1) … / 2) …' in porttracker Campaign Orchestrator showed as
-  choices. Claude echoes sent messages with the same ❯ marker as a menu cursor.
-  bridge/choices.mjs now rejects a candidate menu with a later reply (●/⏺), prompt row
-  (❯/›) or input-box footer below it. 121 tests pass; read-only check of the live
-  Campaign screen keeps its real 5-option menu and rejects the typed list without it.
-  User approved; scheduled bridge restarted 2026-11-04 after verifying ownership (old
-  supervisor85400/server82304); new supervisor48356, server35092 on8787. Local and
-  stableHTTPS healthz ok. No app/beta change. G2: reopen Campaign Orchestrator.
+- [ ] **Swipe down on last page refreshes the reader — preview approval, then G2:**
+  user reports sessions sometimes stop auto-refreshing. Cause: any page swipe freezes
+  the snapshot until send/reopen, while the 1s poll skips frozen readers. Swipe down
+  on the last page now unfreezes, shows Refreshing… in the counter row, polls at once
+  and jumps to the newest page; live polling continues. 122 tests/build pass;
+  simulator: frozen Page3of3 -> swipe -> Page5of5 with new lines. App-only; preview
+  OPEN on Page5of5 (9900/8791). Not uploaded; beta1.0.31 unchanged.
 
 - [ ] **Book-style reader — G2 confirmation:** native six-row whole-page
   swipes; bottom Page X of Y, latest page on open, frozen snapshot while browsing.
@@ -88,6 +86,9 @@ Completed/superseded release notes: [history](docs/todo-history.md).
 
 ## Completed / confirmed
 
+- [x] Typed '❯ 1) / 2)' message no longer shown as Claude choices (bridge/choices.mjs
+  rejects menus with later reply/prompt/input footer) — user confirms on G2 using
+  this Claude session, 2026-11-04.
 - [x] Reader without title row, seven chat rows, two-digit Page X of Y fits (6px
   right slack) — user confirms beta1.0.31 works on G2,2026-11-04.
 - [x] Full-width text with measured firmware glyph widths (reader wrap552/560px,

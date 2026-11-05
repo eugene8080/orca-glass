@@ -401,3 +401,12 @@ The reader no longer shows the session name. Its head container stays in the pag
 holds seven 27px rows (y4..193) above the divider at y198; pages hold seven rows.
 On G2 beta 1.0.30, 'Page 20 of 21' (277px with padding) was cut in the 280px hint,
 so `nativeRight` slack rose from 3px to 6px (maximum 274px).
+
+## Swipe down on the last page refreshes (2026-11-04, unreleased)
+
+Browsing freezes the reader snapshot, and the 1s poll skips frozen readers, so a
+session looked stale after any swipe until a send or reopen. A swipe down while on
+the last page now calls `refreshReader`: it clears the freeze, shows `Refreshing…`
+in the page-counter row, runs one poll tick at once (`startReaderUpdates` returns its
+tick) and restores `Page X of Y`. New output jumps to the newest page; live polling
+then continues. Repeated swipes during a refresh are ignored.
