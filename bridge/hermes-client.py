@@ -18,6 +18,10 @@ class StaleTarget(ValueError):
     pass
 
 
+class PendingQuestion(StaleTarget):
+    """The session is waiting for the user to answer its own question (clarify/approval)."""
+
+
 def identity(endpoint, row):
     return {"profile": endpoint.profile_id, "instance": endpoint.instance_id,
             "epoch": endpoint.authority_epoch, "session": row["session_id"],
@@ -48,6 +52,47 @@ def visible_messages(rows):
         kept.append(row)
         size += len(row["text"])
     return {"messages": list(reversed(kept)), "limited": len(kept) != len(out)}
+
+
+def clarify_questions(arguments):
+    """Questions/choices from one clarify tool call's arguments, bounded.
+
+    The live display row carries only a truncated preview, so the full arguments
+    come from the profile's SessionDB. Models sometimes append trailing text after
+    the JSON list; only the first JSON value is read.
+    """
+    try:
+        parsed = json.loads(arguments) if isinstance(arguments, str) else arguments
+        questions = parsed.get("questions") if isinstance(parsed, dict) else None
+        if isinstance(questions, str):
+            questions = json.JSONDecoder().raw_decode(questions.strip())[0]
+    except (ValueError, TypeError, AttributeError):
+        return []
+    out = []
+    for q in questions if isinstance(questions, list) else []:
+        if not isinstance(q, dict) or not isinstance(q.get("question"), str) or not q["question"].strip():
+            continue
+        choices = [c.strip()[:300] for c in (q.get("choices") or []) if isinstance(c, str) and c.strip()][:10]
+        out.append({"question": q["question"].strip()[:1000], "choices": choices})
+    return out[:5]
+
+
+def pending_clarify(home, sid):
+    """Read-only: the newest clarify call after the last user message, if any."""
+    from hermes_state import SessionDB
+    db = SessionDB(db_path=home / "state.db", read_only=True)
+    try:
+        conversation = db.get_messages_as_conversation(sid, include_ancestors=False)
+    finally:
+        db.close()
+    for message in reversed(conversation[-200:]):
+        if message.get("role") == "user":
+            return []
+        for call in reversed(message.get("tool_calls") or []):
+            function = call.get("function") or {}
+            if function.get("name") == "clarify":
+                return clarify_questions(function.get("arguments"))
+    return []
 
 
 async def inventory(client):
@@ -151,8 +196,11 @@ async def operation(client, endpoint, home, request):
             messages = raw.get("messages", [])
         else:
             messages = await asyncio.to_thread(stored_history, home, row)
+        # A session waiting on its user ('attention') may be holding a clarify
+        # question; show it read-only. Answering stays in Telegram/Desktop for now.
+        questions = await asyncio.to_thread(pending_clarify, home, sid) if row["state"] == "attention" else []
         await checked(client, endpoint, expected)
-        return visible_messages(messages)
+        return {**visible_messages(messages), "questions": questions}
     if action != "send" or not isinstance(request.get("text"), str) or not request["text"].strip():
         raise ValueError("invalid_request")
     if len(request["text"]) > 16000 or not request.get("submissionId"):
@@ -164,7 +212,7 @@ async def operation(client, endpoint, home, request):
             or mounted.get("info", {}).get("profile_id", expected["profile"]) != expected["profile"]):
         raise StaleTarget("session_changed")
     if mounted.get("prompts"):
-        raise StaleTarget("session_needs_attention")
+        raise PendingQuestion("hermes_question_pending")
     await checked(client, endpoint, expected)
     result = await client.rpc("prompt.submit", session_id=sid, text=request["text"],
                               submission_id=request["submissionId"], _timeout=8)
@@ -244,7 +292,8 @@ if __name__ == "__main__":
         print(json.dumps({"ok": True, "result": result}, ensure_ascii=True))
     except Exception as exc:
         # Never return an exception string: it can contain chat, paths or credentials.
-        reason = "stale_target" if isinstance(exc, StaleTarget) else "hermes_unavailable"
+        reason = ("question_pending" if isinstance(exc, PendingQuestion) else
+                  "stale_target" if isinstance(exc, StaleTarget) else "hermes_unavailable")
         if 'request' in globals() and request.get("action") == "send" and not isinstance(exc, StaleTarget):
             reason = "delivery_uncertain"
         print(json.dumps({"ok": False, "error": reason}))

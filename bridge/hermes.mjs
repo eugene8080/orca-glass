@@ -38,7 +38,8 @@ async function localTransport(request) {
     .catch(error => { runtime = null; throw error; });
   const [command] = await runtime;
   const response = await execute(command, ['-I', helper, root], { ...request, root }, request.action === 'list' ? 14000 : 27000);
-  if (!response.ok) throw new Error(response.error === 'stale_target' ? 'Hermes session changed or needs attention. Reopen it before sending.'
+  if (!response.ok) throw new Error(response.error === 'question_pending' ? 'Hermes is waiting for an answer to its question. Answer it in Telegram or Hermes Desktop for now.'
+    : response.error === 'stale_target' ? 'Hermes session changed or needs attention. Reopen it before sending.'
     : response.error === 'delivery_uncertain' ? 'Delivery uncertain. Reopen the session before sending again.' : 'Hermes is unavailable.');
   return response.result;
 }
@@ -78,6 +79,13 @@ export function hermesCatalog(profiles = hermesProfiles()) {
     { id: botGroup(p.dir), name: p.title, hermes: 'bot' },
     ...p.jobs.map(j => ({ id: jobGroup(p.dir, j.id), name: j.name, hermes: 'job', lastActivityAt: j.lastRunAt })),
   ]);
+}
+
+export function clarifyText(questions) {
+  if (!Array.isArray(questions) || !questions.length) return '';
+  const blocks = questions.map((q, i) => [`> ? ${questions.length > 1 ? `(${i + 1}/${questions.length}) ` : ''}${q.question}`,
+    ...(q.choices || []).map((c, n) => `  ${n + 1}. ${c}`)].join('\n'));
+  return [...blocks, '> Answer in Telegram or Hermes Desktop for now.'].join('\n');
 }
 
 export function hermesBinding(document, terminal, sessions) {
@@ -172,7 +180,9 @@ export function createHermesAdapter(transport = localTransport, { document = orc
     async merge(threads, terminals) { return mergeHermesThreads(threads, await discover(), terminals, document(), profiles()); },
     async read(handle) {
       const result = await request(handle, 'read');
-      const text = formatMessages(result.messages || []);
+      // Pending Hermes questions follow the chat as numbered options. Read-only:
+      // answering from the glasses is not supported yet.
+      const text = [formatMessages(result.messages || []), clarifyText(result.questions)].filter(Boolean).join('\n');
       return { text, source: 'hermes-transcript', limited: !!result.limited, messageCount: result.messages?.length || 0, menu: null, progress: '' };
     },
     activity: handle => request(handle, 'activity'),

@@ -86,3 +86,18 @@ then the profile name. `hermesProfiles()` reads the root profile and `profiles/*
 every bot and job to the workspace list with `hermes: 'bot' | 'job'`, so bots and jobs
 without sessions appear. Grouping is for filtering only; send targets remain exact
 handles. Live check 2026-11-05: 7 bots, 2 sessions, 2 jobs, matching Desktop.
+
+## Pending Hermes questions (clarify) (2026-11-05)
+
+A Hermes agent can stop and ask the user one to five questions with options (the
+`clarify` tool; Telegram shows them one at a time with buttons). The live display row
+carries only a truncated preview, so `pending_clarify()` reads the newest clarify call
+after the last user message from the profile's SessionDB (read-only), only while the
+session is in `attention`. Arguments are parsed with `raw_decode`, because models can
+append stray text after the JSON list; at most 5 questions and 10 choices. The reader
+appends them as `> ? (1/2) question` with numbered options and 'Answer in Telegram or
+Hermes Desktop for now.'. A reply while a question is open fails with that same advice
+(`PendingQuestion`), not 'session changed'. Answering from the glasses is the next step:
+Hermes answers batches per question (`clarify.lock`) and then `clarify.respond`; the first
+real answer changes the user's job, so it is built and tested synthetically first.
+Live read-only check 2026-11-05: the #orchestrator session showed both AMC questions.

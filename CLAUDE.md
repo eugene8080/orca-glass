@@ -50,6 +50,12 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-05 user reports Hermes AMC clarify question missing in Orca Glass and reply
+failing. Cause: question is a clarify tool call (excluded) and resume reports a pending
+prompt. Read-only fix shows pending questions from SessionDB; send error now says to
+answer in Telegram/Desktop. 133 Node + 10 Python tests pass; live read-only check shows
+both questions. User chose show-first, answer-from-glasses next.
+
 2026-11-05 Eugene reports he submitted the public release. Fresh read-only portal
 inspection in dedicated Eugene Chrome confirmsv1.0.36 In review, Review in progress,
 Submitted and Awaiting review. Public remains1.0.23; not approved/published yet.

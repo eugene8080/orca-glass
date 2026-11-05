@@ -168,8 +168,36 @@ class Guards(unittest.IsolatedAsyncioTestCase):
                 bridge.inspect_profile = original
 
 
+
+class ClarifyQuestions(unittest.TestCase):
+    def test_full_arguments_parse_even_with_trailing_text(self):
+        questions = [{"question": "Pin the synthetic job?", "choices": ["Yes (Recommended)", "No"]},
+                     {"question": "Run it now?", "choices": ["Yes", "No"]}]
+        arguments = json.dumps({"questions": json.dumps(questions) + "]"})  # model appended stray text
+        self.assertEqual(bridge.clarify_questions(arguments), questions)
+        self.assertEqual(bridge.clarify_questions({"questions": questions}), questions)
+
+    def test_malformed_and_unbounded_input_is_safe(self):
+        self.assertEqual(bridge.clarify_questions("not json"), [])
+        self.assertEqual(bridge.clarify_questions({"questions": [{"choices": ["x"]}, "bad"]}), [])
+        many = [{"question": f"Q{i}", "choices": [str(n) for n in range(20)]} for i in range(9)]
+        parsed = bridge.clarify_questions({"questions": many})
+        self.assertEqual(len(parsed), 5)
+        self.assertEqual(len(parsed[0]["choices"]), 10)
+
+
+class PendingQuestionSend(unittest.IsolatedAsyncioTestCase):
+    async def test_open_question_reports_a_pending_question_not_a_changed_session(self):
+        peer = Peer()
+        peer.prompts = [{"prompt_id": "synthetic-question", "kind": "clarify"}]
+        request = {"action": "send", "target": bridge.identity(endpoint, peer.row), "text": "synthetic", "submissionId": "one"}
+        with self.assertRaises(bridge.PendingQuestion):
+            await bridge.operation(peer, endpoint, Path("unused"), request)
+        self.assertEqual(peer.sent, [])
+
 if __name__ == "__main__":
-    suite = unittest.defaultTestLoader.loadTestsFromTestCase(Guards)
+    suite = unittest.TestSuite(unittest.defaultTestLoader.loadTestsFromTestCase(case)
+                               for case in (Guards, ClarifyQuestions, PendingQuestionSend))
     result = unittest.TextTestRunner().run(suite)
     if not result.wasSuccessful(): raise SystemExit(1)
     print("Hermes helper synthetic checks passed")

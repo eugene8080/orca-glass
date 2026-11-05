@@ -123,3 +123,11 @@ test('bot names come from profile.yaml ui_meta.title, then display_name, then th
   assert.equal(profileTitle('display_name: "Quoted Bot"\n', 'p'), 'Quoted Bot');
   assert.equal(profileTitle('model: x\n', 'writer'), 'writer');
 });
+
+test('pending Hermes questions render as numbered options after the chat', async () => {
+  const { clarifyText } = await import('../bridge/hermes.mjs');
+  assert.equal(clarifyText([]), '');
+  assert.equal(clarifyText([{ question: 'Pin the job?', choices: ['Yes', 'No'] }]),
+    '> ? Pin the job?\n  1. Yes\n  2. No\n> Answer in Telegram or Hermes Desktop for now.');
+  assert.match(clarifyText([{ question: 'A?', choices: [] }, { question: 'B?', choices: ['x'] }]), /^> \? \(1\/2\) A\?\n> \? \(2\/2\) B\?\n  1\. x\n/);
+});

@@ -8,6 +8,14 @@ Completed/superseded release notes: [history](docs/todo-history.md).
 
 ## Open work
 
+- [ ] **Hermes questions (clarify): answer from the glasses -- build next:** user
+  2026-11-05: Orca Glass did not show Hermes' AMC question (2 questions, 2 options each)
+  and a reply failed with 'session changed or needs attention'. Step 1 done: the bridge
+  shows pending questions read-only with numbered options and a clear 'answer in
+  Telegram or Hermes Desktop for now' message (bridge restart, no beta). Step 2: Click/
+  voice number per question via clarify.lock + clarify.respond, synthetic tests first;
+  the user's first real answer is the live test. See docs/hermes-bridge.md.
+
 - [ ] **Separate Hermes and Orca filters; Hermes picker Bots / Sessions / Scheduled jobs;
   new Filter by Agent page -- G2 confirmation:** user approved; beta1.0.36 uploaded/promoted
   (51,971 bytes), public remains1.0.23; bridge restarted (supervisor55704, server80588,
