@@ -50,6 +50,14 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-05 user answered AMC questions in Telegram and asks to build answering from the
+glasses. Open single-select Hermes question is now the reader choice menu (bridge only):
+clarify.respond with the exact choice text, only if gateway prompt id still matches;
+open-ended answered by voice; multi-select/approvals stay Telegram/Desktop. Attach
+(session.resume) at most every10s while attention. 134 Node +16 Python synthetic tests
+pass. Bridge restarted (old8108/57176/84952; new72872/71132/71672 --vad); local/stable
+HTTPS healthz ok. No app/beta change, no live answer sent. First real G2 answer pending.
+
 2026-11-05 bridge restarted for Hermes question display (old55704/80588/10560; new
 8108/57176/84952 --vad); local/stableHTTPS healthz ok.
 

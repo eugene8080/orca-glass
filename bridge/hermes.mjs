@@ -38,7 +38,10 @@ async function localTransport(request) {
     .catch(error => { runtime = null; throw error; });
   const [command] = await runtime;
   const response = await execute(command, ['-I', helper, root], { ...request, root }, request.action === 'list' ? 14000 : 27000);
-  if (!response.ok) throw new Error(response.error === 'question_pending' ? 'Hermes is waiting for an answer to its question. Answer it in Telegram or Hermes Desktop for now.'
+  // 'answer' is a write like 'send': a transport failure must not read as "not sent".
+  if (request.action === 'answer' && !response.ok && response.error === 'hermes_unavailable') throw new Error('Delivery uncertain. Reopen the session before choosing again.');
+  if (!response.ok) throw new Error(response.error === 'question_pending' ? 'Hermes is waiting for an answer to its question. Click for choices, or answer it in Telegram or Hermes Desktop.'
+    : response.error === 'question_changed' ? 'Question changed or was already answered. Nothing sent.'
     : response.error === 'stale_target' ? 'Hermes session changed or needs attention. Reopen it before sending.'
     : response.error === 'delivery_uncertain' ? 'Delivery uncertain. Reopen the session before sending again.' : 'Hermes is unavailable.');
   return response.result;
@@ -81,11 +84,14 @@ export function hermesCatalog(profiles = hermesProfiles()) {
   ]);
 }
 
-export function clarifyText(questions) {
+// Pending Hermes questions after the chat. With an open choice question the
+// reader shows that menu instead (readerContent), so only the batch is listed here
+// when the glasses cannot answer: multi-select, approvals, or not yet checked.
+export function clarifyText(questions, answerable = null) {
   if (!Array.isArray(questions) || !questions.length) return '';
   const blocks = questions.map((q, i) => [`> ? ${questions.length > 1 ? `(${i + 1}/${questions.length}) ` : ''}${q.question}`,
     ...(q.choices || []).map((c, n) => `  ${n + 1}. ${c}`)].join('\n'));
-  return [...blocks, '> Answer in Telegram or Hermes Desktop for now.'].join('\n');
+  return [...blocks, answerable === 'text' ? '> Hold to answer by voice.' : '> Answer in Telegram or Hermes Desktop.'].join('\n');
 }
 
 export function hermesBinding(document, terminal, sessions) {
@@ -147,9 +153,12 @@ function orcaDocument() {
   } catch { return {}; } finally { db?.close(); }
 }
 
-export function createHermesAdapter(transport = localTransport, { document = orcaDocument, listWaitMs = 1500, profiles = () => hermesProfiles() } = {}) {
+export function createHermesAdapter(transport = localTransport, { document = orcaDocument, listWaitMs = 1500, profiles = () => hermesProfiles(), promptCheckMs = 10000, now = Date.now } = {}) {
   let sessions = [], refreshed = 0, pending = null;
   const targets = new Map();
+  // Which question is open needs a gateway attach (session.resume), so the reader's
+  // 1-second polls reuse the last answer for promptCheckMs. Answering clears it.
+  const prompts = new Map();
   let unavailableProfiles = 0;
   async function discover() {
     if (!pending && Date.now() - refreshed > 5000) {
@@ -179,11 +188,22 @@ export function createHermesAdapter(transport = localTransport, { document = orc
     discover,
     async merge(threads, terminals) { return mergeHermesThreads(threads, await discover(), terminals, document(), profiles()); },
     async read(handle) {
-      const result = await request(handle, 'read');
-      // Pending Hermes questions follow the chat as numbered options. Read-only:
-      // answering from the glasses is not supported yet.
-      const text = [formatMessages(result.messages || []), clarifyText(result.questions)].filter(Boolean).join('\n');
-      return { text, source: 'hermes-transcript', limited: !!result.limited, messageCount: result.messages?.length || 0, menu: null, progress: '' };
+      const cached = prompts.get(handle);
+      const result = await request(handle, 'read', { withPrompt: !cached || now() - cached.at >= promptCheckMs });
+      if (!result.questions?.length) prompts.delete(handle);
+      else if (result.promptChecked) prompts.set(handle, { at: now(), menu: result.menu || null, answerable: result.answerable || null });
+      const open = result.questions?.length ? prompts.get(handle) : null;
+      // An open choice question becomes the reader's choice menu (Click or a spoken
+      // number), exactly like a terminal prompt; otherwise list the batch as text.
+      const menu = open?.menu || null;
+      const text = [formatMessages(result.messages || []), menu ? '' : clarifyText(result.questions, open?.answerable)].filter(Boolean).join('\n');
+      return { text, source: 'hermes-transcript', limited: !!result.limited, messageCount: result.messages?.length || 0, menu, progress: '' };
+    },
+    async choose(handle, id, value) {
+      if (typeof id !== 'string' || !/^[0-9a-f]{64}$/.test(id) || typeof value !== 'string' || !/^[1-9]$/.test(value)) throw new Error('Unknown choice');
+      prompts.delete(handle);
+      // The helper re-reads the open prompt and answers only if it still has this exact id.
+      return request(handle, 'answer', { menuId: id, value });
     },
     activity: handle => request(handle, 'activity'),
     async send(handle, text, enter) {

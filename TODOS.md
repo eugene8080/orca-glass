@@ -8,14 +8,16 @@ Completed/superseded release notes: [history](docs/todo-history.md).
 
 ## Open work
 
-- [ ] **Hermes questions (clarify): answer from the glasses -- build next:** user
-  2026-11-05: Orca Glass did not show Hermes' AMC question (2 questions, 2 options each)
-  and a reply failed with 'session changed or needs attention'. Step 1 done: the bridge
-  shows pending questions read-only with numbered options and a clear 'answer in
-  Telegram or Hermes Desktop for now' message; bridge restarted 2026-11-05 (supervisor
-  8108, server57176, whisper84952 --vad), healthz ok; no beta change. Step 2: Click/
-  voice number per question via clarify.lock + clarify.respond, synthetic tests first;
-  the user's first real answer is the live test. See docs/hermes-bridge.md.
+- [ ] **Hermes questions (clarify): answer from the glasses -- first real answer pending:**
+  user 2026-11-05 asked to build it after answering the AMC questions in Telegram.
+  Built 2026-11-05: an open single-select question is the reader's choice menu (Click
+  for choices or say the option number, then confirm); the bridge answers with
+  clarify.respond using the exact choice text, only if the gateway's open prompt still
+  has the same id. Open-ended questions take a spoken reply; multi-select and approvals
+  stay in Telegram/Desktop. 134 Node + 16 Python synthetic tests pass. Bridge restarted
+  2026-11-05 (supervisor72872, server71132, whisper71672 --vad), local/stableHTTPS
+  healthz ok; live read-only check lists 11 Hermes sessions, no question open. No app/
+  beta change. Pending: the user's first real answer from the G2. See docs/hermes-bridge.md.
 
 - [ ] **Separate Hermes and Orca filters; Hermes picker Bots / Sessions / Scheduled jobs;
   new Filter by Agent page -- G2 confirmation:** user approved; beta1.0.36 uploaded/promoted

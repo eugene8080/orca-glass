@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import asyncio
 from contextlib import closing
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -20,6 +21,10 @@ class StaleTarget(ValueError):
 
 class PendingQuestion(StaleTarget):
     """The session is waiting for the user to answer its own question (clarify/approval)."""
+
+
+class QuestionChanged(StaleTarget):
+    """The question the glasses showed is no longer the one Hermes is waiting on."""
 
 
 def identity(endpoint, row):
@@ -93,6 +98,73 @@ def pending_clarify(home, sid):
             if function.get("name") == "clarify":
                 return clarify_questions(function.get("arguments"))
     return []
+
+
+def prompt_menu_id(prompt):
+    # Bound to the exact prompt instance and its wording: a later question that
+    # reuses the same choices, or a new turn, can never receive an old selection.
+    return hashlib.sha256(json.dumps([prompt.get("prompt_id"), prompt.get("execution_generation"),
+                                      prompt.get("question"), prompt.get("choices")]).encode()).hexdigest()
+
+
+def prompt_menu(prompt, questions=()):
+    """The open single-select clarify prompt as a glasses choice menu, else None.
+
+    Hermes registers one canonical prompt per question (messaging surfaces ask a
+    batch one card at a time). Its choices are authoritative: the answer sent back
+    is the exact choice string, as the Telegram/relay adapters do. Multi-select and
+    approvals stay in Telegram/Desktop.
+    """
+    choices = prompt.get("choices") if isinstance(prompt, dict) else None
+    if (not isinstance(prompt, dict) or prompt.get("kind") != "clarify" or prompt.get("multi_select")
+            or not isinstance(prompt.get("prompt_id"), str) or type(prompt.get("execution_generation")) is not int
+            or not isinstance(prompt.get("question"), str) or not isinstance(choices, list)
+            or not 2 <= len(choices) <= 9 or not all(isinstance(c, str) and c.strip() for c in choices)):
+        return None
+    full = prompt["question"].strip()
+    # Messaging cards append a 'Reply "skip"' hint; show the model's own question
+    # text and its position in the batch when it matches the stored tool call.
+    index = next((i for i, q in enumerate(questions) if full.startswith(q["question"])), None)
+    if index is not None:
+        heading = questions[index]["question"]
+        if len(questions) > 1:
+            heading = f"({index + 1}/{len(questions)}) {heading}"
+    else:
+        heading = full.rsplit("\n", 1)[0] if "\n" in full and "skip" in full.rsplit("\n", 1)[1].lower() else full
+    return {"id": prompt_menu_id(prompt), "question": f"? {heading[:1000]}",
+            "options": [{"value": str(i + 1), "label": c.strip()[:300]} for i, c in enumerate(choices)]}
+
+
+def answerable(prompts):
+    """What the glasses can answer: 'choice', 'text' (open-ended question) or None."""
+    if len(prompts) != 1 or not isinstance(prompts[0], dict) or prompts[0].get("kind") != "clarify":
+        return None
+    if prompt_menu(prompts[0]):
+        return "choice"
+    prompt = prompts[0]
+    if (not prompt.get("choices") and not prompt.get("multi_select") and isinstance(prompt.get("prompt_id"), str)
+            and prompt["prompt_id"] and type(prompt.get("execution_generation")) is int):
+        return "text"
+    return None
+
+
+async def mount(client, expected):
+    """Attach to the exact session (Hermes only accepts answers from an attached viewer)."""
+    mounted = await client.rpc("session.resume", session_id=expected["session"], _timeout=8)
+    if (mounted.get("session_id") != expected["session"] or mounted.get("authority_epoch") != expected["epoch"]
+            or mounted.get("info", {}).get("profile_id", expected["profile"]) != expected["profile"]):
+        raise StaleTarget("session_changed")
+    prompts = mounted.get("prompts") or []
+    return prompts if isinstance(prompts, list) else []
+
+
+async def respond_clarify(client, sid, prompt, answer):
+    result = await client.rpc("clarify.respond", session_id=sid, execution_generation=prompt["execution_generation"],
+                              prompt_id=prompt["prompt_id"], answer=answer, _timeout=8)
+    if result.get("status") == "already_resolved":
+        raise QuestionChanged("question_answered")
+    if result.get("status") != "resolved" or result.get("prompt_id") != prompt["prompt_id"]:
+        raise ValueError("delivery_uncertain")
 
 
 async def inventory(client):
@@ -197,22 +269,47 @@ async def operation(client, endpoint, home, request):
         else:
             messages = await asyncio.to_thread(stored_history, home, row)
         # A session waiting on its user ('attention') may be holding a clarify
-        # question; show it read-only. Answering stays in Telegram/Desktop for now.
+        # question. The stored tool call gives the whole batch; only the gateway
+        # knows which question is open, so the caller asks for that (throttled).
         questions = await asyncio.to_thread(pending_clarify, home, sid) if row["state"] == "attention" else []
+        extra = {}
+        if questions and request.get("withPrompt"):
+            prompts = await mount(client, expected)
+            menus = [m for m in (prompt_menu(p, questions) for p in prompts) if m]
+            extra = {"promptChecked": True, "menu": menus[0] if len(menus) == 1 and len(prompts) == 1 else None,
+                     "answerable": answerable(prompts)}
         await checked(client, endpoint, expected)
-        return {**visible_messages(messages), "questions": questions}
+        return {**visible_messages(messages), "questions": questions, **extra}
+    if action == "answer":
+        menu_id, value = request.get("menuId"), request.get("value")
+        if not isinstance(menu_id, str) or len(menu_id) != 64 or not isinstance(value, str) or not value.isdigit():
+            raise ValueError("invalid_request")
+        prompts = await mount(client, expected)
+        await checked(client, endpoint, expected)
+        # Recompute from the gateway's current prompt; the glasses' menu is only a claim.
+        prompt = next((p for p in prompts if prompt_menu(p) and prompt_menu_id(p) == menu_id), None)
+        if prompt is None:
+            raise QuestionChanged("question_changed")
+        index = int(value) - 1
+        if not 0 <= index < len(prompt["choices"]):
+            raise ValueError("invalid_request")
+        await respond_clarify(client, sid, prompt, prompt["choices"][index])
+        return {"sent": prompt["choices"][index].strip()}
     if action != "send" or not isinstance(request.get("text"), str) or not request["text"].strip():
         raise ValueError("invalid_request")
     if len(request["text"]) > 16000 or not request.get("submissionId"):
         raise ValueError("invalid_request")
     # Only a confirmed user write reaches resume. It can refresh/adopt that exact
     # existing session, but cannot silently redirect to a compressed/new owner.
-    mounted = await client.rpc("session.resume", session_id=sid, _timeout=8)
-    if (mounted.get("session_id") != sid or mounted.get("authority_epoch") != expected["epoch"]
-            or mounted.get("info", {}).get("profile_id", expected["profile"]) != expected["profile"]):
-        raise StaleTarget("session_changed")
-    if mounted.get("prompts"):
-        raise PendingQuestion("hermes_question_pending")
+    prompts = await mount(client, expected)
+    if prompts:
+        # A spoken reply answers an open-ended question; anything else (choices,
+        # multi-select, approvals) must not be mistaken for a new message.
+        if answerable(prompts) != "text":
+            raise PendingQuestion("hermes_question_pending")
+        await checked(client, endpoint, expected)
+        await respond_clarify(client, sid, prompts[0], request["text"].strip())
+        return {"accepted": True}
     await checked(client, endpoint, expected)
     result = await client.rpc("prompt.submit", session_id=sid, text=request["text"],
                               submission_id=request["submissionId"], _timeout=8)
@@ -293,7 +390,8 @@ if __name__ == "__main__":
     except Exception as exc:
         # Never return an exception string: it can contain chat, paths or credentials.
         reason = ("question_pending" if isinstance(exc, PendingQuestion) else
+                  "question_changed" if isinstance(exc, QuestionChanged) else
                   "stale_target" if isinstance(exc, StaleTarget) else "hermes_unavailable")
-        if 'request' in globals() and request.get("action") == "send" and not isinstance(exc, StaleTarget):
+        if 'request' in globals() and request.get("action") in ("send", "answer") and not isinstance(exc, StaleTarget):
             reason = "delivery_uncertain"
         print(json.dumps({"ok": False, "error": reason}))

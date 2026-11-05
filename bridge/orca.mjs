@@ -227,6 +227,7 @@ export async function activity(handle) {
 }
 
 export async function choose(handle, id, value) {
+  if (isHermes(handle)) return hermes.choose(handle, id, value);
   const snapshot = await readThread(handle);
   const digit = validateChoice(snapshot.menu, id, value);
   // Recheck immediately before input. Orca has no atomic compare-and-send API;

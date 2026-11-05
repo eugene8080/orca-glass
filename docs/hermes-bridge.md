@@ -101,3 +101,30 @@ Hermes Desktop for now.'. A reply while a question is open fails with that same 
 Hermes answers batches per question (`clarify.lock`) and then `clarify.respond`; the first
 real answer changes the user's job, so it is built and tested synthetically first.
 Live read-only check 2026-11-05: the #orchestrator session showed both AMC questions.
+
+## Answering Hermes questions from the glasses (2026-11-05)
+
+Hermes registers one canonical pending prompt per question (messaging surfaces ask a
+batch one card at a time) and returns it only from `session.resume`, which attaches
+the client. Answers go through `clarify.respond {session_id, execution_generation,
+prompt_id, answer}` from an attached viewer; the answer is the exact choice string, as
+the Telegram/relay adapters send. (`clarify.lock` is only for the local batch panels.)
+- Read: when the session is `attention` and SessionDB holds a clarify call, the helper
+  attaches (`withPrompt`) and turns the single open single-select prompt (2-9 choices)
+  into a choice menu `? (i/n) question` with the option labels. The menu id is a hash of
+  prompt_id, generation, question and choices. The Node adapter repeats this attach at
+  most every 10 s per session (reader polls every second) and forgets it after an answer.
+  While attention, Hermes' turn is running, so the resume policy refresh is refused as
+  busy; the attach ends when the helper exits.
+- The app needs no change: a `menu` from `readThread` already gives Click-for-choices,
+  a spoken option number and the confirm step. `POST /api/choice` routes Hermes handles
+  to `hermes.choose`; the helper re-attaches, recomputes the id from the gateway's
+  current prompt, and answers only on an exact match (`question_changed` otherwise,
+  also when Hermes reports `already_resolved`). Transport failure is reported as
+  delivery uncertain, never as not sent.
+- Open-ended question (no choices): a confirmed spoken reply answers it with
+  `clarify.respond` instead of starting a new prompt. Choice questions, multi-select
+  and approvals still refuse a free-text reply (`question_pending`); multi-select and
+  approvals are answered in Telegram/Desktop.
+Synthetic tests only (tests/hermes_client_test.py ClarifyAnswer, tests/hermes.test.mjs).
+The user's first real answer from the G2 is the live test.

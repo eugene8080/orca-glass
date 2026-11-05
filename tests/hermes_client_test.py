@@ -25,12 +25,17 @@ class Peer:
         self.prompts = []
         self.change_on_read = False
         self.change_on_resume = False
+        self.status = "idle"
+        self.calls = []
+        self.responded = []
+        self.respond_status = "resolved"
 
     async def rpc(self, method, **args):
+        self.calls.append(method)
         if method == "session.list":
             return {"sessions": [dict(self.row)] if args["scope"] == "live" else []}
         if method == "session.active_list":
-            return {"sessions": [{"id": "exact-id", "status": "idle"}]}
+            return {"sessions": [{"id": "exact-id", "status": self.status}]}
         if method == "session.history":
             if self.change_on_read:
                 self.row["started_at"] += 1
@@ -40,6 +45,9 @@ class Peer:
                 self.row["session_id"] = "replacement"
             return {"session_id": self.resume_id, "authority_epoch": 2,
                     "info": {"profile_id": endpoint.profile_id}, "prompts": self.prompts}
+        if method == "clarify.respond":
+            self.responded.append(args)
+            return {"status": self.respond_status, "prompt_id": args["prompt_id"]}
         if method == "prompt.submit":
             self.sent.append(args)
             return {"ref": {"session_id": args["session_id"], "profile_id": endpoint.profile_id},
@@ -195,9 +203,117 @@ class PendingQuestionSend(unittest.IsolatedAsyncioTestCase):
             await bridge.operation(peer, endpoint, Path("unused"), request)
         self.assertEqual(peer.sent, [])
 
+BATCH = [{"question": "Pin the job to Hong Kong time?", "choices": ["Yes (Recommended)", "No"]},
+         {"question": "Post the sheet now?", "choices": ["Yes, post it now", "No, wait"]}]
+
+
+def card(index=1, prompt_id="synthetic-q2", generation=7, **extra):
+    # Shape of a canonical pending prompt from a messaging surface: the question
+    # carries the typed-skip hint on its own line.
+    return {"kind": "clarify", "prompt_id": prompt_id, "execution_generation": generation,
+            "question": BATCH[index]["question"] + '\nReply "skip" to skip this question.',
+            "choices": list(BATCH[index]["choices"]), "multi_select": False, **extra}
+
+
+class ClarifyAnswer(unittest.IsolatedAsyncioTestCase):
+    def test_open_prompt_becomes_a_numbered_menu_with_batch_position(self):
+        menu = bridge.prompt_menu(card(), BATCH)
+        self.assertEqual(menu["question"], "? (2/2) Post the sheet now?")
+        self.assertEqual(menu["options"], [{"value": "1", "label": "Yes, post it now"}, {"value": "2", "label": "No, wait"}])
+        self.assertEqual(len(menu["id"]), 64)
+        # Without the stored batch the skip hint is still not shown.
+        self.assertEqual(bridge.prompt_menu(card())["question"], "? Post the sheet now?")
+        # Same wording in a new prompt instance or turn is a different menu.
+        self.assertNotEqual(menu["id"], bridge.prompt_menu(card(prompt_id="other"))["id"])
+        self.assertNotEqual(menu["id"], bridge.prompt_menu(card(generation=8))["id"])
+
+    def test_only_single_select_clarify_with_two_to_nine_choices_is_a_menu(self):
+        self.assertIsNone(bridge.prompt_menu(card(multi_select=True)))
+        self.assertIsNone(bridge.prompt_menu({**card(), "kind": "approval"}))
+        self.assertIsNone(bridge.prompt_menu(card(choices=["only"])))
+        self.assertIsNone(bridge.prompt_menu(card(choices=[str(n) for n in range(10)])))
+        self.assertIsNone(bridge.prompt_menu(card(execution_generation="7")))
+        self.assertEqual(bridge.answerable([card()]), "choice")
+        self.assertEqual(bridge.answerable([card(choices=[])]), "text")
+        self.assertIsNone(bridge.answerable([card(multi_select=True)]))
+        self.assertIsNone(bridge.answerable([card(), card(prompt_id="second")]))
+        self.assertIsNone(bridge.answerable([]))
+
+    async def read(self, peer, with_prompt):
+        request = {"action": "read", "target": bridge.identity(endpoint, peer.row), "withPrompt": with_prompt}
+        with patch.object(bridge, "pending_clarify", lambda home, sid: BATCH):
+            return await bridge.operation(peer, endpoint, Path("unused"), request)
+
+    async def test_read_attaches_only_when_asked_and_a_question_is_stored(self):
+        peer = Peer()
+        peer.status, peer.prompts = "waiting", [card()]
+        result = await self.read(peer, True)
+        self.assertEqual(result["menu"], bridge.prompt_menu(card(), BATCH))
+        self.assertEqual(result["answerable"], "choice")
+        self.assertTrue(result["promptChecked"])
+        peer.calls.clear()
+        result = await self.read(peer, False)
+        self.assertNotIn("session.resume", peer.calls)
+        self.assertNotIn("menu", result)
+        idle = Peer()
+        idle.prompts = [card()]
+        result = await self.read(idle, True)
+        self.assertEqual(result["questions"], [])
+        self.assertNotIn("session.resume", idle.calls)
+        self.assertEqual(peer.responded + idle.responded, [])
+
+    async def answer(self, peer, menu_id, value="2"):
+        request = {"action": "answer", "target": bridge.identity(endpoint, peer.row), "menuId": menu_id, "value": value}
+        return await bridge.operation(peer, endpoint, Path("unused"), request)
+
+    async def test_answer_sends_the_exact_choice_text_to_the_exact_prompt(self):
+        peer = Peer()
+        peer.status, peer.prompts = "waiting", [card()]
+        menu = bridge.prompt_menu(card(), BATCH)
+        self.assertEqual(await self.answer(peer, menu["id"]), {"sent": "No, wait"})
+        self.assertEqual(peer.responded, [{"session_id": "exact-id", "execution_generation": 7,
+                                           "prompt_id": "synthetic-q2", "answer": "No, wait", "_timeout": 8}])
+        self.assertEqual(peer.sent, [])
+
+    async def test_answer_refuses_a_changed_answered_or_unknown_question(self):
+        menu = bridge.prompt_menu(card(), BATCH)
+        for case in ("next question", "no prompt", "already answered", "session replaced"):
+            peer = Peer()
+            peer.status, peer.prompts = "waiting", [card()]
+            if case == "next question": peer.prompts = [card(prompt_id="synthetic-q3")]
+            if case == "no prompt": peer.prompts = []
+            if case == "already answered": peer.respond_status = "already_resolved"
+            if case == "session replaced": peer.change_on_resume = True
+            with self.assertRaises(bridge.StaleTarget, msg=case):
+                await self.answer(peer, menu["id"])
+            if case != "already answered":
+                self.assertEqual(peer.responded, [], case)
+            self.assertEqual(peer.sent, [], case)
+        for menu_id, value in ((menu["id"], "3"), (menu["id"], "x"), ("short", "1")):
+            peer = Peer()
+            peer.prompts = [card()]
+            with self.assertRaises(ValueError):
+                await self.answer(peer, menu_id, value)
+            self.assertEqual(peer.responded, [])
+
+    async def test_spoken_reply_answers_only_an_open_ended_question(self):
+        peer = Peer()
+        peer.prompts = [card(choices=[])]
+        request = {"action": "send", "target": bridge.identity(endpoint, peer.row), "text": " synthetic answer ", "submissionId": "one"}
+        self.assertEqual(await bridge.operation(peer, endpoint, Path("unused"), request), {"accepted": True})
+        self.assertEqual([r["answer"] for r in peer.responded], ["synthetic answer"])
+        self.assertEqual(peer.sent, [])
+        for prompts in ([card()], [card(choices=[], multi_select=True)], [{"kind": "approval", "prompt_id": "a"}]):
+            peer = Peer()
+            peer.prompts = prompts
+            with self.assertRaises(bridge.PendingQuestion):
+                await bridge.operation(peer, endpoint, Path("unused"), request)
+            self.assertEqual((peer.sent, peer.responded), ([], []))
+
+
 if __name__ == "__main__":
     suite = unittest.TestSuite(unittest.defaultTestLoader.loadTestsFromTestCase(case)
-                               for case in (Guards, ClarifyQuestions, PendingQuestionSend))
+                               for case in (Guards, ClarifyQuestions, PendingQuestionSend, ClarifyAnswer))
     result = unittest.TextTestRunner().run(suite)
     if not result.wasSuccessful(): raise SystemExit(1)
     print("Hermes helper synthetic checks passed")

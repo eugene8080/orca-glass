@@ -127,7 +127,43 @@ test('bot names come from profile.yaml ui_meta.title, then display_name, then th
 test('pending Hermes questions render as numbered options after the chat', async () => {
   const { clarifyText } = await import('../bridge/hermes.mjs');
   assert.equal(clarifyText([]), '');
+  assert.match(clarifyText([{ question: 'Why?', choices: [] }], 'text'), /\n> Hold to answer by voice\.$/);
+  assert.match(clarifyText([{ question: 'Why?', choices: [] }]), /\n> Answer in Telegram or Hermes Desktop\.$/);
   assert.equal(clarifyText([{ question: 'Pin the job?', choices: ['Yes', 'No'] }]),
-    '> ? Pin the job?\n  1. Yes\n  2. No\n> Answer in Telegram or Hermes Desktop for now.');
+    '> ? Pin the job?\n  1. Yes\n  2. No\n> Answer in Telegram or Hermes Desktop.');
   assert.match(clarifyText([{ question: 'A?', choices: [] }, { question: 'B?', choices: ['x'] }]), /^> \? \(1\/2\) A\?\n> \? \(2\/2\) B\?\n  1\. x\n/);
+});
+
+test('an open Hermes choice question becomes the reader menu; answering is exact and throttles attaches', async () => {
+  const target = { profile: 'C:/synthetic/hermes', instance: 'i', epoch: 1, session: 's', started: 1, source: 'telegram' };
+  const menu = { id: 'a'.repeat(64), question: '? (2/2) Post now?', options: [{ value: '1', label: 'Yes' }, { value: '2', label: 'No' }] };
+  const requests = [];
+  let clock = 0, answered = false;
+  const adapter = createHermesAdapter(async request => {
+    requests.push(request);
+    if (request.action === 'list') return { sessions: [{ target, title: 't', state: 'attention' }] };
+    if (request.action === 'answer') { answered = true; return { sent: 'No' }; }
+    const questions = answered ? [] : [{ question: 'Pin?', choices: ['Y', 'N'] }, { question: 'Post now?', choices: ['Yes', 'No'] }];
+    return { messages: [{ role: 'assistant', text: 'Two questions' }], questions, ...(request.withPrompt && questions.length ? { promptChecked: true, menu, answerable: 'choice' } : {}) };
+  }, { document: () => ({}), profiles: () => [], promptCheckMs: 10000, now: () => clock });
+  await adapter.discover();
+  const handle = hermesHandle(target);
+  const first = await adapter.read(handle);
+  assert.deepEqual(first.menu, menu);
+  // The menu replaces the batch text; readerContent prints the question and options.
+  assert.doesNotMatch(first.text, /Pin\?|Telegram/);
+  clock = 5000;
+  assert.deepEqual((await adapter.read(handle)).menu, menu);
+  assert.deepEqual(requests.filter(r => r.action === 'read').map(r => r.withPrompt), [true, false]);
+  clock = 10000;
+  await adapter.read(handle);
+  assert.equal(requests.at(-1).withPrompt, true);
+  await assert.rejects(adapter.choose(handle, 'not-an-id', '1'), /Unknown choice/);
+  await assert.rejects(adapter.choose(handle, menu.id, '0'), /Unknown choice/);
+  assert.deepEqual(await adapter.choose(handle, menu.id, '2'), { sent: 'No' });
+  assert.deepEqual(requests.filter(r => r.action === 'answer').map(r => [r.menuId, r.value, r.target.session]), [[menu.id, '2', 's']]);
+  // Answering forgets the cached question at once; with none stored, no menu remains.
+  const after = await adapter.read(handle);
+  assert.equal(requests.at(-1).withPrompt, true);
+  assert.equal(after.menu, null);
 });
