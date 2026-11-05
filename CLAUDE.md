@@ -50,6 +50,11 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-04 user approves bridge restart for choice-parser fix. Verified scheduled
+task supervisor85400/server82304 owned8787, stopped task and tree, restarted task.
+New supervisor48356 (.local/custom.pid), server35092; local/stableHTTPS healthz ok.
+Agent shell HTTPS_PROXY returns403; check tailnet URL with --noproxy. G2 pending.
+
 2026-11-04 user confirms beta1.0.31 (no title, seven rows, page counter, full-width
 text) works on G2; TODOS rows closed. User reports typed '❯ 1) / 2)' message in
 porttracker Campaign Orchestrator shown as Claude choices. bridge/choices.mjs now
