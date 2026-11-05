@@ -1,7 +1,14 @@
 # Even Hub listing — Orca Glass
-Updated: 2026-11-04
+Updated: 2026-11-05
 
 ## Current status
+
+2026-11-05: user asks to publish 1.0.36 publicly (option chosen: refresh store text,
+recheck privacy attachment, then submit after confirmation). description.txt rewritten
+for 1.0.36 (1,630 characters) but NOT yet saved in the portal; no review submitted.
+Blocked: Claude-in-Chrome lists no connected browser, so the dedicated Eugene Chrome
+profile is unreachable from this session. Public publishing is portal-only (the CLI
+promote command accepts beta only).
 
 2026-11-04 later release: beta **1.0.28** promoted and CLI channel verified;
 public remains1.0.23. Hermes support is now in beta. The portal description below

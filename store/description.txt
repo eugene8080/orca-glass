@@ -1,17 +1,15 @@
 Read your Orca sessions. Speak your next step.
 
-Orca Glass connects G2 glasses to agents running in Orca on your Windows PC. Read conversations, see working/waiting status, and review spoken replies before sending.
+Orca Glass connects G2 glasses to agents running in Orca on your Windows PC, and to a local Hermes Agent. Read conversations, see working/waiting status and the model, and review spoken replies before sending.
 
-Latest beta: 1.0.27
-- Filter by agent and one or more workspaces, with workspace/agent labels.
-- Swipe past the first or last menu row to change pages.
-- Read Codex and Claude conversations with concise Claude progress.
-- Hold to talk, release to review, click to send, double-click to cancel. Whisper transcription runs locally on your PC; chat stays visible during review.
+Version 1.0.36:
+- Filter by agent: Hermes Agent, or All Orca Sessions / Claude / Codex / other Orca agents. Hermes and Orca sessions stay separate.
+- Filter by workspace: Orca shows recent workspaces first, then the rest; Hermes shows Bots, Sessions and Scheduled jobs.
+- Conversations open at the start of the latest reply. Nine rows per page; swipe for pages, swipe down on the last page to refresh. One status row shows state, model and page, e.g. /Waiting Opus5.5 Pg7/8.
+- Hold to open a full-screen voice page that is already listening; release to review, click to send, double-click to cancel. Whisper runs locally on your PC and ignores silence.
 - For numbered prompts, click for choices or speak an option number, then confirm.
-- View available Codex, Claude and Cursor usage. Toggle resets between computer time, phone time and time remaining, e.g. 2d5h12m.
+- View Codex, Claude and Cursor usage; toggle resets between computer time, phone time and time remaining.
 - Start Codex in an existing Orca workspace.
-
-Public build: 1.0.23. Newer features above require the beta. Other agent terminals may appear, but reader support depends on format. Hermes support is in development, not included in the current beta.
 
 Requires G2, the Even Realities Android app, Orca and the companion Windows bridge. The packaged connection targets a configured private PC over Tailscale; arbitrary-PC setup is not yet self-service. Agents run on your PC, not the glasses. English only. Try the demo without a PC.
 
