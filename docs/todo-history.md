@@ -1,4 +1,15 @@
 # Orca Glass TODO history
+
+## G2 confirmation — 2026-11-05
+
+User reports "yes everything works". Current checked-in release is1.0.34,
+following Claude's nine-chat-row/status-row/full-screen voice release. Record
+this as overall G2 acceptance of the current reader feature group, including
+book-style paging and nested-list display. Close the1.0.34 release-check row
+and the superseded1.0.29 book-reader row. This is not an individual edge-case
+certification or confirmation of unrelated usage/Hermes checks. Earlier dated
+implementation details remain historical. No runtime change or new release.
+
 Archived: 2026-11-03
 
 This is the historical implementation log, not the active task list. Older pending

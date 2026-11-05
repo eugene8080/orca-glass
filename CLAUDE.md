@@ -50,6 +50,14 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-05 user reports "yes everything works". Read current shared state first:
+Claude has since released1.0.34 (f95eeca), superseding this thread's1.0.29 page
+layout. Record overall G2 acceptance of current reader/status/full-screen voice
+feature group; close1.0.34 check and superseded book-style reader1.0.29 row in
+TODOS.md. Not individual edge-case proof or unrelated usage/Hermes acceptance.
+Documentation only; no runtime/test/release/bridge change. Details archived in
+docs/todo-history.md.
+
 2026-11-05 user approves nine-row/status-row/full-screen voice. Beta1.0.34
 uploaded/promoted; channel verified51,240bytes, public remains1.0.23.126 tests
 pass; prototype dist restored. Bridge restarted after verifying ownership (old
