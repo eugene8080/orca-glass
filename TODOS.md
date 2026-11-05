@@ -8,7 +8,15 @@ Completed/superseded release notes: [history](docs/todo-history.md).
 
 ## Open work
 
-- [ ] **Usage reset-time modes — G2 confirmation:** beta1.0.27 live; selector cycles
+- [ ] **Book-style reader — preview/G2 confirmation:** native six-row whole-page
+  swipes; bottom Page X of Y, latest page on open, frozen snapshot while browsing.
+  Preserves source nested lists and complete two-digit numbers. Resolves previously
+  unreachable900-byte sections.116 tests/build/doctor pass; synthetic native8-page
+  traversal and voice cancel preservation pass. Preview OPEN on Page6of8 (8791/9900).
+  Screenshot API capture is solid green; user visual approval required before
+  beta upload. Current beta1.0.28 unchanged. See [reader details](docs/session-reader.md).
+
+- [ ] **Usage reset-time modes â€” G2 confirmation:** beta1.0.27 live; selector cycles
   Computer time / Phone time / Absolute time (remaining duration, e.g.2d5h12m).
   Selection persists; bridge retains exact reset instants and computer-local
   labels.107 tests/build/doctor pass; synthetic simulator checked day/zone
@@ -16,7 +24,7 @@ Completed/superseded release notes: [history](docs/todo-history.md).
   approved upload; beta channel verified (49,865 bytes), bridge restarted and
   stableHTTPS usage has timestamps/computer labels for all four provider windows.
   Physical phone/G2 time-zone verification pending. See [reader details](docs/session-reader.md).
-- [ ] **Swipe-only menu paging — G2 confirmation:** beta1.0.26 live;
+- [ ] **Swipe-only menu paging â€” G2 confirmation:** beta1.0.26 live;
   no Previous/Next rows. Swipe past last/first row changes pages and selects the
   opposite edge; outer ends clamp. Seven entries plus two controls per page.
  101 tests/build/doctor pass, native simulator forward/reverse checks pass.
@@ -26,7 +34,7 @@ Completed/superseded release notes: [history](docs/todo-history.md).
   Claude five-hour/weekly and Cursor monthly allowance alongside Codex. User
   approved simulator2026-11-03; beta channel verified, bridge restarted and
   local/stableHTTPS endpoints return ok for all three.79 tests/build/doctor pass.
-- [ ] **Hermes � G2 confirmation:** PR #2 merged as5a48a6f; beta1.0.28 live
+- [ ] **Hermes — G2 confirmation:** PR #2 merged as5a48a6f; beta1.0.28 live
   (49,867 bytes), bridge restarted and stableHTTPS lists15 Hermes sessions.
  113 tests/build/doctor and synthetic native interaction checks pass. Worktree
   and local/origin feature branches deleted after merge; preview captures kept
@@ -73,24 +81,24 @@ Completed/superseded release notes: [history](docs/todo-history.md).
 - [x] Even Hub description and repository README refreshed for beta1.0.27,
   with public1.0.23 distinction; saved portal text verified after reload2026-11-04.
   Hermes branch health/status checked without submitting agent input.
-- [x] Workspace multi-filter and [workspace/Agent] session labels — user confirms
+- [x] Workspace multi-filter and [workspace/Agent] session labels â€” user confirms
   beta1.0.25 works on G2,2026-11-04. Follow-up removes paging rows; tracked above.
 - [x] Claude saved chat / blank-reader recovery, concise working progress and
-  numbered-input feature group — user confirms beta1.0.24 works on G2,2026-11-04.
+  numbered-input feature group â€” user confirms beta1.0.24 works on G2,2026-11-04.
   Overall release accepted; native/voice/stale-question edge cases also covered by
  91 synthetic tests and simulator checks. See [reader details](docs/session-reader.md).
-- [x] Full-width session reader — user confirmed on G2, beta1.0.22,2026-11-03.
+- [x] Full-width session reader â€” user confirmed on G2, beta1.0.22,2026-11-03.
   Native wrapping uses560px body at x8, padding0; fixed50-character wrapping removed.
-- [x] Remaining native-menu checks — Display off/Brightness/Close, moving dot,
+- [x] Remaining native-menu checks â€” Display off/Brightness/Close, moving dot,
   and no displaced slash when a working session is selected; user marks the
   remaining G2 checklist done2026-11-03. No further checks pending for these items.
 - [x] Three contextual actions (Refresh sessions, New Session, Usage) work on G2
-  — user confirmed2026-11-03 for beta1.0.21.
-- [x] Bold vertical bar is gone — user confirmed resolved2026-11-03; exact cause
+  â€” user confirmed2026-11-03 for beta1.0.21.
+- [x] Bold vertical bar is gone â€” user confirmed resolved2026-11-03; exact cause
   not established. No further scrollbar-removal work required for this report.
-- [x] Compact native-text session menu trial — user marks done2026-11-03.
-- [x] Menu compatibility diagnosis and smaller markers — user marks done2026-11-03.
-- [x] Phone Failed to fetch follow-up — user marks resolved2026-11-03.
+- [x] Compact native-text session menu trial â€” user marks done2026-11-03.
+- [x] Menu compatibility diagnosis and smaller markers â€” user marks done2026-11-03.
+- [x] Phone Failed to fetch follow-up â€” user marks resolved2026-11-03.
 - [x] Android/G2 startup/load rejection recovery; menu speed and stationary text.
 - [x] Count/filter/provider alignment, no blank title row, plain cmd.exe excluded.
 - [x] Three-row transcription, native footer text, voice completion/chat retention.

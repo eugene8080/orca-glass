@@ -1,5 +1,36 @@
 # Session reader
 
+## Book-style paging — 2026-11-04
+
+Session readers now show six explicit native text rows per page, constrained to
+900 UTF-8 bytes and measured to550px inside the560px body. Long words split by
+Unicode code point; ordinary words and source list labels remain intact. Original
+bullets, nested indentation and numbers are preserved; no renumbering occurs.
+Eugene clarified that Campaign's source list is nested, not a flat1-19 list.
+Other app screens retain their prior text behavior.
+
+Open starts on the latest page. Up/down moves one full page, clamped at the ends.
+The bottom-right hint's third row shows Page X of Y in native text; the session
+title remains at the top. No extra containers. Browsing freezes the snapshot/count
+while activity and question detection continue. Reopening or sending resumes live
+newest-page updates. Page writes serialize with live writes and coalesce rapid
+swipes. This replaces the prior inaccessible900-byte sections.
+
+Voice hides the hint/counter, preserving three transcription rows. Cancel restores
+the same page without rebuilding or rewriting the body; send resumes live updates.
+Hold waits for pending page writes and checks release before enabling the mic.
+
+116 tests/build/doctor pass. `scripts/check-reader-pages-simulator.mjs` uses a fresh
+isolated simulator9900 and fixture8791, sets synthetic text, traverses8 pages both
+ways, checks every character, two-digit items1-19 and nested bullets, clamps first
+page, then records/cancels without a body rewrite. Preview OPEN on Page6of8 in the
+existing root named Orca tabs. Captures in `.local/book-reader-preview` are not
+visual proof: screenshot API returns solid green. User preview approval and G2
+confirmation pending; beta1.0.28/production unchanged. No real provider input.
+
+Earlier native-scroll behavior and section notes below are historical.
+
+
 2026-11-04 user approves Usage reset toggle beta.1.0.27 uploaded/promoted;
 beta channel verified (49,865 bytes), public remains1.0.23.107 tests/build/doctor
 passed for implementation; beta/prototype builds pass. Production bridge restarted
