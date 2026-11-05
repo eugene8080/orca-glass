@@ -8,6 +8,19 @@ Completed/superseded release notes: [history](docs/todo-history.md).
 
 ## Open work
 
+- [ ] **Hermes picker: Bots / Sessions / Scheduled jobs — preview approval, then release
+  (beta AND bridge restart), then G2:** user request 2026-11-05, matching Hermes Desktop
+  (7 bots, 2 sessions, 2 scheduled jobs). Bridge: each Hermes session joins one group
+  -- Desktop chat = its own Session, cron run = its job (run title starts with the job
+  name, same profile), anything else = its profile's Bot. Bot name = profile.yaml
+  ui_meta.title; jobs = <profile>/cron/jobs.json; listWorkspaces appends every bot and
+  job (marked hermes) so bots/jobs without sessions still show. Session list label is
+  now the bot name, e.g. [Grand Master Bot/Hermes]. Picker: Hermes mode shows only these
+  sections (recency order); Orca mode no longer lists Hermes groups. Read-only live check:
+  7 bots, 2 sessions, 2 jobs (FEHD has no run yet), exactly as Desktop. Old saved
+  'hermes-profile:' selections show under 'Other selections' to clear. 132 tests pass;
+  simulator verified both pages. Preview OPEN on page 2. Not released.
+
 - [ ] **Workspace picker: no title, Recent workspaces first — G2 confirmation:** user request 2026-11-05. Ten rows, no
   title. Page 1: Done, [x] All workspaces, 'Recent workspaces' heading, four most
   recently active (Orca worktree lastActivityAt, or newer session output), 'Other

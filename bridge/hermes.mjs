@@ -2,6 +2,7 @@
 import { execFile } from 'node:child_process';
 import { createHash, randomUUID } from 'node:crypto';
 import { access } from 'node:fs/promises';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -42,6 +43,43 @@ async function localTransport(request) {
   return response.result;
 }
 
+// Hermes Desktop groups conversations as Bots (one per profile), Sessions
+// (Desktop chats) and Scheduled jobs (cron definitions). The bot name is the
+// profile's ui_meta.title (the Desktop label), else display_name, else its name.
+export function profileTitle(yaml, fallback) {
+  const meta = /^ui_meta:[^\n]*\n((?:[ \t]+[^\n]*(?:\n|$))*)/m.exec(yaml || '')?.[1] || '';
+  const title = /^[ \t]+title:[ \t]*(.+?)[ \t]*$/m.exec(meta)?.[1] || /^display_name:[ \t]*(.+?)[ \t]*$/m.exec(yaml || '')?.[1];
+  return title ? title.replace(/^(['"])(.*)\1$/, '$2') : fallback;
+}
+
+// Read-only: the root profile ('default') and profiles/*, with each profile's
+// cron job definitions. Bounded; unreadable files simply contribute nothing.
+export function hermesProfiles(home = root) {
+  const read = file => { try { return readFileSync(file, 'utf8'); } catch { return ''; } };
+  let dirs = [];
+  try { dirs = readdirSync(join(home, 'profiles'), { withFileTypes: true }).filter(d => d.isDirectory()).slice(0, 32).map(d => [d.name, join(home, 'profiles', d.name)]); } catch {}
+  return [['default', home], ...dirs].filter(([, dir]) => existsSync(join(dir, 'profile.yaml'))).map(([name, dir]) => {
+    let jobs = [];
+    try {
+      const parsed = JSON.parse(read(join(dir, 'cron', 'jobs.json')) || '[]');
+      jobs = (Array.isArray(parsed) ? parsed : parsed?.jobs || []).filter(j => typeof j?.id === 'string' && typeof j?.name === 'string')
+        .slice(0, 200).map(j => ({ id: j.id, name: j.name, lastRunAt: Date.parse(j.last_run_at) || undefined }));
+    } catch {}
+    return { name, dir, title: profileTitle(read(join(dir, 'profile.yaml')), name), jobs };
+  });
+}
+
+const botGroup = dir => `hermes-bot:${digest(normalize(dir))}`;
+const jobGroup = (dir, job) => `hermes-job:${digest([normalize(dir), job])}`;
+
+// Picker entries for every bot and scheduled job, including ones with no sessions yet.
+export function hermesCatalog(profiles = hermesProfiles()) {
+  return profiles.flatMap(p => [
+    { id: botGroup(p.dir), name: p.title, hermes: 'bot' },
+    ...p.jobs.map(j => ({ id: jobGroup(p.dir, j.id), name: j.name, hermes: 'job', lastActivityAt: j.lastRunAt })),
+  ]);
+}
+
 export function hermesBinding(document, terminal, sessions) {
   const pane = `${terminal.tabId}:${terminal.leafId}`;
   const record = document.sleepingAgentSessionsByPaneKey?.[pane];
@@ -58,7 +96,7 @@ export function hermesBinding(document, terminal, sessions) {
   return candidates.length === 1 ? candidates[0] : null;
 }
 
-export function mergeHermesThreads(threads, sessions, terminals = [], document = {}) {
+export function mergeHermesThreads(threads, sessions, terminals = [], document = {}, profiles = []) {
   const unique = new Map();
   for (const session of sessions) {
     const handle = hermesHandle(session.target);
@@ -70,12 +108,21 @@ export function mergeHermesThreads(threads, sessions, terminals = [], document =
   const hermesRows = [...unique.values()].filter(Boolean).map(({ session, handle }) => {
     const matches = terminals.filter(t => hermesBinding(document, t, sessions) === session);
     const owned = matches.length === 1 ? threads.find(t => t.handle === matches[0].handle) : null;
-    const workspaceId = `hermes-profile:${digest(normalize(session.target.profile))}`;
+    // One group per session: a Desktop chat is its own Session, a cron run
+    // belongs to its job (the run title starts with the job name), anything
+    // else (Telegram and other channels) to its profile's Bot.
+    const profile = profiles.find(p => normalize(p.dir) === normalize(session.target.profile));
+    const bot = profile?.title || session.profileName;
+    const job = session.target.source === 'cron' ? profile?.jobs.find(j => (session.title || '').startsWith(j.name)) : null;
+    const group = session.target.source === 'desktop' ? { id: `hermes-session:${handle}`, label: session.title || 'Hermes session', kind: 'session' }
+      : job ? { id: jobGroup(profile.dir, job.id), label: job.name, kind: 'job' }
+      : { id: botGroup(session.target.profile), label: bot, kind: 'bot' };
     return { handle, title: session.title, agent: 'hermes',
       state: session.state === 'working' ? 'busy' : session.state === 'waiting' ? 'idle' : 'unknown',
-      workspaceId: owned?.workspaceId || workspaceId,
-      workspaceName: owned?.workspaceName || `Hermes: ${session.profileName}`,
-      workspaceLabel: owned?.workspaceLabel || session.profileName,
+      workspaceId: owned?.workspaceId || group.id,
+      workspaceName: owned?.workspaceName || bot,
+      workspaceLabel: owned?.workspaceLabel || group.label,
+      hermesGroup: owned ? 'session' : group.kind,
       lastOutputAt: Number(session.target.started || 0) * 1000 };
   });
   // Gateway is authoritative for Hermes. Unproven terminal panes are never a
@@ -92,7 +139,7 @@ function orcaDocument() {
   } catch { return {}; } finally { db?.close(); }
 }
 
-export function createHermesAdapter(transport = localTransport, { document = orcaDocument, listWaitMs = 1500 } = {}) {
+export function createHermesAdapter(transport = localTransport, { document = orcaDocument, listWaitMs = 1500, profiles = () => hermesProfiles() } = {}) {
   let sessions = [], refreshed = 0, pending = null;
   const targets = new Map();
   let unavailableProfiles = 0;
@@ -122,7 +169,7 @@ export function createHermesAdapter(transport = localTransport, { document = orc
   }
   return {
     discover,
-    async merge(threads, terminals) { return mergeHermesThreads(threads, await discover(), terminals, document()); },
+    async merge(threads, terminals) { return mergeHermesThreads(threads, await discover(), terminals, document(), profiles()); },
     async read(handle) {
       const result = await request(handle, 'read');
       const text = formatMessages(result.messages || []);

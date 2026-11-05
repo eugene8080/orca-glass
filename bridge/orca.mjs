@@ -9,7 +9,7 @@ import { terminalConversation, terminalModel } from './reader-text.mjs';
 import { terminalProvider } from './terminal-provider.mjs';
 import { progressSummary } from './progress.mjs';
 import { workspaceLabels } from './workspace-label.mjs';
-import { hermes, isHermes } from './hermes.mjs';
+import { hermes, isHermes, hermesCatalog } from './hermes.mjs';
 
 const run = promisify(execFile);
 const ORCA = orcaExecutable();
@@ -269,7 +269,7 @@ export async function listWorkspaces() {
       name: w.path.split(/[\\/]/).pop() + (w.isMainWorktree ? '' : `:${w.displayName}`),
       // Orca's own last-activity time orders the picker's Recent workspaces.
       lastActivityAt: Number.isFinite(w.lastActivityAt) ? w.lastActivityAt : undefined,
-    }));
+    })).concat(hermesCatalog()); // Hermes bots/jobs, marked 'hermes', for the Hermes picker.
 }
 
 export async function startSession({ workspaceId, command, prompt }) {

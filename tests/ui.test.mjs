@@ -942,17 +942,19 @@ test('workspace picker pages reach every entry and saved unavailable workspaces 
   const h = await harness(0, false, 'tap', '', 0, false, '["missing"]');
   h.api.workspaces = async () => Array.from({ length: 15 }, (_, i) => ({ id: `w${i}`, name: `Workspace ${String(i).padStart(2, '0')}` }));
   await h.pick(1);
-  assert.ok(menuItems(h).some(s => s.includes('unavailable')));
   const seen = new Set();
+  let unavailable = false;
   for (let page = 0; page < 5; page++) {
     const items = menuItems(h);
+    unavailable ||= items.some(s => s.includes('unavailable'));
     items.filter(s => s.includes('Workspace ')).forEach(s => seen.add(s));
     assert.ok(items.length <= 10);
     assert.ok(!items.some(s => /^(Next|Previous) page$/.test(s)));
-    if (seen.size === 15) break;
+    if (seen.size === 15 && unavailable) break;
     for (let row = 0; row < items.length; row++) await h.scroll('down');
   }
   assert.equal(seen.size, 15);
+  assert.ok(unavailable, 'saved missing workspace is listed so it can be cleared');
   await h.back();
   assert.equal(menuItems(h).length, 2);
 });
@@ -1221,4 +1223,30 @@ test('with the Hermes agent filter the workspace picker lists only Hermes worksp
   assert.ok(items.includes('[x] porttracker'));
   assert.ok(!items.some(s => /orca-glass|zeta/.test(s)), items.join(' | '));
   assert.ok(!items.some(s => s.includes('unavailable')));
+});
+
+test('Hermes picker shows Bots, Sessions and Scheduled jobs instead of Orca workspaces', async () => {
+  const h = await harness(0, false, 'tap', 'hermes');
+  h.api.threads = async () => [
+    { handle: 'codex-1', title: 'Codex work', agent: 'codex', state: 'idle', workspaceId: 'orca-glass-id', workspaceLabel: 'orca-glass', lastOutputAt: 99 },
+    { handle: 'hermes:1', title: 'Chat', agent: 'hermes', state: 'idle', workspaceId: 'bot-gm', workspaceName: 'Grand Master Bot', workspaceLabel: 'Grand Master Bot', hermesGroup: 'bot', lastOutputAt: 50 },
+    { handle: 'hermes:2', title: 'Plan', agent: 'hermes', state: 'idle', workspaceId: 'session-plan', workspaceName: 'Grand Master Bot', workspaceLabel: 'Complete porttracker', hermesGroup: 'session', lastOutputAt: 40 },
+    { handle: 'hermes:3', title: 'Run', agent: 'hermes', state: 'idle', workspaceId: 'job-amc', workspaceName: 'Schedule Bot', workspaceLabel: 'AMC sign-up', hermesGroup: 'job', lastOutputAt: 60 },
+  ];
+  h.api.workspaces = async () => [
+    { id: 'orca-glass-id', name: 'orca-glass', lastActivityAt: 100 },
+    { id: 'bot-gm', name: 'Grand Master Bot', hermes: 'bot' },
+    { id: 'bot-writer', name: 'Writer Bot', hermes: 'bot' },
+    { id: 'job-amc', name: 'AMC sign-up', hermes: 'job' },
+    { id: 'job-fehd', name: 'FEHD list', hermes: 'job' },
+  ];
+  await h.menu(1001); await h.pick(1);
+  assert.equal(JSON.stringify([...menuItems(h)]), JSON.stringify(['Done', '[x] All workspaces',
+    'Bots', '[ ] Grand Master Bot', '[ ] Writer Bot',
+    'Sessions', '[ ] Complete porttracker',
+    'Scheduled jobs', '[ ] AMC sign-up', '[ ] FEHD list']));
+  // Selecting a bot filters the Hermes session list to that bot's chats.
+  await h.pick(3); await h.pick(0);
+  const list = [...menuItems(h)];
+  assert.ok(list.some(s => s.includes('Chat')) && !list.some(s => s.includes('Plan') || s.includes('Run')), list.join(' | '));
 });

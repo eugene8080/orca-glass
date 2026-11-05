@@ -71,3 +71,18 @@ build/doctor and read-only stored-history smoke pass. Synthetic simulator
 interaction checks pass; preview remains open on8795/9902. Screenshot API capture
 is solid green, so user visual review is still required. Merge and deployment
 remain held; beta1.0.27/production unchanged. No real prompts/resumes/replies.
+
+## Bots, Sessions and Scheduled jobs (2026-11-05, unreleased)
+
+Hermes Desktop groups conversations as Bots (one per profile), Sessions (Desktop chats)
+and Scheduled jobs (cron definitions). The bridge mirrors that: `mergeHermesThreads`
+puts each session in exactly one group -- a `desktop` source is its own Session
+(`hermes-session:<handle>`), a `cron` run belongs to the job in the same profile whose
+name starts its title (`hermes-job:<profile,job>`), and any other source belongs to the
+profile's Bot (`hermes-bot:<profile>`); an unmatched cron run falls back to its Bot.
+Bot names come from the profile's `profile.yaml` `ui_meta.title`, then `display_name`,
+then the profile name. `hermesProfiles()` reads the root profile and `profiles/*`
+(max 32) and each `cron/jobs.json` (max 200 jobs), read-only; `hermesCatalog()` adds
+every bot and job to the workspace list with `hermes: 'bot' | 'job'`, so bots and jobs
+without sessions appear. Grouping is for filtering only; send targets remain exact
+handles. Live check 2026-11-05: 7 bots, 2 sessions, 2 jobs, matching Desktop.

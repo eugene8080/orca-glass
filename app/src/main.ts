@@ -442,7 +442,7 @@ function home(page = 0, selected = 0) {
     const allThreads = await api.threads();
     if (current !== owner) return;
     const threads = allThreads.filter(t => (viewProvider === 'all' || t.agent === viewProvider) && (viewWorkspaces === null || !!t.workspaceId && viewWorkspaces.has(t.workspaceId)));
-    for (const t of allThreads) if (t.workspaceId) workspaceNames.set(t.workspaceId, t.workspaceName || t.workspaceLabel || 'Workspace');
+    for (const t of allThreads) if (t.workspaceId) workspaceNames.set(t.workspaceId, (t.agent === 'hermes' ? t.workspaceLabel : t.workspaceName) || t.workspaceLabel || t.workspaceName || 'Workspace');
     const workspaceFilter = viewWorkspaces === null ? 'All workspaces' : viewWorkspaces.size === 0 ? 'None' : viewWorkspaces.size === 1 ? workspaceNames.get([...viewWorkspaces][0]) || '1 selected' : `${viewWorkspaces.size} selected`;
     const pageSize = 7; // Nine native rows: two filters plus seven sessions.
     const pageCount = Math.max(1, Math.ceil(threads.length / pageSize));
@@ -499,65 +499,81 @@ function viewOptions(page = 0) {
 
 // null means all workspaces; an explicit empty set means none. Keep each
 // toggle selected in a native text page so multiple picks do not jump to row 1.
-// Ten rows, no title. Page 1: Done, All, Recent workspaces (four most recently
-// active), Other workspaces (alphabetical) to fill the page; later pages: Done,
-// All, then eight more alphabetical rows. Headings are not selectable.
+// Ten rows, no title: Done, All, then sections paged eight entries at a time.
+// Orca: Recent workspaces (four most recently active), then Other workspaces
+// (alphabetical). Hermes (not part of Orca): Bots, Sessions, Scheduled jobs, as
+// in Hermes Desktop. Headings are not selectable and never end a page.
 const PICKER_ROWS = 10;
 const RECENT_WORKSPACES = 4;
+type PickerRow = [id: string, name: string];
 function workspaceOptions(page = 0, selected = 0) {
   return guard('Filter by Workspace', async () => {
     const owner = current;
     const [threads, catalog] = await Promise.all([api.threads(), api.workspaces().catch(() => [])]);
     if (current !== owner) return;
-    // Hermes is not part of Orca: with the Hermes agent filter, list only the
-    // workspaces its sessions belong to (an Orca pane's workspace or a Hermes
-    // profile group), not the whole Orca catalogue.
     const hermesOnly = viewProvider === 'hermes';
-    const sessions = hermesOnly ? threads.filter(t => t.agent === 'hermes') : threads;
-    const choices = new Map(hermesOnly ? [] : catalog.map(w => [w.id, w.name]));
-    for (const t of sessions) if (t.workspaceId) choices.set(t.workspaceId, t.workspaceLabel || t.workspaceName || 'Workspace');
-    // Saved selections stay visible so they can be cleared; only truly missing
-    // workspaces are marked unavailable.
-    const known = new Map(catalog.map(w => [w.id, w.name]));
-    for (const id of viewWorkspaces || []) if (!choices.has(id)) choices.set(id, known.get(id) || `${workspaceNames.get(id) || id.replaceAll('\\', '/').split('/').pop() || 'Workspace'} (unavailable)`);
-    // Recency: Orca's workspace activity time, or a newer session output in it.
+    const sessions = threads.filter(t => (t.agent === 'hermes') === hermesOnly);
+    const entries = catalog.filter(w => !!w.hermes === hermesOnly);
+    const names = new Map<string, string>(entries.map(w => [w.id, w.name]));
+    const kinds = new Map<string, string>(entries.filter(w => w.hermes).map(w => [w.id, w.hermes!]));
+    for (const t of sessions) if (t.workspaceId) {
+      names.set(t.workspaceId, t.workspaceLabel || t.workspaceName || 'Workspace');
+      if (t.hermesGroup) kinds.set(t.workspaceId, t.hermesGroup);
+    }
+    // Recency: Orca's activity time, a job's last run, or a newer session output.
     const activity = new Map<string, number>();
-    for (const w of catalog) if (w.lastActivityAt) activity.set(w.id, w.lastActivityAt);
+    for (const w of entries) if (w.lastActivityAt) activity.set(w.id, w.lastActivityAt);
     for (const t of sessions) if (t.workspaceId && t.lastOutputAt) activity.set(t.workspaceId, Math.max(activity.get(t.workspaceId) || 0, t.lastOutputAt));
-    const recent = [...choices].filter(([id]) => activity.has(id))
-      .sort((a, b) => activity.get(b[0])! - activity.get(a[0])! || a[1].localeCompare(b[1])).slice(0, RECENT_WORKSPACES);
-    const recentIds = new Set(recent.map(([id]) => id));
-    const others = [...choices].filter(([id]) => !recentIds.has(id)).sort((a, b) => a[1].localeCompare(b[1]));
-    const later = PICKER_ROWS - 2;
-    const first = recent.length ? Math.max(0, later - recent.length - 1 - (others.length ? 1 : 0)) : later;
-    const pageCount = 1 + Math.ceil(Math.max(0, others.length - first) / later);
-    page = Math.max(0, Math.min(page, pageCount - 1));
+    const byRecency = (a: PickerRow, b: PickerRow) => (activity.get(b[0]) || 0) - (activity.get(a[0]) || 0) || a[1].localeCompare(b[1]);
+    const rows = [...names] as PickerRow[];
+    let sections: { title?: string; rows: PickerRow[] }[];
+    if (hermesOnly) {
+      sections = [['Bots', 'bot'], ['Sessions', 'session'], ['Scheduled jobs', 'job']]
+        .map(([title, kind]) => ({ title, rows: rows.filter(([id]) => (kinds.get(id) || 'session') === kind).sort(byRecency) }));
+    } else {
+      const recent = rows.filter(([id]) => activity.has(id)).sort(byRecency).slice(0, RECENT_WORKSPACES);
+      const recentIds = new Set(recent.map(([id]) => id));
+      const others = rows.filter(([id]) => !recentIds.has(id)).sort((a, b) => a[1].localeCompare(b[1]));
+      sections = recent.length ? [{ title: 'Recent workspaces', rows: recent }, { title: 'Other workspaces', rows: others }] : [{ rows: others }];
+    }
+    // Saved selections from the other mode stay visible so they can be cleared.
+    const listed = new Set(rows.map(([id]) => id));
+    const known = new Map(catalog.map(w => [w.id, w.name]));
+    const elsewhere = [...viewWorkspaces || []].filter(id => !listed.has(id)).map((id): PickerRow => [id,
+      known.get(id) || workspaceNames.get(id) || `${id.replaceAll('\\', '/').split('/').pop() || 'Workspace'} (unavailable)`]);
+    if (elsewhere.length) sections.push({ title: 'Other selections', rows: elsewhere });
+    // Flatten to headings and rows, then page eight entries below Done/All.
+    const flat: ({ heading: string } | { row: PickerRow })[] = sections.filter(x => x.rows.length)
+      .flatMap(x => [...(x.title ? [{ heading: x.title }] : []), ...x.rows.map(row => ({ row }))]);
+    const perPage = PICKER_ROWS - 2;
+    const pages: typeof flat[] = [[]];
+    for (const entry of flat) {
+      const last = pages.at(-1)!;
+      if (last.length === perPage || ('heading' in entry && last.length === perPage - 1)) pages.push([]);
+      pages.at(-1)!.push(entry);
+    }
+    page = Math.max(0, Math.min(page, pages.length - 1));
     const save = async () => bridge.setLocalStorage('view-workspaces', viewWorkspaces === null ? 'all' : JSON.stringify([...viewWorkspaces]));
     const actions: { label: string; run: () => unknown }[] = [
       { label: 'Done', run: () => home() },
       { label: `[${viewWorkspaces === null ? 'x' : ' '}] All workspaces`, run: async () => { const owner = current; viewWorkspaces = null; await save(); if (current === owner) await workspaceOptions(page, 1); } },
     ];
     const headings: number[] = [];
-    const heading = (label: string) => { headings.push(actions.length); actions.push({ label, run: () => {} }); };
-    const checkbox = ([id, name]: [string, string]) => {
+    for (const entry of pages[page]) {
       const index = actions.length;
+      if ('heading' in entry) { headings.push(index); actions.push({ label: entry.heading, run: () => {} }); continue; }
+      const [id, name] = entry.row;
       actions.push({ label: `[${viewWorkspaces?.has(id) ? 'x' : ' '}] ${name}`, run: async () => {
         viewWorkspaces ??= new Set();
         if (viewWorkspaces.has(id)) viewWorkspaces.delete(id); else viewWorkspaces.add(id);
         const owner = current; await save(); if (current === owner) await workspaceOptions(page, index);
       } });
-    };
-    if (page === 0 && recent.length) {
-      heading('Recent workspaces');
-      recent.forEach(checkbox);
-      if (others.length) heading('Other workspaces');
     }
-    (page === 0 ? others.slice(0, first) : others.slice(first + (page - 1) * later, first + page * later)).forEach(checkbox);
     let selection = selected < 0 ? actions.length - 1 : Math.min(selected, actions.length - 1);
     while (headings.includes(selection)) selection--;
     await show({ kind: 'list', workspacePicker: true, title: 'Filter by Workspace', items: actions.map(a => a.label), headings, selected: selection,
       onPreviousPage: page > 0 ? () => workspaceOptions(page - 1, -1) : undefined,
-      onNextPage: page + 1 < pageCount ? () => workspaceOptions(page + 1) : undefined,
+      onNextPage: page + 1 < pages.length ? () => workspaceOptions(page + 1) : undefined,
       onPick: i => { if (!headings.includes(i)) void actions[i]?.run(); }, onBack: () => home() });
   }, home);
 }

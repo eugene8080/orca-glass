@@ -56,10 +56,10 @@ async function call<T>(method: 'GET' | 'POST', path: string, body?: unknown): Pr
   return data as T;
 }
 
-export type Thread = { handle: string; title: string; agent: string; state: 'idle' | 'busy' | 'unknown'; workspaceId?: string; workspaceName?: string; workspaceLabel?: string; lastOutputAt?: number };
+export type Thread = { handle: string; title: string; agent: string; state: 'idle' | 'busy' | 'unknown'; workspaceId?: string; workspaceName?: string; workspaceLabel?: string; lastOutputAt?: number; hermesGroup?: 'bot' | 'session' | 'job' };
 export type ChoiceMenu = { id: string; question: string; options: { value: string; label: string; description?: string }[] };
 export type Provider = { id: string; models: string[]; ok: boolean; note: string };
-export type Workspace = { id: string; name: string; lastActivityAt?: number };
+export type Workspace = { id: string; name: string; lastActivityAt?: number; hermes?: 'bot' | 'session' | 'job' };
 export type Activity = 'working' | 'waiting' | 'attention' | 'unknown';
 export type UsageLimit = { usedPercent: number; resetDescription: string; resetsAt?: number | null; computerResetDescription?: string };
 type Limit = UsageLimit | null;
