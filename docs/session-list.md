@@ -108,3 +108,14 @@ With the agent filter set to Hermes, which is not part of Orca, the picker lists
 the workspaces of Hermes sessions (the Orca workspace of a Hermes pane, or a Hermes
 profile group) instead of the Orca catalogue. Earlier selections remain visible so
 they can be cleared.
+
+## Separate Hermes and Orca filters (2026-11-05, unreleased)
+
+Hermes is not part of Orca, so the two never mix. Filter by Agent is a native-text
+page: `<-`, `Hermes Agent`, a divider (not selectable), `All Orca Sessions`, `Claude`,
+`Codex`, then any other Orca agent seen. With Hermes Agent the session list shows only
+Hermes sessions and Filter by Workspace opens the Hermes page (Bots, Sessions,
+Scheduled jobs), saved as `view-hermes-workspaces`. Every other choice shows only Orca
+sessions (All Orca Sessions excludes Hermes) and opens the Orca page (Recent/Other),
+saved as `view-workspaces`. Each page lists only its own workspaces; a saved selection
+that no longer exists shows under `Unavailable` so it can be cleared.

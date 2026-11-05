@@ -53,7 +53,7 @@ const TEXT_BYTES = 999;
 const POLL_MS = 1000;
 
 type Screen =
-  | { kind: 'list'; title: string; items: string[]; sessionList?: boolean; workspacePicker?: boolean; headings?: number[]; menuActions?: { id: number; label: string; run: () => unknown }[]; compat?: boolean; columns?: SessionColumns[]; connectedCount?: number; selected?: number; paintedSelection?: number; menuFrame?: number; paintedCursor?: string; cursorWriting?: boolean; paging?: boolean; onPreviousPage?: () => unknown; onNextPage?: () => unknown; onPick: (i: number) => void; onBack?: () => void }
+  | { kind: 'list'; title: string; items: string[]; sessionList?: boolean; workspacePicker?: boolean; agentPicker?: boolean; headings?: number[]; menuActions?: { id: number; label: string; run: () => unknown }[]; compat?: boolean; columns?: SessionColumns[]; connectedCount?: number; selected?: number; paintedSelection?: number; menuFrame?: number; paintedCursor?: string; cursorWriting?: boolean; paging?: boolean; onPreviousPage?: () => unknown; onNextPage?: () => unknown; onPick: (i: number) => void; onBack?: () => void }
   | { kind: 'text'; title: string; text: string; usageMode?: ResetMode; conversationText?: string; choiceMenu?: ChoiceMenu | null; tail?: boolean; offset?: number; pageText?: string; pages?: string[]; pageTarget?: number; pageWriting?: boolean; reading?: boolean; refreshing?: boolean; responsePage?: number; openAtResponse?: boolean; model?: string; voice?: boolean; voiceHint?: string; voiceTail?: boolean; activityLabel?: string; activityState?: string; reportedSeconds?: number | null; statusFrame?: number; statusStartedAt?: number; savedHistory?: boolean; reader?: Thread; onClick?: () => void; onBack?: () => void; onHold?: () => void; };
 
 let bridge: EvenAppBridge;
@@ -74,6 +74,14 @@ let releaseCapture: (() => void) | null = null;
 let viewProvider = 'all';
 let usageResetMode: ResetMode = 'computer';
 let viewWorkspaces: Set<string> | null = null;
+// Hermes is not part of Orca: it has its own workspace selection and page.
+let viewHermesWorkspaces: Set<string> | null = null;
+const hermesView = () => viewProvider === 'hermes';
+const activeWorkspaces = () => hermesView() ? viewHermesWorkspaces : viewWorkspaces;
+function setActiveWorkspaces(value: Set<string> | null) { if (hermesView()) viewHermesWorkspaces = value; else viewWorkspaces = value; }
+const saveActiveWorkspaces = () => { const value = activeWorkspaces();
+  return bridge.setLocalStorage(hermesView() ? 'view-hermes-workspaces' : 'view-workspaces', value === null ? 'all' : JSON.stringify([...value])); };
+const providerFilterLabel = () => viewProvider === 'all' ? 'All Orca sessions' : agentLabel(viewProvider);
 let workspaceNames = new Map<string, string>();
 const providerName = agentLabel;
 
@@ -316,7 +324,7 @@ async function show(s: Screen, reloadText = false) {
     if (s.kind === 'list' && s.sessionList && compactMenuOnly) {
       s.compat = true; page = compatibilityMenu(s, menu) as typeof page;
     }
-    if (s.kind === 'list' && s.workspacePicker) { s.compat = true; page = compatibilityMenu(s, {}) as typeof page; }
+    if (s.kind === 'list' && (s.workspacePicker || s.agentPicker)) { s.compat = true; page = compatibilityMenu(s, {}) as typeof page; }
     let accepted = await bridge.rebuildPageContainer(new RebuildPageContainer(page));
     if (!accepted && s.kind === 'list' && s.sessionList && !s.compat) {
       s.compat = true;
@@ -441,27 +449,31 @@ function home(page = 0, selected = 0) {
     const owner = current;
     const allThreads = await api.threads();
     if (current !== owner) return;
-    const threads = allThreads.filter(t => (viewProvider === 'all' || t.agent === viewProvider) && (viewWorkspaces === null || !!t.workspaceId && viewWorkspaces.has(t.workspaceId)));
+    // Hermes Agent lists only Hermes sessions; All Orca sessions and each Orca agent
+    // exclude Hermes. Each side applies its own workspace selection.
+    const selection = activeWorkspaces();
+    const threads = allThreads.filter(t => (hermesView() ? t.agent === 'hermes' : t.agent !== 'hermes' && (viewProvider === 'all' || t.agent === viewProvider))
+      && (selection === null || !!t.workspaceId && selection.has(t.workspaceId)));
     for (const t of allThreads) if (t.workspaceId) workspaceNames.set(t.workspaceId, (t.agent === 'hermes' ? t.workspaceLabel : t.workspaceName) || t.workspaceLabel || t.workspaceName || 'Workspace');
-    const workspaceFilter = viewWorkspaces === null ? 'All workspaces' : viewWorkspaces.size === 0 ? 'None' : viewWorkspaces.size === 1 ? workspaceNames.get([...viewWorkspaces][0]) || '1 selected' : `${viewWorkspaces.size} selected`;
+    const workspaceFilter = selection === null ? 'All workspaces' : selection.size === 0 ? 'None' : selection.size === 1 ? workspaceNames.get([...selection][0]) || '1 selected' : `${selection.size} selected`;
     const pageSize = 7; // Nine native rows: two filters plus seven sessions.
     const pageCount = Math.max(1, Math.ceil(threads.length / pageSize));
     page = Math.max(0, Math.min(page, pageCount - 1));
     const start = page * pageSize;
     const visible = threads.slice(start, start + pageSize);
     const actions: { label: string; run: () => unknown }[] = [
-      { label: `* Filter by Agent [${viewProvider === 'all' ? 'All sessions' : agentLabel(viewProvider)}]`, run: () => viewOptions() },
+      { label: `* Filter by Agent [${providerFilterLabel()}]`, run: () => viewOptions() },
       { label: `* Filter by Workspace [${workspaceFilter}]`, run: () => workspaceOptions() },
       ...visible.map(t => ({ label: sessionRow(t.title, t.handle, t.agent, t.state, t.workspaceName), run: () => thread(t) })),
     ];
     const columns = actions.map((a, i): SessionColumns => {
       const t = i >= 2 ? visible[i - 2] : undefined;
       if (t) return { marker: t.state === 'idle' ? '/' : t.state === 'busy' ? '' : '?', title: compactSessionTitle(t.title, t.handle), right: sessionAgentLabel(t.workspaceName || '', t.agent), busy: t.state === 'busy', handle: t.handle };
-      return i === 0 ? { marker: '*', title: 'Filter by Agent', right: `[${viewProvider === 'all' ? 'All sessions' : agentLabel(viewProvider)}]` }
+      return i === 0 ? { marker: '*', title: 'Filter by Agent', right: `[${providerFilterLabel()}]` }
         : i === 1 ? { marker: '*', title: 'Filter by Workspace', right: `[${workspaceFilter}]` } : { marker: '', title: a.label, right: '' };
     });
-    const selection = selected < 0 ? actions.length - 1 : Math.min(selected, actions.length - 1);
-    await show({ kind: 'list', title: sessionListTitle(allThreads.length), sessionList: true, columns, connectedCount: allThreads.length, selected: selection, paintedSelection: selection,
+    const cursor = selected < 0 ? actions.length - 1 : Math.min(selected, actions.length - 1);
+    await show({ kind: 'list', title: sessionListTitle(allThreads.length), sessionList: true, columns, connectedCount: allThreads.length, selected: cursor, paintedSelection: cursor,
       onPreviousPage: page > 0 ? () => home(page - 1, -1) : undefined,
       onNextPage: page + 1 < pageCount ? () => home(page + 1) : undefined,
       menuActions: [
@@ -474,26 +486,31 @@ function home(page = 0, selected = 0) {
   }, home);
 }
 
-function viewOptions(page = 0) {
+// Filter by Agent: Hermes Agent first, a divider, then All Orca sessions and each
+// Orca agent harness (Claude, Codex, then any others seen). Rendered as native
+// text so the divider is not selectable.
+function viewOptions() {
   return guard('Filter by Agent', async () => {
     const threads = await api.threads();
-    const providers = ['all', 'claude', 'codex', ...new Set(threads.map(t => t.agent).filter(Boolean))]
+    const orca = ['all', 'claude', 'codex', ...new Set(threads.map(t => t.agent).filter(a => !!a && a !== 'hermes'))]
       .filter((id, index, ids) => ids.indexOf(id) === index);
-    if (!providers.includes(viewProvider)) providers.push(viewProvider);
-    const size = LIST_MAX - 3;
-    const actions: { label: string; run: () => unknown }[] = [{ label: '<-', run: () => home() }];
-    for (const id of providers.slice(page * size, (page + 1) * size)) {
-      actions.push({ label: `${id === 'all' ? 'All Sessions' : providerName(id)}${viewProvider === id ? ' ✓' : ''}`,
-        run: async () => {
-          await bridge.setLocalStorage('view-provider', id);
-          viewProvider = id;
-          await home();
-        } });
-    }
-    if (page > 0) actions.push({ label: 'Previous page', run: () => viewOptions(page - 1) });
-    if ((page + 1) * size < providers.length) actions.push({ label: 'Next page', run: () => viewOptions(page + 1) });
-    await show({ kind: 'list', title: 'Filter by Agent', items: actions.map(a => a.label),
-      onPick: i => { void actions[i]?.run(); }, onBack: home });
+    if (viewProvider !== 'hermes' && !orca.includes(viewProvider)) orca.push(viewProvider);
+    const choose = (id: string) => async () => {
+      await bridge.setLocalStorage('view-provider', id);
+      viewProvider = id;
+      await home();
+    };
+    const label = (id: string, name: string) => `${name}${viewProvider === id ? ' ✓' : ''}`;
+    const actions: { label: string; run: () => unknown }[] = [
+      { label: '<-', run: () => home() },
+      { label: label('hermes', 'Hermes Agent'), run: choose('hermes') },
+      { label: '-------------------------', run: () => {} },
+      ...orca.map(id => ({ label: label(id, id === 'all' ? 'All Orca Sessions' : providerName(id)), run: choose(id) })),
+    ];
+    const headings = [2];
+    const selected = Math.max(0, actions.findIndex(a => a.label.endsWith(' ✓')));
+    await show({ kind: 'list', agentPicker: true, title: 'Filter by Agent', items: actions.map(a => a.label), headings, selected,
+      onPick: i => { if (!headings.includes(i)) void actions[i]?.run(); }, onBack: home });
   }, home);
 }
 
@@ -511,7 +528,8 @@ function workspaceOptions(page = 0, selected = 0) {
     const owner = current;
     const [threads, catalog] = await Promise.all([api.threads(), api.workspaces().catch(() => [])]);
     if (current !== owner) return;
-    const hermesOnly = viewProvider === 'hermes';
+    const hermesOnly = hermesView();
+    const chosen = activeWorkspaces();
     const sessions = threads.filter(t => (t.agent === 'hermes') === hermesOnly);
     const entries = catalog.filter(w => !!w.hermes === hermesOnly);
     const names = new Map<string, string>(entries.map(w => [w.id, w.name]));
@@ -536,12 +554,12 @@ function workspaceOptions(page = 0, selected = 0) {
       const others = rows.filter(([id]) => !recentIds.has(id)).sort((a, b) => a[1].localeCompare(b[1]));
       sections = recent.length ? [{ title: 'Recent workspaces', rows: recent }, { title: 'Other workspaces', rows: others }] : [{ rows: others }];
     }
-    // Saved selections from the other mode stay visible so they can be cleared.
+    // Saved selections that no longer exist stay visible so they can be cleared.
     const listed = new Set(rows.map(([id]) => id));
     const known = new Map(catalog.map(w => [w.id, w.name]));
-    const elsewhere = [...viewWorkspaces || []].filter(id => !listed.has(id)).map((id): PickerRow => [id,
+    const elsewhere = [...chosen || []].filter(id => !listed.has(id)).map((id): PickerRow => [id,
       known.get(id) || workspaceNames.get(id) || `${id.replaceAll('\\', '/').split('/').pop() || 'Workspace'} (unavailable)`]);
-    if (elsewhere.length) sections.push({ title: 'Other selections', rows: elsewhere });
+    if (elsewhere.length) sections.push({ title: 'Unavailable', rows: elsewhere });
     // Flatten to headings and rows, then page eight entries below Done/All.
     const flat: ({ heading: string } | { row: PickerRow })[] = sections.filter(x => x.rows.length)
       .flatMap(x => [...(x.title ? [{ heading: x.title }] : []), ...x.rows.map(row => ({ row }))]);
@@ -553,19 +571,20 @@ function workspaceOptions(page = 0, selected = 0) {
       pages.at(-1)!.push(entry);
     }
     page = Math.max(0, Math.min(page, pages.length - 1));
-    const save = async () => bridge.setLocalStorage('view-workspaces', viewWorkspaces === null ? 'all' : JSON.stringify([...viewWorkspaces]));
+    const save = saveActiveWorkspaces;
     const actions: { label: string; run: () => unknown }[] = [
       { label: 'Done', run: () => home() },
-      { label: `[${viewWorkspaces === null ? 'x' : ' '}] All workspaces`, run: async () => { const owner = current; viewWorkspaces = null; await save(); if (current === owner) await workspaceOptions(page, 1); } },
+      { label: `[${chosen === null ? 'x' : ' '}] All workspaces`, run: async () => { const owner = current; setActiveWorkspaces(null); await save(); if (current === owner) await workspaceOptions(page, 1); } },
     ];
     const headings: number[] = [];
     for (const entry of pages[page]) {
       const index = actions.length;
       if ('heading' in entry) { headings.push(index); actions.push({ label: entry.heading, run: () => {} }); continue; }
       const [id, name] = entry.row;
-      actions.push({ label: `[${viewWorkspaces?.has(id) ? 'x' : ' '}] ${name}`, run: async () => {
-        viewWorkspaces ??= new Set();
-        if (viewWorkspaces.has(id)) viewWorkspaces.delete(id); else viewWorkspaces.add(id);
+      actions.push({ label: `[${chosen?.has(id) ? 'x' : ' '}] ${name}`, run: async () => {
+        const next = activeWorkspaces() ?? new Set<string>();
+        if (next.has(id)) next.delete(id); else next.add(id);
+        setActiveWorkspaces(next);
         const owner = current; await save(); if (current === owner) await workspaceOptions(page, index);
       } });
     }
@@ -1050,7 +1069,7 @@ function onEvent(e: EvenHubEvent) {
   // Ignore repeated swipes/clicks during a fetch so one edge gesture changes
   // exactly one page and cannot activate a row from the page being replaced.
   if (s.kind === 'list' && s.paging) return;
-  if (s.kind === 'list' && (s.sessionList || s.workspacePicker) && (type === OsEventTypeList.SCROLL_TOP_EVENT || type === OsEventTypeList.SCROLL_BOTTOM_EVENT)) {
+  if (s.kind === 'list' && (s.sessionList || s.workspacePicker || s.agentPicker) && (type === OsEventTypeList.SCROLL_TOP_EVENT || type === OsEventTypeList.SCROLL_BOTTOM_EVENT)) {
     const step = type === OsEventTypeList.SCROLL_TOP_EVENT ? -1 : 1;
     let next = (s.selected || 0) + step;
     while (s.headings?.includes(next)) next += step; // Headings are not selectable.
@@ -1091,7 +1110,7 @@ function onEvent(e: EvenHubEvent) {
   if (type !== OsEventTypeList.CLICK_EVENT) return;
   if (s.kind === 'list') {
     // 先頭項目(0)も既定値として省かれうる
-    if (s.sessionList || s.workspacePicker) {
+    if (s.sessionList || s.workspacePicker || s.agentPicker) {
       const index = e.listEvent?.currentSelectItemIndex ?? s.selected ?? 0;
       // Finish in-flight cursor writes before reusing BODY on the next page.
       void sessionCursorWrites.then(() => { if (current === s) s.onPick(index); });
@@ -1165,10 +1184,12 @@ async function main() {
   viewProvider = (await bridge.getLocalStorage('view-provider')) || 'all';
   const resetMode = await bridge.getLocalStorage('usage-reset-mode');
   if (RESET_MODES.includes(resetMode as ResetMode)) usageResetMode = resetMode as ResetMode;
-  try {
-    const stored = JSON.parse(await bridge.getLocalStorage('view-workspaces') || 'null');
-    if (Array.isArray(stored) && stored.every(id => typeof id === 'string')) viewWorkspaces = new Set(stored);
-  } catch { /* Older or corrupt preferences safely restore all workspaces. */ }
+  for (const [key, set] of [['view-workspaces', (v: Set<string>) => { viewWorkspaces = v; }], ['view-hermes-workspaces', (v: Set<string>) => { viewHermesWorkspaces = v; }]] as const) {
+    try {
+      const stored = JSON.parse(await bridge.getLocalStorage(key) || 'null');
+      if (Array.isArray(stored) && stored.every(id => typeof id === 'string')) set(new Set(stored));
+    } catch { /* Older or corrupt preferences safely restore all workspaces. */ }
+  }
   useLang(pref);
   const draft = document.getElementById('reply-text') as HTMLTextAreaElement;
   const send = document.getElementById('send-reply') as HTMLButtonElement;

@@ -50,6 +50,12 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-05 user confirms 1.0.35 picker layout/heading skip on G2; Hermes-only list did not
+meet the need. Implemented separate Hermes/Orca agent filters, workspace pages and saved
+selections, and the new Filter by Agent text page with a non-selectable divider.
+132 tests pass; simulator verified; preview LEFT OPEN. Release (beta 1.0.36 + bridge
+restart for Hermes grouping) after approval.
+
 2026-11-05 user requests Hermes picker sections Bots/Sessions/Scheduled jobs (7/2/2 in
 Hermes Desktop). Bridge groups each Hermes session (desktop=Session, cron=job, else
 Bot) and lists all bots (profile.yaml ui_meta.title) and jobs (cron/jobs.json). Live

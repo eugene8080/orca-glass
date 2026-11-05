@@ -112,7 +112,7 @@ test('Filter by Agent stays in the list and contextual menu gets the three moved
   assert.equal(h.pages.at(-1).textObject[0].content, 'Filter by Agent');
 });
 
-test('Filter by Agent discovers providers, marks selection, filters and restores All Sessions', async () => {
+test('Filter by Agent lists Hermes, a divider, then All Orca sessions and each Orca agent', async () => {
   const h = await harness();
   h.api.threads = async () => [
     { handle: 'codex', title: 'Codex conversation', agent: 'codex' },
@@ -122,16 +122,23 @@ test('Filter by Agent discovers providers, marks selection, filters and restores
   const saved = [];
   h.bridge.setLocalStorage = async (key, value) => { saved.push([key, value]); };
   await h.pick(0);
-  assert.deepEqual([...menuItems(h)],
-    ['<-', 'All Sessions ✓', 'Claude', 'Codex', 'OpenCode', 'Gemini']);
-  await h.pick(4);
+  assert.equal(JSON.stringify([...menuItems(h)]),
+    JSON.stringify(['<-', 'Hermes Agent', '-------------------------', 'All Orca Sessions ✓', 'Claude', 'Codex', 'OpenCode', 'Gemini']));
+  // The cursor opens on the ticked row; the divider is skipped in both directions.
+  await h.scroll('up');
+  assert.match(h.upgrades.at(-1).content.split('\n')[1], /^> Hermes Agent/);
+  await h.scroll('down');
+  assert.match(h.upgrades.at(-1).content.split('\n')[3], /^> All Orca Sessions/);
+  await h.pick(2);
+  assert.equal(saved.length, 0);
+  await h.pick(6);
   assert.deepEqual(saved, [['view-provider', 'opencode']]);
   let items = menuItems(h);
   assert.equal(items.length, 3);
   assert.match(items[2], /OpenCode worker/);
   await h.pick(0);
-  assert.match(menuItems(h)[4], /OpenCode ✓/);
-  await h.pick(1);
+  assert.match(menuItems(h)[6], /OpenCode ✓/);
+  await h.pick(3);
   items = menuItems(h);
   assert.equal(items.length, 5);
   assert.equal(h.sends.length, 0);
@@ -141,7 +148,7 @@ test('saved provider filter restores even with no matching live sessions', async
   const h = await harness(2, false, 'tap', 'claude');
   assert.equal(menuItems(h).length, 2);
   await h.pick(0);
-  assert.equal(menuItems(h)[2], 'Claude ✓');
+  assert.equal(menuItems(h)[4], 'Claude ✓');
   assert.equal(h.sends.length, 0);
 });
 
@@ -155,8 +162,10 @@ test('Hermes mixed models share one filter and saved reader uses confirmed voice
     { handle: 'claude', title: 'Claude regression', agent: 'claude' },
   ];
   await h.pick(0);
-  assert.deepEqual([...menuItems(h)], ['<-', 'All Sessions ✓', 'Claude', 'Codex', 'Hermes']);
-  await h.pick(4);
+  assert.equal(JSON.stringify([...menuItems(h)]), JSON.stringify(['<-', 'Hermes Agent', '-------------------------', 'All Orca Sessions ✓', 'Claude', 'Codex']));
+  // All Orca Sessions never includes Hermes.
+  assert.ok(!menuItems(h).some(s => /^Hermes (?!Agent)/.test(s)));
+  await h.pick(1);
   assert.equal(menuItems(h).length, 9);
   assert.ok(menuItems(h).slice(2).every(t => t.startsWith('Hermes ')));
   h.api.history = async () => ({ source: 'hermes-transcript', text: '> Exact Hermes saved answer' });
@@ -620,7 +629,7 @@ test('compact session menu uses native text and one update per cursor move', asy
   const actionRows = columns.find(c => c.containerName === 'body').content.split('\n').slice(0, 4);
   assert.ok(actionRows.every(row => /^ {1}\S/.test(row)));
   assert.ok(!actionRows.join(' ').includes('Usage'));
-  assert.match(columns.find(c => c.containerName === 'menu-right').content.split('\n')[0], /All sessions/);
+  assert.match(columns.find(c => c.containerName === 'menu-right').content.split('\n')[0], /All Orca sessions/);
   assert.equal(columns.find(c => c.containerName === 'menu-right').content.split('\n')[2].trim(), '[Codex]');
   assert.equal(h.pages.at(-1).containerTotalNum, 6);
   const all = [...columns];
@@ -913,7 +922,7 @@ test('workspace multi-select stays open, persists, combines with agent filter an
   assert.equal(menuItems(h).length, 4);
   assert.ok(menuItems(h).some(s => s.includes('Archive session')));
   assert.ok(!menuItems(h).some(s => s.includes('Settings session')));
-  await h.pick(0); await h.pick(3);
+  await h.pick(0); await h.pick(5);
   assert.equal(menuItems(h).length, 3);
   assert.ok(menuItems(h)[2].includes('Glasses session'));
   await h.pick(1); await h.pick(2); await h.pick(0);
@@ -1206,23 +1215,36 @@ test('workspace picker has no title, lists four recent workspaces first and the 
   assert.match(h.pages.at(-1).textObject.find(c => c.containerName === 'body').content.split('\n')[9], /^> \[ \] ai-stock/);
 });
 
-test('with the Hermes agent filter the workspace picker lists only Hermes workspaces', async () => {
+test('Hermes and Orca keep separate workspace pages, selections and session lists', async () => {
   const h = await harness(0, false, 'tap', 'hermes', 0, false, '["porttracker-id"]');
+  const saved = [];
+  h.bridge.setLocalStorage = async (key, value) => { saved.push([key, value]); };
   h.api.threads = async () => [
     { handle: 'codex-1', title: 'Codex work', agent: 'codex', state: 'idle', workspaceId: 'orca-glass-id', workspaceName: 'orca-glass', workspaceLabel: 'orca-glass', lastOutputAt: 50 },
-    { handle: 'hermes:1', title: 'Hermes chat', agent: 'hermes', state: 'idle', workspaceId: 'hermes-profile:abc', workspaceName: 'Hermes: default', workspaceLabel: 'Hermes: default', lastOutputAt: 40 },
-    { handle: 'hermes:2', title: 'Hermes pane', agent: 'hermes', state: 'idle', workspaceId: 'pc-settings-id', workspaceName: 'pc-settings', workspaceLabel: 'pc-settings', lastOutputAt: 30 },
+    { handle: 'claude-1', title: 'Claude port', agent: 'claude', state: 'idle', workspaceId: 'porttracker-id', workspaceName: 'porttracker', workspaceLabel: 'porttracker', lastOutputAt: 45 },
+    { handle: 'hermes:1', title: 'Hermes chat', agent: 'hermes', state: 'idle', workspaceId: 'bot-gm', workspaceName: 'Grand Master Bot', workspaceLabel: 'Grand Master Bot', hermesGroup: 'bot', lastOutputAt: 40 },
   ];
-  h.api.workspaces = async () => ['orca-glass', 'pc-settings', 'porttracker', 'zeta'].map((name, i) => ({ id: `${name}-id`, name, lastActivityAt: 100 - i }));
-  await h.menu(1001); await h.pick(1);
-  const items = [...menuItems(h)];
-  // Hermes profile group and the Orca pane workspace a Hermes session lives in;
-  // the earlier Orca selection stays visible (checked) so it can be cleared.
-  assert.ok(items.includes('[ ] Hermes: default'));
-  assert.ok(items.includes('[ ] pc-settings'));
-  assert.ok(items.includes('[x] porttracker'));
-  assert.ok(!items.some(s => /orca-glass|zeta/.test(s)), items.join(' | '));
-  assert.ok(!items.some(s => s.includes('unavailable')));
+  h.api.workspaces = async () => [...['orca-glass', 'porttracker', 'zeta'].map((name, i) => ({ id: `${name}-id`, name, lastActivityAt: 100 - i })),
+    { id: 'bot-gm', name: 'Grand Master Bot', hermes: 'bot' }];
+  await h.menu(1001);
+  // Hermes Agent: only Hermes sessions; the saved Orca selection does not apply.
+  let list = [...menuItems(h)];
+  assert.ok(list.some(s => s.includes('Hermes chat')) && !list.some(s => /Codex work|Claude port/.test(s)), list.join(' | '));
+  await h.pick(1);
+  const hermesPage = [...menuItems(h)];
+  assert.ok(hermesPage.includes('[ ] Grand Master Bot'));
+  assert.ok(!hermesPage.some(s => /orca-glass|porttracker|zeta/.test(s)), hermesPage.join(' | '));
+  await h.pick(hermesPage.indexOf('[ ] Grand Master Bot'));
+  assert.equal(saved.at(-1)[0], 'view-hermes-workspaces');
+  await h.pick(0);
+  // Switch to All Orca Sessions: Orca workspace page with its own saved selection.
+  await h.pick(0); await h.pick(3);
+  list = [...menuItems(h)];
+  assert.ok(list.some(s => s.includes('Claude port')) && !list.some(s => /Hermes chat|Codex work/.test(s)), list.join(' | '));
+  await h.pick(1);
+  const orcaPage = [...menuItems(h)];
+  assert.ok(orcaPage.includes('[x] porttracker'));
+  assert.ok(!orcaPage.some(s => s.includes('Grand Master Bot')), orcaPage.join(' | '));
 });
 
 test('Hermes picker shows Bots, Sessions and Scheduled jobs instead of Orca workspaces', async () => {

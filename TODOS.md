@@ -8,8 +8,15 @@ Completed/superseded release notes: [history](docs/todo-history.md).
 
 ## Open work
 
-- [ ] **Hermes picker: Bots / Sessions / Scheduled jobs — preview approval, then release
-  (beta AND bridge restart), then G2:** user request 2026-11-05, matching Hermes Desktop
+- [ ] **Separate Hermes and Orca filters; Hermes picker Bots / Sessions / Scheduled jobs;
+  new Filter by Agent page -- preview approval, then release (beta AND bridge restart),
+  then G2:** user 2026-11-05: on 1.0.35 Hermes mode still mixed Orca items. Now Filter by
+  Agent is a text page '<-, Hermes Agent, divider (not selectable), All Orca Sessions,
+  Claude, Codex, other Orca agents'. Hermes Agent shows only Hermes sessions and opens
+  the Hermes workspace page (selection saved as view-hermes-workspaces); every other
+  choice shows only Orca sessions and opens the Orca page (view-workspaces). 132 tests
+  pass; simulator verified agent page, divider skip, Hermes list, Orca list and Orca
+  page. Earlier picker detail:   (beta AND bridge restart), then G2:** user request 2026-11-05, matching Hermes Desktop
   (7 bots, 2 sessions, 2 scheduled jobs). Bridge: each Hermes session joins one group
   -- Desktop chat = its own Session, cron run = its job (run title starts with the job
   name, same profile), anything else = its profile's Bot. Bot name = profile.yaml
@@ -20,22 +27,6 @@ Completed/superseded release notes: [history](docs/todo-history.md).
   7 bots, 2 sessions, 2 jobs (FEHD has no run yet), exactly as Desktop. Old saved
   'hermes-profile:' selections show under 'Other selections' to clear. 132 tests pass;
   simulator verified both pages. Preview OPEN on page 2. Not released.
-
-- [ ] **Workspace picker: no title, Recent workspaces first — G2 confirmation:** user request 2026-11-05. Ten rows, no
-  title. Page 1: Done, [x] All workspaces, 'Recent workspaces' heading, four most
-  recently active (Orca worktree lastActivityAt, or newer session output), 'Other
-  workspaces' heading, alphabetical rows to fill the page. Later pages: Done, All, eight
-  alphabetical rows. Headings are flush left, not selectable; the cursor skips them.
-  Recent workspaces are not repeated in the alphabetical list. Bridge now passes
-  lastActivityAt from 'orca worktree list' (needs restart; until then recency uses
-  session output only). 128 tests pass; simulator verified page 1 layout, heading
-  skip and page 2. Real Orca session workspaceId equals worktree id (checked).
-  Hermes filter (user 2026-11-05): with the agent filter on Hermes, the picker lists
-  only Hermes sessions' workspaces (Orca pane workspace or Hermes profile group), not
-  the Orca catalogue; earlier Orca selections stay visible to clear. 129 tests pass.
-  User approved; beta1.0.35 uploaded/promoted (51,570 bytes), public remains1.0.23;
-  bridge restarted (supervisor5356, server81532, whisper70068 with --vad), local/
-  stableHTTPS healthz ok; all 58 workspaces carry lastActivityAt.
 
 - [ ] **Hermes — G2 confirmation:** PR #2 merged as5a48a6f; beta1.0.28 live
   (49,867 bytes), bridge restarted and stableHTTPS lists15 Hermes sessions.
@@ -81,6 +72,9 @@ Completed/superseded release notes: [history](docs/todo-history.md).
 
 ## Completed / confirmed
 
+- [x] Workspace picker without title, ten rows, Recent workspaces first, cursor skips
+  headings -- user confirms beta1.0.35 on G2, 2026-11-05. (Its Hermes-only list did not
+  meet the need; superseded by the separate Hermes/Orca pages row in Open work.)
 - [x] Silent hold no longer transcribed as 'you' (Whisper Silero VAD) — user confirms
   on G2 'Could not hear anything' for silence and normal transcription, 2026-11-05.
 - [x] Swipe down on the last page refreshes the reader (beta1.0.32) — user confirmed
