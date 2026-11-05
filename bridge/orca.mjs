@@ -5,7 +5,7 @@ import { orcaExecutable } from './platform.mjs';
 import { parseChoices, validateChoice } from './choices.mjs';
 import { sessionTitles, sessionTitle } from './session-titles.mjs';
 import { activityState, reportedElapsed } from './activity.mjs';
-import { terminalConversation } from './reader-text.mjs';
+import { terminalConversation, terminalModel } from './reader-text.mjs';
 import { terminalProvider } from './terminal-provider.mjs';
 import { progressSummary } from './progress.mjs';
 import { workspaceLabels } from './workspace-label.mjs';
@@ -180,7 +180,7 @@ export async function readThread(handle) {
     !bottom.slice(-4).some(l => /^\s*(?:PS\s+.+>|[A-Za-z]:\\[^>]*>)/.test(l));
   // The selected ❯ 1. row is a menu cursor, not a new user message. Deliver
   // the prompt structurally and retain saved/previous chat in the reader.
-  return { text: menu ? '' : answer || (['codex', 'claude'].includes(agent) ? '' : '> Conversation-only text is unavailable for this terminal format.'), menu, progress: menu ? '' : progressSummary(lines, agent), inputReady };
+  return { text: menu ? '' : answer || (['codex', 'claude'].includes(agent) ? '' : '> Conversation-only text is unavailable for this terminal format.'), menu, progress: menu ? '' : progressSummary(lines, agent), inputReady, model: terminalModel(lines) || undefined };
 }
 
 export async function readHistory(handle) {

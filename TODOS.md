@@ -8,6 +8,25 @@ Completed/superseded release notes: [history](docs/todo-history.md).
 
 ## Open work
 
+- [ ] **Nine chat rows + one status row; full-screen voice page — preview approval,
+  then release (app beta AND bridge restart), then G2:** user request 2026-11-05.
+  Reader: nine 27px rows (y4..247), divider y250, one status row y254: left
+  '/Waiting Opus5.5' (spinner icon + working word + model while working), right
+  '[Tap&Hold for Input] Pg77/78' (provider timer in front while working). The hint
+  shrinks to [Tap&Hold], [T&H], then none, fitted against the widest working word,
+  model, timer and page counter (4-digit Pg1453/1467 tested). Model: bridge reads
+  saved transcript (Claude message.model, Codex turn_context model+effort) or the
+  Codex footer; read-only check: this Claude session Opus5.5, Codex sessions
+  GPT-6.1-Sol low / GPT-6-Astra med. Hold opens a full-screen voice page already
+  listening (nine scrollable transcript rows, divider, instruction row: Listening…,
+  Transcribing…, Tap to send / Double tap to cancel); send or cancel rebuilds the chat
+  at its newest (bottom) page. Voice-border images removed: reader page 7 containers,
+  IDs 1..7, layers 0..6; voice page 4 containers. Latest-response page break now only
+  when the response does not already sit wholly on the last page. 126 tests/build/
+  typecheck pass; simulator verified layout, listen/review/send (one synthetic send),
+  cancel (no send) and return to Pg6/6. Preview OPEN. Supersedes the 2026-11-02
+  no-rebuild voice overlay rule at the user's explicit request.
+
 - [ ] **Open a session at the top of the latest response — G2 confirmation:**
   user wants opening to show the page starting the latest LLM response (e.g. the final
   'Beta 1.0.32 is uploaded and promoted' message). latestResponseStart() picks the LAST

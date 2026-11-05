@@ -8,7 +8,7 @@ const limit = (usedPercent, minutes) => {
   return { usedPercent, resetsAt, resetDescription: '', computerResetDescription: new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Hong_Kong', weekday: 'short', hour: 'numeric', minute: '2-digit', hour12: true }).format(resetsAt).replace(',', '') };
 };
 const fixture = {
-  state: 'working', source: 'claude-transcript', progress: 'Reading files', menu: null,
+  state: 'working', source: 'claude-transcript', progress: 'Reading files', menu: null, model: 'Opus5.5',
   text: Array.from({ length: 35 }, (_, i) => `Chat line ${i + 1}: native reader scroll retention check.`).join('\n'),
   transcript: Array.from({ length: 30 }, (_, i) => `Draft line ${i + 1}: review this transcription.`).join('\n'),
   threads: [
@@ -75,7 +75,7 @@ const server = await createServer({
           if (req.method === 'GET' && ['/__fixture/read', '/__fixture/activity'].includes(url.pathname)) {
             const handle = url.searchParams.get('handle');
             const result = url.pathname.endsWith('/read')
-              ? hermesScenario ? await hermesScenario.read(handle) : { text: fixture.text, menu: fixture.menu, progress: fixture.progress, source: fixture.source }
+              ? hermesScenario ? await hermesScenario.read(handle) : { text: fixture.text, menu: fixture.menu, progress: fixture.progress, source: fixture.source, model: fixture.model }
               : hermesScenario ? await hermesScenario.activity(handle) : { state: fixture.state };
             res.setHeader('content-type', 'application/json'); res.end(JSON.stringify(result)); return;
           }
@@ -99,7 +99,7 @@ const server = await createServer({
               if ('menu' in data) fixture.menu = data.menu;
               for (const key of ['threads', 'workspaces']) if (Array.isArray(data[key])) fixture[key] = data[key];
               if (data.usage && typeof data.usage === 'object') fixture.usage = data.usage;
-              for (const key of ['state', 'text', 'source', 'transcript', 'progress']) {
+              for (const key of ['state', 'text', 'source', 'transcript', 'progress', 'model']) {
                 if (typeof data[key] === 'string') fixture[key] = data[key];
               }
             }

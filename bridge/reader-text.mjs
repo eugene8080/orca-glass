@@ -8,6 +8,28 @@ export function formatMessages(messages) {
     .join('\n');
 }
 
+// Compact model label for the one-row reader status, e.g. claude-opus-5-5 ->
+// Opus5.5, gpt-6-astra + medium effort -> GPT-6-Astra med. Unknown -> ''.
+const EFFORT = { minimal: 'min', low: 'low', medium: 'med', high: 'high', xhigh: 'xhigh' };
+export function modelLabel(model, effort) {
+  if (typeof model !== 'string' || !/^[\w.-]{1,64}$/.test(model)) return '';
+  const claude = /^claude-([a-z]+)-(\d+)(?:-(\d{1,2}))?(?:-\d{8})?$/i.exec(model);
+  if (claude) return claude[1][0].toUpperCase() + claude[1].slice(1).toLowerCase() + claude[2] + (claude[3] ? `.${claude[3]}` : '');
+  const name = model.split('-').map(part => /^gpt$/i.test(part) ? 'GPT' : part.charAt(0).toUpperCase() + part.slice(1)).join('-');
+  const level = typeof effort === 'string' ? EFFORT[effort] ?? '' : '';
+  return level ? `${name} ${level}` : name;
+}
+
+// Codex prints 'GPT-6-Astra medium · <cwd> · <title>' in its footer. Read the
+// model from the bottom rows only when no saved transcript supplies it.
+export function terminalModel(lines) {
+  for (const line of (lines || []).slice(-8).reverse()) {
+    const match = /^\s*(gpt-[\w.-]+)\s+(minimal|low|medium|high|xhigh)\s+·\s/i.exec(line);
+    if (match) return modelLabel(match[1].toLowerCase(), match[2].toLowerCase());
+  }
+  return '';
+}
+
 const CODEX_TOOL = /^(?:Ran|Explored|Edited|Added|Deleted|Updated Plan|Called|Searched|Read|Listed|Waited|Worked|Working|Thinking|Reasoning|Model changed|You have|Context|Compact|Exited \(status)\b/;
 const CLAUDE_TOOL = /^(?:[A-Z][A-Za-z]*(?: [A-Z][A-Za-z]*)?\(|[\w.-]+ - [\w .-]+ \(MCP\)|Update Todos\b|Agent ".*" (?:finished|launched|failed|stopped))/;
 

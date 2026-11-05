@@ -421,3 +421,27 @@ that point separately, so the response begins at the top of a page (the page bef
 it can be short) and records `responsePage`. Opening a session (`openAtResponse`)
 shows that page once. Live updates and the swipe-down refresh still follow the
 newest page. Text without turn markers (terminal fallback) opens at the newest page.
+
+## Nine chat rows, one status row, full-screen voice (2026-11-05, unreleased)
+
+User request: allocate nine rows to chat and one bottom row reading, for example,
+`/Waiting Opus5.5 [Tap&Hold for Input] Pg77/78`. The reader body is nine 27px rows
+(y4..247); a divider sits at y250 and the status row at y254. The row is two text
+layers: `voice` (left: status word, or the spinner image plus working word, then the
+model) and `hint` (right-aligned: provider timer while working, the hint and
+`PgX/Y`). `readerHint` reserves the widest left text the state can show and picks
+the longest hint from `[Tap&Hold for Input]`, `[Tap&Hold]`, `[T&H]`, none that fits
+(measured with the firmware glyph widths, 6px slack).
+
+The model comes from the bridge: Claude transcripts stamp `message.model`
+(`claude-opus-5-5` -> `Opus5.5`), Codex transcripts record `turn_context` model and
+effort (`gpt-6-astra` + `medium` -> `GPT-6-Astra med`), and terminal-only Codex
+sessions fall back to the footer `GPT-6-Astra medium · <cwd> · <title>`.
+
+Hold now opens a full-screen voice page (rebuild, already listening while held):
+nine scrollable transcript rows, a divider and one instruction row (`Listening…
+release to review`, `Transcribing…`, `Tap to send / Double tap to cancel`). Send
+or cancel rebuilds the chat at its newest page, not the latest-response page. This
+supersedes the earlier rule that voice must never rebuild the chat; the user chose
+full-screen review explicitly. The voice-border images are gone, so the reader page
+has seven containers (IDs 1..7, layers 0..6) and the voice page four.

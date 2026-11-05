@@ -50,6 +50,14 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-05 user requests nine chat rows + one status row ('/Waiting Opus5.5
+[Tap&Hold for Input] Pg77/78') and a full-screen voice page that returns to the
+bottom chat page. Implemented with bridge model labels (transcript or Codex footer).
+126 tests/build/typecheck pass; simulator verified; fixture restarted in its tab
+(model field added) and simulator restarted. Preview LEFT OPEN. Release needs beta
+upload AND bridge restart after approval. Explicit user choice supersedes the old
+no-rebuild voice overlay rule.
+
 2026-11-04 user approves open-at-latest-response. Beta1.0.33 uploaded/promoted;
 channel verified50,898bytes, public remains1.0.23.123 tests pass; prototype dist
 restored. App-only, no bridge restart. Orca CLI briefly returned runtime_unavailable

@@ -4,7 +4,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { open, realpath, stat } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { basename, join, relative, resolve } from 'node:path';
-import { formatMessages } from './reader-text.mjs';
+import { formatMessages, modelLabel } from './reader-text.mjs';
 
 const appData = process.env.APPDATA || join(homedir(), 'AppData', 'Roaming');
 const orcaHome = join(appData, 'orca');
@@ -63,7 +63,7 @@ async function parseTranscript(file, binding) {
   const key = `${file}:${binding.id}:${binding.provider || 'codex'}`;
   let state = cache.get(key);
   if (!state || info.size < state.offset || (info.size === state.size && info.mtimeMs !== state.mtime)) {
-    state = { offset: 0, size: 0, mtime: 0, messages: [], chars: 0, limited: false, meta: null, ids: new Set() };
+    state = { offset: 0, size: 0, mtime: 0, messages: [], chars: 0, limited: false, meta: null, ids: new Set(), model: '' };
     cache.set(key, state);
     if (cache.size > 32) cache.delete(cache.keys().next().value);
   }
@@ -94,6 +94,10 @@ async function parseTranscript(file, binding) {
         if (record.sessionId !== binding.id) throw new Error('Transcript identity does not match the selected terminal');
         state.meta ??= { id: record.sessionId, cwd: record.cwd };
       } else if (record.type === 'session_meta') state.meta = record.payload;
+      // The latest model wins: Claude stamps each assistant message; Codex records
+      // model and reasoning effort per turn. Synthetic/unknown names are skipped.
+      if (binding.provider === 'claude' && record.type === 'assistant' && !record.isSidechain) state.model = modelLabel(record.message?.model) || state.model;
+      else if (record.type === 'turn_context') state.model = modelLabel(record.payload?.model, record.payload?.effort) || state.model;
       const message = binding.provider === 'claude' ? visibleClaudeMessage(record) : visibleMessage(record);
       if (!message || (message.id && state.ids.has(message.id))) continue;
       if (message.id) state.ids.add(message.id);
@@ -109,7 +113,7 @@ async function parseTranscript(file, binding) {
   state.size = info.size;
   state.mtime = info.mtimeMs;
   if ((state.meta?.id || state.meta?.session_id) !== binding.id || normalize(state.meta?.cwd) !== normalize(binding.cwd)) throw new Error('Transcript identity does not match the selected terminal');
-  return { text: formatMessages(state.messages),
+  return { text: formatMessages(state.messages), model: state.model || undefined,
     source: binding.provider === 'claude' ? 'claude-transcript' : 'codex-transcript', limited: state.limited, messageCount: state.messages.length };
 }
 

@@ -1,22 +1,14 @@
 export const SPINNER = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
 export const WORKING_LABELS = ['Processing', 'Thinking', 'Pondering', 'Cooking', 'Computing', 'Inferring', 'Burning Tokens'];
 
-// Two tiles fit the SDK's 288px image limit. Black pixels are transparent;
-// drawing only inside the reserved footer leaves the mounted chat untouched.
-export function voiceBorderPixels(side: 'left' | 'right', visible: boolean): number[] {
-  return Array.from({ length: 280 * 84 }, (_, i) => {
-    const x = i % 280, y = Math.floor(i / 280);
-    return visible && (y < 2 || y >= 82 || (side === 'left' ? x < 2 : x >= 278)) ? 255 : 0;
-  });
-}
-
 export function readerStatus(state: string, frame = 0, elapsedMs = frame * 200): string {
   if (state === 'working') {
     const phase = Math.floor(elapsedMs / 5000) % WORKING_LABELS.length;
     const dots = '.'.repeat(Math.floor((elapsedMs % 5000) / 500) % 3 + 1);
     return `${SPINNER[frame % SPINNER.length]} ${WORKING_LABELS[phase]}${dots}`;
   }
-  return state === 'waiting' ? '/ Waiting input' : state === 'attention' ? '/ Needs attention' : '/ Status unavailable';
+  // Compact words for the one-row status: '/Waiting Opus5.5 [Tap&hold] Pg7/8'.
+  return state === 'waiting' ? '/Waiting' : state === 'attention' ? '/Needs attention' : '/Status unknown';
 }
 
 // Native/simulator fonts can omit Braille. Rasterize the exact Unicode pattern

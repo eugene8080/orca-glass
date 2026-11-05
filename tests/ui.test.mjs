@@ -84,6 +84,8 @@ async function harness(count = 2, voice = false, mode = 'tap', savedView = '', s
   };
 }
 
+const voiceBody = h => h.upgrades.findLast(u => u.containerName === 'voice-body')?.content;
+const statusHint = h => h.upgrades.findLast(u => u.containerName === 'hint').content.trim();
 const menuItems = h => h.pages.at(-1).listObject?.[0].itemContainer.itemName || h.pages.at(-1).textObject.find(c => c.containerName === 'body').content.split('\n').map(row => row.trim().replace(/^> ?/, '').replace(/^[*/?+◇]\s+/, ''));
 
 test('every live terminal remains reachable through session-list pages', async () => {
@@ -222,9 +224,13 @@ test('working footer uses reported duration and animation never rewrites the con
   assert.equal(h.pages.length, pageCount);
   assert.ok(h.images.length > imagesBefore);
   assert.ok(h.upgrades.every(u => ['voice', 'hint'].includes(u.containerName)));
-  assert.equal(hintExports.footerHint(812), '13m 32s [Tap & hold to input]');
-  assert.equal(hintExports.footerHint(null), '[Tap & hold to input]');
-  assert.equal(hintExports.footerHint(NaN), '[Tap & hold to input]');
+  assert.equal(hintExports.compactDuration(812), '13m32s');
+  assert.equal(hintExports.compactDuration(3725), '1h02m');
+  assert.equal(hintExports.compactDuration(NaN), '');
+  assert.equal(hintExports.statusRight(812, false, 'Pg7/8'), '13m32s [Tap&Hold for Input] Pg7/8');
+  assert.equal(hintExports.statusRight(null, false, 'Pg7/8', t => t.length <= 12), '[T&H] Pg7/8');
+  assert.equal(hintExports.statusRight(null, false, 'Pg7/8', t => t.length <= 6), 'Pg7/8');
+  assert.equal(hintExports.statusRight(null, true, 'Pg1/2'), '[Click:choices] Pg1/2');
 });
 
 test('working words last five seconds and Braille patterns are distinct', () => {
@@ -236,23 +242,25 @@ test('working words last five seconds and Braille patterns are distinct', () => 
   assert.equal(new Set(statusExports.SPINNER.map(s => JSON.stringify(statusExports.statusPixels(s)))).size, 10);
 });
 
-test('hold release reviews text and only explicit send submits once', async () => {
+test('hold opens a full-screen voice page; release reviews; only explicit send submits once', async () => {
   const h = await harness(2, true, 'hold');
   await h.pick(2);
-  h.press();
-  await h.flush();
-  h.audio();
-  h.release();
-  await h.flush();
+  const readerBuilds = h.pages.length;
+  h.press(); await h.flush();
+  const voicePage = h.pages.at(-1);
+  assert.equal(h.pages.length, readerBuilds + 1);
+  assert.equal(voicePage.containerTotalNum, 4);
+  assert.equal(voicePage.textObject.find(c => c.containerName === 'voice-hint').content, 'Listening… release to review');
+  h.audio(); h.release(); await h.flush();
   assert.deepEqual(h.mic, [true, false]);
   assert.equal(h.transcriptions.length, 1);
   assert.equal(h.sends.length, 0);
-  assert.match(h.upgrades.at(-1).content, /A voice test\./);
-  assert.equal(h.upgrades.at(-1).containerName, 'voice');
+  assert.match(voiceBody(h), /A voice test\./);
+  assert.equal(h.upgrades.findLast(u => u.containerName === 'voice-hint').content, 'Tap to send / Double tap to cancel');
   await h.tap();
   assert.equal(h.sends.length, 1);
-  h.release();
-  await h.flush();
+  assert.ok(h.pages.at(-1).textObject.some(c => c.containerName === 'hint'), 'send returns to the chat');
+  h.release(); await h.flush();
   assert.equal(h.sends.length, 1);
 });
 
@@ -288,19 +296,19 @@ test('text pages preserve long Unicode output within row and byte limits', () =>
   assert.ok(pages.every(p => new TextEncoder().encode(p).length <= 999 && p.split('\n').length <= 8));
 });
 
-test('reader flips seven-row pages, shows position, clamps ends and freezes incoming text', async () => {
+test('reader flips nine-row pages, shows position, clamps ends and freezes incoming text', async () => {
   const h = await harness();
-  const output = Array.from({ length: 22 }, (_, i) => `Line ${i}`).join('\n');
+  const output = Array.from({ length: 30 }, (_, i) => `Line ${i}`).join('\n');
   h.api.thread = async () => ({ text: output });
   await h.pick(2);
-  assert.equal(h.pages.at(-1).textObject[1].content, 'Line 21');
-  assert.match(h.pages.at(-1).textObject.find(c => c.containerName === 'hint').content.trim(), /Page 4 of 4$/);
+  assert.equal(h.pages.at(-1).textObject[1].content, 'Line 27\nLine 28\nLine 29');
+  assert.match(h.pages.at(-1).textObject.find(c => c.containerName === 'hint').content.trim(), /Pg4\/4$/);
   const body = () => h.upgrades.findLast(u => u.containerName === 'body')?.content;
   await h.scroll('up');
-  assert.equal(body(), 'Line 14\nLine 15\nLine 16\nLine 17\nLine 18\nLine 19\nLine 20');
-  assert.match(h.upgrades.findLast(u => u.containerName === 'hint').content.trim(), /Page 3 of 4/);
+  assert.equal(body(), Array.from({ length: 9 }, (_, i) => `Line ${i + 18}`).join('\n'));
+  assert.match(statusHint(h), /Pg3\/4$/);
   await h.scroll('up'); await h.scroll('up');
-  assert.match(h.upgrades.findLast(u => u.containerName === 'hint').content.trim(), /Page 1 of 4/);
+  assert.match(statusHint(h), /Pg1\/4$/);
   const writes = h.upgrades.length;
   await h.scroll('up');
   h.api.thread = async () => ({ text: 'Updated output' });
@@ -311,7 +319,7 @@ test('reader flips seven-row pages, shows position, clamps ends and freezes inco
   assert.equal(h.pages.length, count);
   assert.equal(h.upgrades.length, writes);
   await h.scroll('down');
-  assert.equal(body(), 'Line 7\nLine 8\nLine 9\nLine 10\nLine 11\nLine 12\nLine 13');
+  assert.equal(body(), Array.from({ length: 9 }, (_, i) => `Line ${i + 9}`).join('\n'));
 });
 
 test('Unicode sections preserve all text within native update limit', () => {
@@ -341,7 +349,7 @@ test('previews serialize requests; release waits for final text before review', 
   finish({ text: 'First words and final words' }); await h.flush();
   assert.equal(requests, 2);
   assert.equal(h.sends.length, 0);
-  assert.match(h.upgrades.at(-1).content, /First words and final words/);
+  assert.match(voiceBody(h), /First words and final words/);
   await h.tap();
   assert.deepEqual(h.sends, [{ handle: 'terminal-0', text: 'First words and final words' }]);
 });
@@ -353,7 +361,7 @@ test('cancel during preview prevents late captions and input', async () => {
   h.api.transcribe = () => new Promise(resolve => { finish = resolve; });
   [...h.timers.values()][0](); await h.back();
   finish({ text: 'Late caption' }); await h.flush();
-  assert.equal(h.upgrades.findLast(u => u.containerName === 'voice').content, '/ Status unavailable');
+  assert.ok(h.pages.at(-1).textObject.some(c => c.containerName === 'hint'), 'cancel returns to the chat');
   assert.ok(h.upgrades.every(u => !u.content.includes('Late caption')));
   assert.equal(h.sends.length, 0);
 });
@@ -363,7 +371,7 @@ test('saved history is reachable in both directions without dropped or renumbere
   const text = '> Open items:\n' + Array.from({ length: 19 }, (_, i) => `  ${i + 1}. Item ${i + 1}`).join('\n') + '\n  - Group\n    1. Nested one\n    2. Nested two';
   h.api.history = async () => ({ text, source: 'claude-transcript' });
   await h.pick(2);
-  const expected = [...textExports.readerPages(text, t => textExports.glassTextWidth(t), 552, 7)];
+  const expected = [...textExports.readerPages(text, t => textExports.glassTextWidth(t), 552, 9)];
   // A single response opens at its top (page 1); page down through the rest.
   const seen = [h.pages.at(-1).textObject[1].content];
   const pageCount = h.pages.length;
@@ -398,8 +406,8 @@ test('rapid reader swipes serialize writes and never rebuild the page or send in
   const rebuilds = h.pages.length;
   await h.scroll('up'); await h.scroll('up'); await h.scroll('up');
   release(); await h.flush();
-  assert.equal(h.upgrades.findLast(u => u.containerName === 'body').content, 'Line 7\nLine 8\nLine 9\nLine 10\nLine 11\nLine 12\nLine 13');
-  assert.match(h.upgrades.findLast(u => u.containerName === 'hint').content.trim(), /Page 2 of 5/);
+  assert.equal(h.upgrades.findLast(u => u.containerName === 'body').content, Array.from({ length: 9 }, (_, i) => `Line ${i}`).join('\n'));
+  assert.match(statusHint(h), /Pg1\/4$/);
   assert.equal(h.pages.length, rebuilds);
   assert.equal(h.sends.length, 0);
 });
@@ -422,25 +430,17 @@ test('hold starts directly from chat even with a saved tap preference, without m
   h.api.capabilities = async () => { throw new Error('No pre-record capability lookup should run'); };
   h.press(); await h.flush();
   assert.deepEqual(h.mic, [true]);
-  assert.equal(h.pages.length, before);
+  assert.equal(h.pages.length, before + 1);
   assert.equal(h.pages.at(-1).listObject, undefined);
-  assert.match(h.upgrades.at(-1).content, /^recording/);
+  assert.equal(h.pages.at(-1).textObject.find(c => c.containerName === 'voice-hint').content, 'Listening… release to review');
   await h.back();
   assert.equal(h.sends.length, 0);
 });
 
-
-
-
-
-
-
-
-
 test('double-click discards a finished voice draft without sending', async () => {
   const h = await harness(2, true, 'hold');
   await h.pick(2); h.press(); await h.flush(); h.audio(); h.release(); await h.flush();
-  assert.equal(h.upgrades.at(-1).content, 'A voice test.');
+  assert.equal(voiceBody(h), 'A voice test.');
   await h.back();
   assert.equal(h.sends.length, 0);
   assert.equal(h.pages.at(-1).textObject[1].content, 'Content terminal-0');
@@ -450,59 +450,38 @@ test('double-click discards a finished voice draft without sending', async () =>
 });
 
 
-test('capture and bottom-panel review never rebuild or rewrite the chat on send or cancel', async () => {
+test('voice send and cancel both return to the newest chat page and resume live updates', async () => {
   for (const send of [true, false]) {
     const h = await harness(2, true, 'hold');
-    h.api.history = async () => ({ text: 'Saved history '.repeat(300), source: 'codex-transcript' });
-    await h.pick(2); await h.scroll('up');
-    const page = h.pages.at(-1), count = h.pages.length, writes = h.upgrades.length;
-    const panel = page.textObject.find(c => c.containerName === 'voice');
-    assert.equal(panel.width, 544);
-    assert.ok(panel.height <= 81);
-    const reader = page.textObject.find(c => c.containerName === 'body');
-    assert.ok(reader.yPosition + reader.height <= panel.yPosition);
-    assert.ok(panel.yPosition + panel.height <= 288);
-    assert.equal(panel.content, '/ Status unavailable');
-    assert.equal(panel.textColor, 4);
-    assert.ok(panel.zOrderIndex > page.textObject[1].zOrderIndex);
-    h.press(); await h.flush();
-    assert.equal(h.pages.length, count);
-    assert.ok(h.upgrades.slice(writes).every(u => ['voice', 'hint'].includes(u.containerName)));
-    h.audio(); h.release(); await h.flush();
-    assert.equal(h.pages.length, count);
-    assert.equal(h.upgrades.at(-1).containerName, 'voice');
+    const text = Array.from({ length: 30 }, (_, i) => `Line ${i}`).join('\n');
+    h.api.history = async () => ({ text, source: 'codex-transcript' });
+    await h.pick(2); await h.scroll('up'); await h.scroll('up');
+    assert.match(statusHint(h), /Pg2\/4$/);
+    h.press(); await h.flush(); h.audio(); h.release(); await h.flush();
     assert.equal(h.sends.length, 0);
     if (send) await h.tap(); else await h.back();
-    const restoredPages = h.pages.length;
-    assert.equal(restoredPages, count);
-    assert.equal(h.pages.at(-1).textObject.find(c => c.containerName === 'voice').content, '/ Status unavailable');
+    await h.flush();
+    const page = h.pages.at(-1);
+    assert.equal(page.textObject.find(c => c.containerName === 'body').content, 'Line 27\nLine 28\nLine 29');
+    assert.match(page.textObject.find(c => c.containerName === 'hint').content.trim(), /Pg4\/4$/);
     assert.equal(h.sends.length, send ? 1 : 0);
     assert.equal(h.timers.size, 1);
-    if (send) {
-      h.api.history = async () => ({ text: 'New response after voice send', source: 'codex-transcript' });
-      await [...h.timers.values()][0]();
-      assert.equal(h.upgrades.findLast(u => u.containerName === 'body').content, 'New response after voice send');
-      assert.equal(h.pages.length, restoredPages);
-      await h.scroll('up');
-      const pausedWrites = h.upgrades.length;
-      await [...h.timers.values()][0]();
-      assert.equal(h.upgrades.length, pausedWrites);
-    }
+    h.api.history = async () => ({ text: `${text}\nLine 30`, source: 'codex-transcript' });
+    await [...h.timers.values()][0]();
+    assert.equal(h.upgrades.findLast(u => u.containerName === 'body').content, 'Line 27\nLine 28\nLine 29\nLine 30');
   }
 });
 
-
-test('rejected foreground panel preserves the chat instead of rebuilding a voice page', async () => {
+test('a rejected voice page keeps the chat, never starts the microphone and resumes polling', async () => {
   const h = await harness(2, true, 'hold');
   await h.pick(2);
-  const upgrade = h.bridge.textContainerUpgrade;
-  const count = h.pages.length;
-  h.bridge.textContainerUpgrade = value => value.containerName === 'voice' ? Promise.resolve(false) : upgrade(value);
+  const rebuild = h.bridge.rebuildPageContainer;
+  h.bridge.rebuildPageContainer = async p => p.textObject.some(c => c.containerName === 'voice-body') ? false : rebuild(p);
   h.press(); await h.flush();
-  assert.equal(h.pages.length, count);
   assert.notEqual(h.mic.at(-1), true);
   assert.match(h.elements.get('diag').textContent, /rejected/);
   assert.equal(h.sends.length, 0);
+  assert.equal(h.timers.size, 1);
 });
 
 test('bottom status changes while reading is paused without rewriting the conversation', async () => {
@@ -516,7 +495,7 @@ test('bottom status changes while reading is paused without rewriting the conver
   assert.deepEqual(Object.keys(h.upgrades.at(-1)).sort(), ['containerID', 'containerName', 'content', 'textColor'].sort());
   h.api.activity = async () => ({ state: 'waiting' });
   await [...h.timers.values()][0]();
-  assert.equal(h.upgrades.at(-1).content, '/ Waiting input');
+  assert.equal(h.upgrades.findLast(u => u.containerName === 'voice').content, '/Waiting');
   assert.ok(h.upgrades.every(u => ['voice', 'hint'].includes(u.containerName)));
   assert.equal(h.pages.length, pages);
 });
@@ -528,7 +507,7 @@ test('initial reader status is fetched before rendering rather than waiting for 
   assert.equal(h.pages.at(-1).textObject.find(c => c.containerName === 'voice').content, '    Processing.');
 });
 
-test('late activity cannot overwrite voice capture; cancel restores status and keeps text paused', async () => {
+test('late activity cannot write to the voice page; cancel restores status and live polling', async () => {
   const h = await harness(2, true, 'hold');
   await h.pick(2);
   h.api.activity = async () => ({ state: 'working' });
@@ -541,13 +520,11 @@ test('late activity cannot overwrite voice capture; cancel restores status and k
   finish({ state: 'waiting' });
   await pending;
   assert.equal(h.upgrades.length, writes);
-  await h.back();
-  assert.equal(h.upgrades.findLast(u => u.containerName === 'voice').content, '    Processing.');
+  await h.back(); await h.flush();
+  assert.equal(h.pages.at(-1).textObject.find(c => c.containerName === 'voice').content, '    Processing.');
   h.api.activity = async () => ({ state: 'waiting' });
-  const afterCancel = h.upgrades.length;
   await [...h.timers.values()][0]();
-  assert.equal(h.upgrades.at(-1).content, '/ Waiting input');
-  assert.ok(h.upgrades.slice(afterCancel).every(u => ['voice', 'hint'].includes(u.containerName)));
+  assert.equal(h.upgrades.findLast(u => u.containerName === 'voice').content, '/Waiting');
 });
 
 test('saved history losing its association falls back to live output and keeps updating', async () => {
@@ -596,27 +573,32 @@ test('a rejected live text update is retried instead of marking unseen text as d
   assert.equal(divider.borderColor, 15);
   assert.equal(frame.borderWidth, 2);
   assert.equal(divider.height, 2);
-  assert.equal(h.pages.at(-1).textObject.find(c => c.containerName === 'voice').content, '/ Status unavailable');
+  assert.equal(h.pages.at(-1).textObject.find(c => c.containerName === 'voice').content, '/Status unknown');
 });
 
-test('voice border is precreated, appears for capture/review and clears on cancel', async () => {
+test('reader and voice pages use contiguous IDs; voice page has nine transcript rows and one instruction row', async () => {
   const h = await harness(2, true, 'hold');
   await h.pick(2);
-  const page = h.pages.at(-1);
-  assert.equal(page.imageObject.length, 3);
-  for (const tile of page.imageObject.filter(c => c.containerName.startsWith('voice-border'))) {
-    assert.ok(tile.width <= 288 && tile.height <= 144);
-    assert.ok(tile.yPosition >= 198);
-  }
-  const count = h.pages.length;
+  const reader = h.pages.at(-1);
+  assert.equal(reader.containerTotalNum, 7);
+  const list = values => JSON.stringify([...values]);
+  assert.equal(list(reader.imageObject.map(c => c.containerName)), list(['status-icon']));
+  assert.equal(list([...reader.textObject, ...reader.imageObject].map(c => c.containerID).sort((a, b) => a - b)), list([1, 2, 3, 4, 5, 6, 7]));
+  assert.equal(list([...reader.textObject, ...reader.imageObject].map(c => c.zOrderIndex).sort((a, b) => a - b)), list([0, 1, 2, 3, 4, 5, 6]));
   h.press(); await h.flush(); h.audio(); h.release(); await h.flush();
-  const borders = h.images.filter(i => i.containerName.startsWith('voice-border'));
-  assert.equal(borders.length, 2);
-  assert.ok(borders.every(i => i.imageData.some(p => p === 255)));
+  const voice = h.pages.at(-1);
+  assert.equal(list(voice.textObject.map(c => c.containerID).sort((a, b) => a - b)), list([1, 2, 3, 4]));
+  const body = voice.textObject.find(c => c.containerName === 'voice-body');
+  const hint = voice.textObject.find(c => c.containerName === 'voice-hint');
+  const divider = voice.textObject.find(c => c.containerName === 'voice-divider');
+  assert.equal(body.height, 243);
+  assert.equal(body.isEventCapture, 1);
+  assert.ok(body.yPosition + body.height < divider.yPosition);
+  assert.ok(divider.yPosition + divider.height <= hint.yPosition);
+  assert.equal(hint.height, 28);
+  assert.ok(hint.yPosition + hint.height <= 288);
   await h.back();
-  assert.equal(h.pages.length, count);
-  assert.ok(h.images.filter(i => i.containerName.startsWith('voice-border')).slice(-2).every(i => i.imageData.every(p => p === 0)));
-  assert.ok(h.upgrades.every(u => ['voice', 'hint'].includes(u.containerName)));
+  assert.equal(h.images.filter(i => i.containerName.startsWith('voice-border')).length, 0);
 });
 
 test('compact session menu uses native text and one update per cursor move', async () => {
@@ -654,21 +636,26 @@ test('compact session menu uses native text and one update per cursor move', asy
   assert.equal(h.pages.at(-1).textObject[1].content, 'Content terminal-0');
 });
 
-test('reader has no title row and reserves seven native chat rows and three input rows', async () => {
+test('reader has no title row, nine chat rows, a divider and one status row', async () => {
   const h = await harness();
   await h.pick(2);
   const page = h.pages.at(-1);
   const body = page.textObject.find(c => c.containerName === 'body');
   const voice = page.textObject.find(c => c.containerName === 'voice');
+  const hint = page.textObject.find(c => c.containerName === 'hint');
+  const divider = page.textObject.find(c => c.containerName === 'divider');
   assert.equal(page.textObject.find(c => c.containerName === 'head').content, ' ');
   assert.equal(body.yPosition, 4);
-  assert.equal(body.height, 189);
+  assert.equal(body.height, 243);
   assert.equal(body.xPosition, 8);
   assert.equal(body.width, 560);
   assert.equal(body.paddingLength, 0);
-  assert.equal(voice.height, 81);
-  assert.ok(body.yPosition + body.height < voice.yPosition);
-  assert.ok(voice.yPosition + voice.height < 288);
+  assert.ok(body.yPosition + body.height < divider.yPosition);
+  for (const row of [voice, hint]) {
+    assert.equal(row.height, 28);
+    assert.ok(divider.yPosition + divider.height <= row.yPosition);
+    assert.ok(row.yPosition + row.height < 288);
+  }
 });
 
 test('rapid native-text menu swipes coalesce instead of queuing every redraw', async () => {
@@ -708,16 +695,12 @@ test('hardware rejecting aligned layout gets an operable compact fallback', asyn
   assert.equal(h.pages.filter(p => p.containerTotalNum === 6).length, 1);
 });
 
-test('voice review uses all three native rows and hint is native text', async () => {
+test('voice review shows a multi-line transcript on the full-screen page', async () => {
   const h = await harness(2, true, 'hold');
   await h.pick(2);
-  const page = h.pages.at(-1), count = h.pages.length;
-  assert.ok(page.textObject.some(c => c.containerName === 'hint'));
-  assert.ok(!page.imageObject.some(c => c.containerName === 'hint'));
   h.api.transcribe = async () => ({ text: 'First line.\nSecond line.\nThird line.' });
   h.press(); await h.flush(); h.audio(); h.release(); await h.flush();
-  assert.equal(h.upgrades.filter(u => u.containerName === 'voice').at(-1).content, 'First line.\nSecond line.\nThird line.');
-  assert.equal(h.pages.length, count);
+  assert.equal(voiceBody(h), 'First line.\nSecond line.\nThird line.');
   await h.tap();
   assert.equal(h.sends.length, 1);
 });
@@ -871,7 +854,7 @@ test('spoken choice is reviewed, then validated against the captured prompt with
   await h.pick(2);
   h.press(); await h.flush(); h.audio(); h.release();
   await h.flush(); await h.flush();
-  assert.ok(h.upgrades.some(u => u.containerName === 'voice' && u.content === '2. Second approach'));
+  assert.ok(h.upgrades.some(u => u.containerName === 'voice-body' && u.content === '2. Second approach'));
   assert.equal(h.choices.length, 0);
   await h.tap(); await h.flush();
   assert.deepEqual(h.choices, [{ handle: 'terminal-0', menuId: 'question-a', value: '2' }]);
@@ -1116,27 +1099,27 @@ test('session titles extend to their own label and keep the handle suffix', () =
 
 test('swiping down on the last page resumes live updates and refreshes at once', async () => {
   const h = await harness();
-  h.api.thread = async () => ({ text: Array.from({ length: 8 }, (_, i) => `Line ${i}`).join('\n') });
+  const lines = n => Array.from({ length: n }, (_, i) => `Line ${i}`).join('\n');
+  h.api.thread = async () => ({ text: lines(12) });
   await h.pick(2);
-  const hint = () => h.upgrades.findLast(u => u.containerName === 'hint').content.trim();
   const body = () => h.upgrades.findLast(u => u.containerName === 'body')?.content;
   await h.scroll('up');                       // Browsing freezes the snapshot.
   await h.scroll('down');                     // Back on the last page: still frozen.
-  assert.match(hint(), /Page 2 of 2$/);
-  h.api.thread = async () => ({ text: Array.from({ length: 16 }, (_, i) => `Line ${i}`).join('\n') });
+  assert.match(statusHint(h), /Pg2\/2$/);
+  h.api.thread = async () => ({ text: lines(20) });
   await [...h.timers.values()][0]();
-  assert.equal(body(), 'Line 7');             // Frozen poll ignored the new output.
+  assert.equal(body(), 'Line 9\nLine 10\nLine 11');   // Frozen poll ignored the new output.
   const rebuilds = h.pages.length;
   await h.scroll('down');                     // Swipe past the last page: refresh.
   await h.flush();
   assert.ok(h.upgrades.some(u => u.containerName === 'hint' && /Refreshing…$/.test(u.content.trim())));
-  assert.equal(body(), 'Line 14\nLine 15');
-  assert.match(hint(), /Page 3 of 3$/);
+  assert.equal(body(), 'Line 18\nLine 19');
+  assert.match(statusHint(h), /Pg3\/3$/);
   assert.equal(h.pages.length, rebuilds);
   assert.equal(h.sends.length, 0);
-  h.api.thread = async () => ({ text: Array.from({ length: 17 }, (_, i) => `Line ${i}`).join('\n') });
+  h.api.thread = async () => ({ text: lines(21) });
   await [...h.timers.values()].at(-1)();      // Live polling continues afterwards.
-  assert.equal(body(), 'Line 14\nLine 15\nLine 16');
+  assert.equal(body(), 'Line 18\nLine 19\nLine 20');
 });
 
 test('opening a session shows the page that starts the latest response', async () => {
@@ -1149,10 +1132,45 @@ test('opening a session shows the page that starts the latest response', async (
   const open = h.pages.at(-1);
   assert.match(open.textObject[1].content, /^> Latest answer starts here\n/);
   const hint = open.textObject.find(c => c.containerName === 'hint').content.trim();
-  const [, page, total] = hint.match(/Page (\d+) of (\d+)$/);
+  const [, page, total] = hint.match(/Pg(\d+)\/(\d+)$/);
   assert.ok(Number(page) < Number(total), 'long response opens before the last page');
   // Earlier pages remain reachable and every character is kept.
   assert.equal(textExports.latestResponseStart(text), text.indexOf('> Latest'));
   assert.equal(textExports.latestResponseStart('/ only a question'), -1);
   assert.equal(textExports.latestResponseStart('plain terminal text'), -1);
+});
+
+test('status row shows the model and shrinks the hint to fit one row', async () => {
+  const h = await harness();
+  h.api.history = async () => ({ text: '/ question\n> answer', source: 'claude-transcript', model: 'Opus5.5' });
+  h.api.activity = async () => ({ state: 'waiting' });
+  await h.pick(2);
+  const page = h.pages.at(-1);
+  assert.equal(page.textObject.find(c => c.containerName === 'voice').content, '/Waiting Opus5.5');
+  assert.equal(page.textObject.find(c => c.containerName === 'hint').content.trim(), '[Tap&Hold for Input] Pg1/1');
+  // A model switch updates the status row in place.
+  h.api.history = async () => ({ text: '/ question\n> answer', source: 'claude-transcript', model: 'Sonnet5.5' });
+  await [...h.timers.values()][0]();
+  assert.equal(h.upgrades.findLast(u => u.containerName === 'voice').content, '/Waiting Sonnet5.5');
+  // The widest working state cannot fit the full hint next to a long model.
+  const w = t => textExports.glassTextWidth(t, () => 12);
+  h.api.history = async () => ({ text: '/ question\n> answer', source: 'codex-transcript', model: 'GPT-6-Astra med' });
+  h.api.activity = async () => ({ state: 'working', elapsedSeconds: 812 });
+  await [...h.timers.values()][0]();
+  const right = statusHint(h);
+  assert.match(right, /^13m32s (?:\[T&H\] )?Pg1\/1$/);
+  const left = Math.max(...statusExports.WORKING_LABELS.map(word => w(`    ${word}... GPT-6-Astra med`)));
+  assert.ok(left + 10 + w(right) <= 538, `${left} + ${w(right)}`);
+});
+
+test('four-digit page counters shrink the hint instead of wrapping the status row', async () => {
+  const h = await harness();
+  h.api.history = async () => ({ text: Array.from({ length: 13200 }, (_, i) => `> Row ${i}`).join('\n'), source: 'codex-transcript', model: 'GPT-6-Astra med' });
+  h.api.activity = async () => ({ state: 'working', elapsedSeconds: 812 });
+  await h.pick(2);
+  const right = h.pages.at(-1).textObject.find(c => c.containerName === 'hint').content.trim();
+  assert.match(right, /^13m32s (?:\[T&H\] )?Pg\d{4}\/\d{4}$/);
+  const w = t => textExports.glassTextWidth(t, () => 12);
+  const left = Math.max(...statusExports.WORKING_LABELS.map(word => w(`    ${word}... GPT-6-Astra med`)));
+  assert.ok(left + 10 + w(right) <= 538 && w(right) <= 274, `${left} + ${w(right)}`);
 });

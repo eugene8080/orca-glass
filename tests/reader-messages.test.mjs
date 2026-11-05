@@ -48,3 +48,15 @@ test('nested bullets and two-digit list numbers remain literal in conversation d
   assert.equal(formatMessages([{ role: 'assistant', text: source }]),
     source.split('\n').map((line, i) => (i ? '  ' : '> ') + line).join('\n'));
 });
+
+test('model labels are compact for the one-row reader status', async () => {
+  const { modelLabel, terminalModel } = await import('../bridge/reader-text.mjs');
+  assert.equal(modelLabel('claude-opus-5-5'), 'Opus5.5');
+  assert.equal(modelLabel('claude-haiku-4-5-20251001'), 'Haiku4.5');
+  assert.equal(modelLabel('<synthetic>'), '');
+  assert.equal(modelLabel('gpt-6-astra', 'medium'), 'GPT-6-Astra med');
+  assert.equal(modelLabel('gpt-6.1-sol', 'low'), 'GPT-6.1-Sol low');
+  // Synthetic Codex footer; quoted prose higher up the screen is ignored.
+  assert.equal(terminalModel(['GPT-9 high · quoted earlier', ...Array(8).fill(''), '› Ask Codex to do anything', '  GPT-6-Astra medium · D:\dev\example · Example title']), 'GPT-6-Astra med');
+  assert.equal(terminalModel(['No footer here']), '');
+});

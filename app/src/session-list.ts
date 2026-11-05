@@ -20,7 +20,7 @@ const TITLE_LABEL_GAP = 8;
 const TITLE_BYTES = 60;
 export const MENU_RIGHT = { xPosition: 328, width: 248 };
 // Width of native list text: measured firmware advances for ASCII, Arial for the rest.
-function glassWidth(text: string): number {
+export function glassWidth(text: string): number {
   const ctx = document.createElement('canvas').getContext('2d');
   if (ctx) ctx.font = '21px Arial';
   return glassTextWidth(text, ch => ctx ? ctx.measureText(ch).width : 21);

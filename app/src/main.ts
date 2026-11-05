@@ -19,29 +19,34 @@ import {
 import { api, currentBase, setApiLang, setConnection, setDemo, type ChoiceMenu, type Provider, type Thread, type Usage, type Workspace } from './api';
 import { parseCode, resolveBase } from './pairing';
 import { applyPage, detectLang, setLang, t as tr } from './i18n';
-import { clipBytes, textSections, readerPages, latestResponseStart, choiceNumber, readerContent, glassTextWidth } from './text';
-import { readerStatus, statusPixels, voiceBorderPixels, SPINNER } from './reader-status';
-import { footerHint } from './footer-hint';
+import { clipBytes, tailBytes, textSections, readerPages, latestResponseStart, choiceNumber, readerContent, glassTextWidth } from './text';
+import { readerStatus, statusPixels, SPINNER, WORKING_LABELS } from './reader-status';
+import { statusRight } from './footer-hint';
 import { formatReset, RESET_MODES, resetModeLabel, type ResetMode } from './usage-reset';
-import { agentLabel, sessionRow, sessionListTitle, sessionHeading, MENU_LEFT, MENU_RIGHT, MENU_CURSOR, sessionAgentLabel, menuNativeText, menuCursorText, nativeRight, compactSessionTitle, type SessionColumns } from './session-list';
+import { agentLabel, sessionRow, sessionListTitle, sessionHeading, MENU_LEFT, MENU_RIGHT, MENU_CURSOR, sessionAgentLabel, menuNativeText, menuCursorText, nativeRight, glassWidth, compactSessionTitle, type SessionColumns } from './session-list';
 
 // 画面 576x288。上に見出し(テキスト)、下に本文(リスト or テキスト)の2段構成で統一する。
 const HEAD = { containerID: 1, containerName: 'head', xPosition: 0, yPosition: 0, width: 576, height: 36 };
 const BODY = { containerID: 2, containerName: 'body', xPosition: 0, yPosition: 40, width: 576, height: 248 };
-// Text layers are transparent on G2. Reserve a separate quarter-screen input
-// area so showing/hiding it needs no reader rebuild or overlapping text.
-const VOICE = { containerID: 3, containerName: 'voice', xPosition: 16, yPosition: 202, width: 544, height: 81 };
-const FRAME = { containerID: 4, containerName: 'frame', xPosition: 0, yPosition: 0, width: 576, height: 288 };
-const DIVIDER = { containerID: 5, containerName: 'divider', xPosition: 16, yPosition: 198, width: 544, height: 2 };
-const HINT = { containerID: 6, containerName: 'hint', xPosition: 280, yPosition: 202, width: 280, height: 81 };
-const STATUS_ICON = { containerID: 7, containerName: 'status-icon', xPosition: 16, yPosition: 202, width: 20, height: 28 };
-const VOICE_BORDER_LEFT = { containerID: 8, containerName: 'voice-border-l', xPosition: 8, yPosition: 200, width: 280, height: 84 };
-const VOICE_BORDER_RIGHT = { containerID: 9, containerName: 'voice-border-r', xPosition: 288, yPosition: 200, width: 280, height: 84 };
-const USAGE_RESET = { containerID: 3, containerName: 'usage-reset', xPosition: 0, yPosition: 28, width: 576, height: 28 };
-// No title row: chat starts at the top frame and gains a seventh 27px row (y4..193).
-const READER_ROWS = 7;
+// Reader: nine 27px chat rows (y4..247), a divider at y250 and one status row
+// (y254..281). Status (left, 'voice') and hint/page (right, 'hint') share that
+// row as two transparent text layers; their combined width is fitted to the row.
+const READER_ROWS = 9;
 const READER_TOP = 4;
 const READER_HEIGHT = READER_ROWS * 27;
+const STATUS_ROW_Y = 254;
+const VOICE = { containerID: 3, containerName: 'voice', xPosition: 16, yPosition: STATUS_ROW_Y, width: 544, height: 28 };
+const FRAME = { containerID: 4, containerName: 'frame', xPosition: 0, yPosition: 0, width: 576, height: 288 };
+const DIVIDER = { containerID: 5, containerName: 'divider', xPosition: 16, yPosition: 250, width: 544, height: 2 };
+const HINT = { containerID: 6, containerName: 'hint', xPosition: 280, yPosition: STATUS_ROW_Y, width: 280, height: 28 };
+const STATUS_ICON = { containerID: 7, containerName: 'status-icon', xPosition: 16, yPosition: STATUS_ROW_Y, width: 20, height: 28 };
+// Full-screen voice page: the same nine rows hold the scrollable transcript and
+// the status row holds the instruction. IDs/layers are contiguous from 1/0.
+const VOICE_BODY = { containerID: 1, containerName: 'voice-body', xPosition: 8, yPosition: READER_TOP, width: 560, height: READER_HEIGHT };
+const VOICE_HINT = { containerID: 2, containerName: 'voice-hint', xPosition: 16, yPosition: STATUS_ROW_Y, width: 544, height: 28 };
+const VOICE_FRAME = { ...FRAME, containerID: 3, containerName: 'voice-frame' };
+const VOICE_DIVIDER = { ...DIVIDER, containerID: 4, containerName: 'voice-divider' };
+const USAGE_RESET = { containerID: 3, containerName: 'usage-reset', xPosition: 0, yPosition: 28, width: 576, height: 28 };
 const LIST_ITEM_BYTES = 63;
 const LIST_MAX = 20;
 const TEXT_BYTES = 999;
@@ -49,7 +54,7 @@ const POLL_MS = 1000;
 
 type Screen =
   | { kind: 'list'; title: string; items: string[]; sessionList?: boolean; workspacePicker?: boolean; menuActions?: { id: number; label: string; run: () => unknown }[]; compat?: boolean; columns?: SessionColumns[]; connectedCount?: number; selected?: number; paintedSelection?: number; menuFrame?: number; paintedCursor?: string; cursorWriting?: boolean; paging?: boolean; onPreviousPage?: () => unknown; onNextPage?: () => unknown; onPick: (i: number) => void; onBack?: () => void }
-  | { kind: 'text'; title: string; text: string; usageMode?: ResetMode; conversationText?: string; choiceMenu?: ChoiceMenu | null; tail?: boolean; offset?: number; pageText?: string; pages?: string[]; pageTarget?: number; pageWriting?: boolean; reading?: boolean; refreshing?: boolean; responsePage?: number; openAtResponse?: boolean; activityLabel?: string; activityState?: string; reportedSeconds?: number | null; statusFrame?: number; statusStartedAt?: number; savedHistory?: boolean; reader?: Thread; onClick?: () => void; onBack?: () => void; onHold?: () => void; };
+  | { kind: 'text'; title: string; text: string; usageMode?: ResetMode; conversationText?: string; choiceMenu?: ChoiceMenu | null; tail?: boolean; offset?: number; pageText?: string; pages?: string[]; pageTarget?: number; pageWriting?: boolean; reading?: boolean; refreshing?: boolean; responsePage?: number; openAtResponse?: boolean; model?: string; voice?: boolean; voiceHint?: string; voiceTail?: boolean; activityLabel?: string; activityState?: string; reportedSeconds?: number | null; statusFrame?: number; statusStartedAt?: number; savedHistory?: boolean; reader?: Thread; onClick?: () => void; onBack?: () => void; onHold?: () => void; };
 
 let bridge: EvenAppBridge;
 let current: Screen | null = null;
@@ -62,7 +67,6 @@ let statusAnimation: ReturnType<typeof setInterval> | undefined;
 let readerWrites: Promise<void> = Promise.resolve();
 let panelWrites: Promise<void> = Promise.resolve();
 let sessionCursorWrites: Promise<void> = Promise.resolve();
-let voiceBorderVisible = false;
 let selectedThread: Thread | null = null;
 let sending = false;
 let holding = false;
@@ -94,11 +98,24 @@ function readerLayout(s: TextScreen) {
     if (ctx) ctx.font = '21px Arial';
     // Wrap with the measured firmware font; Arial only sizes non-ASCII glyphs.
     const measure = (text: string) => glassTextWidth(text, ch => ctx ? ctx.measureText(ch).width : 21);
-    // Start a fresh page at the latest response so it opens at the page top.
+    // Open on the latest response. When it already lies wholly on the last
+    // page, keep normal pages; otherwise start a fresh page at its first line
+    // so it opens at the page top. Pages keep every character except the
+    // newlines at row breaks, so non-newline counts locate the start.
     const start = latestResponseStart(s.text);
-    const before = start > 0 ? readerPages(s.text.slice(0, start - 1), measure, READER_WRAP_WIDTH, READER_ROWS) : [];
-    s.pages = [...before, ...readerPages(start > 0 ? s.text.slice(start) : s.text, measure, READER_WRAP_WIDTH, READER_ROWS)];
-    s.responsePage = start >= 0 ? before.length : undefined;
+    const whole = readerPages(s.text, measure, READER_WRAP_WIDTH, READER_ROWS);
+    const chars = (text: string) => text.replaceAll('\n', '').length;
+    if (start < 0) {
+      s.pages = whole;
+      s.responsePage = undefined;
+    } else if (chars(s.text.slice(0, start)) >= chars(whole.slice(0, -1).join(''))) {
+      s.pages = whole;
+      s.responsePage = whole.length - 1;
+    } else {
+      const before = start > 0 ? readerPages(s.text.slice(0, start - 1), measure, READER_WRAP_WIDTH, READER_ROWS) : [];
+      s.pages = [...before, ...readerPages(s.text.slice(start), measure, READER_WRAP_WIDTH, READER_ROWS)];
+      s.responsePage = before.length;
+    }
     s.pageText = s.text;
   }
   return s.pages;
@@ -114,13 +131,41 @@ function bodyText(s: TextScreen) {
   return sections[s.offset];
 }
 
+// Full-screen voice page: nine scrollable transcript rows, a divider and one
+// instruction row. Live captions show their latest words; review shows the start.
+function voiceBodyText(s: TextScreen) {
+  return (s.voiceTail ? tailBytes(s.text, 900) : clipBytes(s.text, 900)) || ' ';
+}
+function voicePage(s: TextScreen, content: string) {
+  return { containerTotalNum: 4, textObject: [
+    new TextContainerProperty({ ...VOICE_BODY, content, paddingLength: 0, isEventCapture: 1, zOrderIndex: 1 }),
+    new TextContainerProperty({ ...VOICE_HINT, content: s.voiceHint || ' ', textColor: 4, paddingLength: 0, isEventCapture: 0, zOrderIndex: 3 }),
+    new TextContainerProperty({ ...VOICE_FRAME, content: ' ', textColor: 4, borderWidth: 2, borderColor: 15, borderRadius: 0, isEventCapture: 0, zOrderIndex: 0 }),
+    new TextContainerProperty({ ...VOICE_DIVIDER, content: ' ', textColor: 4, borderWidth: 2, borderColor: 15, isEventCapture: 0, zOrderIndex: 2 }),
+  ] };
+}
+
 // The reader keeps its head container (stable IDs/layers) but leaves it blank.
 function screenTitle(s: Screen) { return s.kind === 'text' && s.reader ? ' ' : s.title; }
 
+// Left part of the status row: '/Waiting Opus5.5'. A working label starts with
+// its spinner glyph, drawn as a separate 20px image, so four spaces replace it.
+function statusLeft(label: string, model?: string) {
+  const line = model ? `${label} ${model}` : label;
+  return label[0] !== '/' && label.length > 2 ? '    ' + line.slice(2) : line;
+}
+
+// Right part: '[Tap&hold] Pg77/78', right-aligned in its own layer on the same
+// row. Reserve the widest left text this state can show (working words rotate)
+// and shrink the hint so the two parts never collide.
 function readerHint(s: TextScreen, seconds: number | null | undefined) {
   bodyText(s);
-  return nativeRight(footerHint(seconds, !!s.choiceMenu), HINT.width) + '\n\n' +
-    nativeRight(s.refreshing ? 'Refreshing…' : `Page ${s.offset! + 1} of ${s.pages!.length}`, HINT.width);
+  const left = s.activityState === 'working'
+    ? Math.max(...WORKING_LABELS.map(word => glassWidth(statusLeft(`. ${word}...`, s.model))))
+    : glassWidth(statusLeft(s.activityLabel || readerStatus('unknown'), s.model));
+  const room = Math.min(VOICE.width - 6 - left - 10, HINT.width - 6);
+  const page = s.refreshing ? 'Refreshing…' : `Pg${s.offset! + 1}/${s.pages!.length}`;
+  return nativeRight(statusRight(seconds, !!s.choiceMenu, page, text => glassWidth(text) <= room), HINT.width);
 }
 
 function flipReader(s: TextScreen, delta: number) {
@@ -139,7 +184,7 @@ function flipReader(s: TextScreen, delta: number) {
       if (!await bridge.textContainerUpgrade(new TextContainerUpgrade({ containerID: BODY.containerID, containerName: BODY.containerName, content }))) throw new Error('Glasses rejected the page. Swipe to retry.');
       if (current !== s) return;
       s.offset = target;
-      await inputHint(true);
+      await inputHint();
       if (current !== s) return;
     }
   });
@@ -154,13 +199,13 @@ async function refreshReader(s: TextScreen) {
   s.reading = false;
   s.tail = true;
   try {
-    await inputHint(true);
+    await inputHint();
     if (current !== s) return;
     await startReaderUpdates(s)?.();
   } catch (e) { diag((e as Error).message); }
   finally {
     s.refreshing = false;
-    if (current === s) await inputHint(true).catch(e => diag((e as Error).message));
+    if (current === s) await inputHint().catch(e => diag((e as Error).message));
   }
 }
 
@@ -168,46 +213,35 @@ function activityLabel(state: string) {
   return readerStatus(state);
 }
 
-function writePanel(content: string, active: () => boolean = () => true, statusMode?: boolean) {
+// Reader status (left part of the status row). Writes are serialized with the
+// hint so the two layers of the row never interleave.
+function writePanel(label: string, active: () => boolean = () => true) {
+  const owner = current;
   const write = panelWrites.then(async () => {
-    if (!active()) return false;
-    const status = statusMode ?? (current?.kind === 'text' && !!current.reader);
-    if (voiceBorderVisible !== !status) {
-      // Mark ownership first so cancellation clears even a partially uploaded border.
-      voiceBorderVisible = !status;
-      for (const [geometry, side] of [[VOICE_BORDER_LEFT, 'left'], [VOICE_BORDER_RIGHT, 'right']] as const) {
-        const result = await bridge.updateImageRawData(new ImageRawDataUpdate({
-          containerID: geometry.containerID, containerName: geometry.containerName,
-          imageData: voiceBorderPixels(side, !status),
-        }));
-        if (result !== ImageRawDataUpdateResult.success) throw new Error('Glasses rejected the voice border update. Chat position preserved.');
-      }
-    }
-    // The four-space gutter reserves the icon's 20px without changing voice
-    // panel geometry when capture/review temporarily takes ownership.
-    let visible = status && content[0] !== '/' && content.length > 2 ? '    ' + content.slice(2) : content;
+    if (!active() || owner?.kind !== 'text' || !owner.reader) return false;
+    let visible = statusLeft(label, owner.model);
     try {
       await bridge.updateImageRawData(new ImageRawDataUpdate({ containerID: STATUS_ICON.containerID, containerName: STATUS_ICON.containerName,
-        imageData: statusPixels(status && content[0] !== '/' ? content[0] : '') }));
+        imageData: statusPixels(label[0] !== '/' ? label[0] : '') }));
     } catch (e) {
-      // A missing image renderer must not prevent voice review or status text.
+      // A missing image renderer must not prevent the status text.
       diag((e as Error).message);
-      visible = content;
+      visible = owner.model ? `${label} ${owner.model}` : label;
     }
     if (!active()) return false;
-    return bridge.textContainerUpgrade(new TextContainerUpgrade({ containerID: VOICE.containerID, containerName: VOICE.containerName, content: visible || ' ', textColor: content ? 4 : 0 }));
+    return bridge.textContainerUpgrade(new TextContainerUpgrade({ containerID: VOICE.containerID, containerName: VOICE.containerName, content: visible || ' ', textColor: 4 }));
   });
   panelWrites = write.then(() => {}, () => {});
   return write;
 }
 
-async function inputHint(visible: boolean) {
+async function inputHint() {
   const owner = current;
-  const seconds = current?.kind === 'text' ? current.reportedSeconds : null;
+  if (owner?.kind !== 'text' || !owner.reader) return;
   const write = panelWrites.then(async () => {
-    if (visible && current !== owner) return;
+    if (current !== owner) return;
     await bridge.textContainerUpgrade(new TextContainerUpgrade({ containerID: HINT.containerID, containerName: HINT.containerName,
-      content: visible && owner?.kind === 'text' && owner.reader ? readerHint(owner, seconds) : visible ? nativeRight(footerHint(seconds, false), HINT.width) : ' ', textColor: 4 }));
+      content: readerHint(owner, owner.reportedSeconds), textColor: 4 }));
   });
   panelWrites = write.then(() => {}, () => {});
   await write;
@@ -221,8 +255,7 @@ async function show(s: Screen, reloadText = false) {
   if (s.kind === 'text' && s.reader) s.activityLabel ??= readerStatus('unknown');
   const previous = current;
   current = s;
-  voiceBorderVisible = false;
-  const content = s.kind === 'text' ? bodyText(s) : '';
+  const content = s.kind === 'text' ? (s.voice ? voiceBodyText(s) : bodyText(s)) : '';
   const uploadText = reloadText || (s.kind === 'text' && !!s.reader && s.text.length > 900) || new TextEncoder().encode(content).length > 999;
   const head = new TextContainerProperty({ ...HEAD, ...(s.kind === 'text' && s.usageMode ? { height: 28 } : {}), ...(s.kind === 'text' && s.reader ? { xPosition: 16, yPosition: 2, width: 544, height: 28, zOrderIndex: 1 } : {}), content: s.kind === 'list' && s.sessionList ? sessionHeading() : clipBytes(screenTitle(s), TEXT_BYTES), isEventCapture: 0 });
   // Firmware retains Display off, Brightness and Close alongside these actions.
@@ -254,21 +287,18 @@ async function show(s: Screen, reloadText = false) {
           ] }),
         }
       : {
-          containerTotalNum: s.reader ? 9 : s.usageMode ? 3 : 2,
+          containerTotalNum: s.reader ? 7 : s.usageMode ? 3 : 2,
           textObject: [head, new TextContainerProperty({ ...BODY, ...(s.usageMode ? { yPosition: 64, height: 224 } : {}), ...(s.reader ? { xPosition: 8, yPosition: READER_TOP, width: 560, paddingLength: 0, zOrderIndex: 2, height: READER_HEIGHT } : {}), content: uploadText ? '' : content, isEventCapture: 1 }),
             ...(s.usageMode ? [new TextContainerProperty({ ...USAGE_RESET, content: `Reset: ${resetModeLabel(s.usageMode)}  (Click to change)`, isEventCapture: 0 })] : []),
             ...(s.reader ? [
-              new TextContainerProperty({ ...HINT, content: readerHint(s, s.reportedSeconds), textColor: 4, isEventCapture: 0, zOrderIndex: 8 }),
-              new TextContainerProperty({ ...VOICE, content: s.activityLabel![0] === '/' ? s.activityLabel : '    ' + s.activityLabel!.slice(2), textColor: 4, isEventCapture: 0, zOrderIndex: 7 }),
+              new TextContainerProperty({ ...HINT, content: readerHint(s, s.reportedSeconds), textColor: 4, isEventCapture: 0, paddingLength: 0, zOrderIndex: 6 }),
+              new TextContainerProperty({ ...VOICE, content: statusLeft(s.activityLabel!, s.model), textColor: 4, isEventCapture: 0, paddingLength: 0, zOrderIndex: 5 }),
               new TextContainerProperty({ ...FRAME, content: ' ', textColor: 4, borderWidth: 2, borderColor: 15, borderRadius: 0, isEventCapture: 0, zOrderIndex: 0 }),
               new TextContainerProperty({ ...DIVIDER, content: ' ', textColor: 4, borderWidth: 2, borderColor: 15, isEventCapture: 0, zOrderIndex: 3 }),
             ] : [])],
-          ...(s.reader ? { imageObject: [
-            new ImageContainerProperty({ ...STATUS_ICON, zOrderIndex: 6 }),
-            new ImageContainerProperty({ ...VOICE_BORDER_LEFT, zOrderIndex: 4 }),
-            new ImageContainerProperty({ ...VOICE_BORDER_RIGHT, zOrderIndex: 5 }),
-          ] } : {}),
+          ...(s.reader ? { imageObject: [new ImageContainerProperty({ ...STATUS_ICON, zOrderIndex: 4 })] } : {}),
         };
+  if (s.kind === 'text' && s.voice) page = voicePage(s, content) as typeof page;
   try {
     if (!started) {
       // Bootstrap with the small, hardware-proven native text shape. The richer
@@ -325,7 +355,7 @@ async function updateText(title: string, text: string) {
     }
     if (current !== screen || (screen.reader && screen.reading)) return;
     if (!await bridge.textContainerUpgrade(new TextContainerUpgrade({ containerID: BODY.containerID, containerName: BODY.containerName, content }))) throw new Error('Glasses rejected the live text update. Retrying.');
-    if (current === screen && !(screen.reader && screen.reading)) { screen.title = title; screen.text = text; screen.offset = next.offset; screen.pages = next.pages; screen.pageText = next.pageText; screen.responsePage = next.responsePage; if (screen.reader) await inputHint(true); }
+    if (current === screen && !(screen.reader && screen.reading)) { screen.title = title; screen.text = text; screen.offset = next.offset; screen.pages = next.pages; screen.pageText = next.pageText; screen.responsePage = next.responsePage; if (screen.reader) await inputHint(); }
   };
   if (screen.reader) {
     const work = readerWrites.then(write);
@@ -511,7 +541,7 @@ function thread(t: Thread, note = '') {
       return { state: 'unknown', elapsedSeconds: null };
     });
     const text = readerContent(conversationText, snapshot.menu, snapshot.progress, t.agent === 'claude' && state.state === 'working');
-    await show({ kind: 'text', title: title(), text, conversationText, choiceMenu: snapshot.menu, tail: true, openAtResponse: true, activityState: state.state, reportedSeconds: state.state === 'working' ? state.elapsedSeconds ?? null : null, activityLabel: activityLabel(state.state), savedHistory: useSaved, reader: t, onBack: home,
+    await show({ kind: 'text', title: title(), text, conversationText, choiceMenu: snapshot.menu, tail: true, openAtResponse: true, model: (useSaved ? saved!.model : undefined) || snapshot.model, activityState: state.state, reportedSeconds: state.state === 'working' ? state.elapsedSeconds ?? null : null, activityLabel: activityLabel(state.state), savedHistory: useSaved, reader: t, onBack: home,
       onClick: () => { if (current?.kind === 'text' && current.choiceMenu) void replies(t); },
       onHold: () => { void record(t, true); } });
     startReaderUpdates(current);
@@ -551,7 +581,7 @@ function startReaderUpdates(screen: Screen | null): (() => Promise<void>) | unde
     const seconds = activity.state === 'working' ? activity.elapsedSeconds ?? null : null;
     if (screen.reportedSeconds !== seconds) {
       screen.reportedSeconds = seconds;
-      try { await inputHint(true); } catch (e) { diag((e as Error).message); }
+      try { await inputHint(); } catch (e) { diag((e as Error).message); }
       if (current !== screen) { reading = false; return; }
     }
     const label = readerStatus(activity.state, screen.statusFrame || 0, Date.now() - screen.statusStartedAt!);
@@ -568,7 +598,7 @@ function startReaderUpdates(screen: Screen | null): (() => Promise<void>) | unde
     if (current !== screen) { reading = false; return; }
     if (snapshot && screen.choiceMenu?.id !== snapshot.menu?.id) {
       screen.choiceMenu = snapshot.menu;
-      await inputHint(true).catch(e => diag((e as Error).message));
+      await inputHint().catch(e => diag((e as Error).message));
     }
     if (screen.reading) { reading = false; return; }
     let r = await (screen.savedHistory ? api.history(t.handle) : Promise.resolve(snapshot)).catch(() => null);
@@ -581,6 +611,13 @@ function startReaderUpdates(screen: Screen | null): (() => Promise<void>) | unde
     if (r && current === screen && !screen.reading) {
       // An empty live tool frame must not erase the last public reply.
       if (r.text.trim()) screen.conversationText = r.text;
+      // A model switch mid-session updates the status row in place.
+      const model = ('model' in r ? r.model : undefined) || snapshot?.model;
+      if (model && model !== screen.model) {
+        screen.model = model;
+        await writePanel(screen.activityLabel || readerStatus('unknown'), () => current === screen).catch(e => diag((e as Error).message));
+        await inputHint().catch(e => diag((e as Error).message));
+      }
       const text = readerContent(screen.conversationText || '', screen.choiceMenu, snapshot?.progress, t.agent === 'claude' && screen.activityState === 'working');
       if (text.trim() && text !== screen.text) {
         try { await updateText(screen.title, text); }
@@ -643,46 +680,53 @@ let recording: Uint8Array[] | null = null;
 let cancelCapture: (() => void) | null = null;
 const MAX_REC_SEC = 60;
 
+// Voice hints on the full-screen voice page's instruction row.
+const VOICE_LISTENING = 'Listening… release to review';
+const VOICE_REVIEW = 'Tap to send / Double tap to cancel';
+const VOICE_RETURN = 'Tap or double tap to return';
+
 async function record(t: Thread, hold = false) {
   if ((hold && !holding) || recording !== null || cancelCapture) return;
-  diag('Hold received. Opening voice panel…');
+  diag('Hold received. Opening voice screen…');
   const background = current;
   if (background?.kind !== 'text' || !background.reader) return;
   await readerWrites;
   if (current !== background || (hold && !holding)) return;
   const choiceMenu = background.choiceMenu;
-  // Keep the mounted reader and its firmware scroll position untouched throughout
-  // capture, transcription and review. Only a successful Send resumes updates.
+  // Hold opens a full-screen voice page that is already listening. Send or
+  // cancel rebuilds the chat at its newest (bottom) page.
   background.reading = true;
   clearInterval(poll);
   clearInterval(statusAnimation);
   let overlayActive = true;
-  let overlayWrites: Promise<void> = Promise.resolve();
-  const writeOverlay = (content: string, status = false) => {
-    const write = overlayWrites.then(async () => {
-      const accepted = await writePanel(content, () => true, status);
-      if (!accepted) throw new Error('Glasses rejected the voice panel update.');
+  let voiceWrites: Promise<void> = Promise.resolve();
+  const voiceScreen: TextScreen = { kind: 'text', title: ' ', text: ' ', voice: true, voiceHint: VOICE_LISTENING, voiceTail: true };
+  // Serialize page and row writes; the first call builds the voice page and
+  // later calls replace only its transcript and instruction rows.
+  const voiceShow = (text: string, hint: string, handlers: { onClick?: () => void; onBack?: () => void } = {}, tail = false) => {
+    const write = voiceWrites.then(async () => {
+      if (!overlayActive) return;
+      const before = { text: voiceScreen.text, hint: voiceScreen.voiceHint, tail: voiceScreen.voiceTail };
+      Object.assign(voiceScreen, { text: text || ' ', voiceHint: hint, voiceTail: tail, onClick: handlers.onClick, onBack: handlers.onBack });
+      if (current !== voiceScreen) { await show(voiceScreen); return; }
+      if (before.text !== voiceScreen.text || before.tail !== voiceScreen.voiceTail) {
+        if (!await bridge.textContainerUpgrade(new TextContainerUpgrade({ containerID: VOICE_BODY.containerID, containerName: VOICE_BODY.containerName, content: voiceBodyText(voiceScreen) })))
+          throw new Error('Glasses rejected the voice text update.');
+      }
+      if (before.hint !== hint && !await bridge.textContainerUpgrade(new TextContainerUpgrade({ containerID: VOICE_HINT.containerID, containerName: VOICE_HINT.containerName, content: hint || ' ', textColor: 4 })))
+        throw new Error('Glasses rejected the voice instruction update.');
     });
-    overlayWrites = write.catch(() => {});
+    voiceWrites = write.catch(() => {});
     return write;
   };
-  const voiceShow = async (screen: Extract<Screen, { kind: 'text' }>) => {
-    if (!overlayActive) return;
-    current = screen;
-    try { await writeOverlay(clipBytes(screen.title ? `${screen.title}\n${screen.text}` : screen.text, 900)); }
-    catch (e) {
-      diag(`${(e as Error).message} Chat position preserved; voice panel could not update.`);
-      throw e;
-    }
-  };
+  // Return to the chat at its newest page (not the latest-response page).
   const closeVoice = async () => {
     if (!overlayActive) return;
     overlayActive = false;
-    current = background;
-    await inputHint(true).catch(e => diag((e as Error).message));
-    try { await writeOverlay(background.activityLabel || readerStatus('unknown'), true); }
-    catch (e) { diag((e as Error).message); }
-    finally { startReaderUpdates(background); }
+    await voiceWrites;
+    Object.assign(background, { reading: false, tail: true, offset: undefined, openAtResponse: false, pageTarget: undefined, pageWriting: false });
+    try { await show(background); }
+    catch (e) { diag((e as Error).message); void home(); }
   };
   recording = [];
   const chunks = recording;
@@ -710,37 +754,32 @@ async function record(t: Thread, hold = false) {
     void bridge.audioControl(false).catch(() => {});
   };
   cancelCapture = cancel;
-  const sendText = async (text: string) => {
+  const back = () => { cancel(); void closeVoice(); };
+  const sendText = async (text: string, shown: string) => {
     if (cancelled || submitted || sending) return;
     submitted = true;
     sending = true;
     cancelCapture = null;
     try {
-      await voiceShow({ kind: 'text', title: t.title, text: 'Sending…' });
+      await voiceShow(shown, 'Sending…');
       if (choiceMenu) {
         const value = choiceNumber(text);
         if (!value || !choiceMenu.options.some(o => o.value === value)) throw new Error('Say one of the displayed option numbers. Nothing sent.');
         await api.choice(t.handle, choiceMenu.id, value);
       } else await api.say(t.handle, text);
       await closeVoice();
-      if (current === background) {
-        background.reading = false;
-        background.tail = true;
-        startReaderUpdates(background);
-      }
     } catch (e) {
-      await voiceShow({ kind: 'text', title: t.title, text: (e as Error).message, onBack: () => closeVoice(), onClick: () => closeVoice() }).catch(e => diag((e as Error).message));
+      await voiceShow((e as Error).message, VOICE_RETURN, { onBack: () => { void closeVoice(); }, onClick: () => { void closeVoice(); } }).catch(e => diag((e as Error).message));
     } finally { sending = false; }
   };
   const stop = async (finish: boolean) => {
     if (stopped) return;
-    if (!finish) { cancel(); await closeVoice(); return; }
+    if (!finish) { back(); return; }
     stopped = true;
     cleanup();
     await bridge.audioControl(false).catch(() => {});
     try {
-      await voiceShow({ kind: 'text', title: tr('transcribing'), text: caption || 'Finishing transcription…',
-        onBack: () => { cancel(); void closeVoice(); } });
+      await voiceShow(caption || 'Finishing transcription…', 'Transcribing…', { onBack: back }, true);
       await pending;
       if (cancelled) return;
       const pcm = snapshot();
@@ -748,29 +787,28 @@ async function record(t: Thread, hold = false) {
       if (cancelled) return;
       cancelCapture = null;
       if (!text) {
-        await voiceShow({ kind: 'text', title: tr('voiceTitle'), text: tr('notHeard'), onClick: () => closeVoice(), onBack: () => closeVoice() });
+        await voiceShow(tr('notHeard'), VOICE_RETURN, { onClick: () => { void closeVoice(); }, onBack: () => { void closeVoice(); } });
       } else {
         cancelCapture = cancel;
         const choice = choiceMenu?.options.find(o => o.value === choiceNumber(text));
-        await voiceShow({ kind: 'text', title: '', text: choice ? `${choice.value}. ${choice.label}` : text,
-          onClick: () => { void sendText(text); }, onBack: () => { cancel(); void closeVoice(); } });
+        const shown = choice ? `${choice.value}. ${choice.label}` : text;
+        await voiceShow(shown, VOICE_REVIEW, { onClick: () => { void sendText(text, shown); }, onBack: back });
       }
     } catch (e) {
       if (cancelled) return;
       cancelCapture = null;
-      await voiceShow({ kind: 'text', title: tr('voiceTitle'), text: (e as Error).message, onBack: () => closeVoice(), onClick: () => closeVoice() }).catch(e => diag((e as Error).message));
+      await voiceShow((e as Error).message, VOICE_RETURN, { onBack: () => { void closeVoice(); }, onClick: () => { void closeVoice(); } }).catch(e => diag((e as Error).message));
     }
   };
   if (hold) releaseCapture = () => { void stop(true); };
-  const hint = hold ? 'Speak. Release to review. Double-click to cancel.' : tr('recordingHint');
   try {
-    await inputHint(false);
-    await voiceShow({ kind: 'text', title: tr('recording', 0), text: hint,
-      onClick: hold ? undefined : () => { void stop(true); }, onBack: () => { void stop(false); } });
+    await voiceShow(hold ? ' ' : tr('recordingHint'), VOICE_LISTENING, { onClick: hold ? undefined : () => { void stop(true); }, onBack: () => { void stop(false); } }, true);
   } catch (e) {
+    // The voice page was rejected: the chat is still mounted, so resume it.
     cancel();
+    overlayActive = false;
     current = background;
-    void inputHint(true).catch(() => {});
+    background.reading = false;
     startReaderUpdates(background);
     diag((e as Error).message);
     return;
@@ -780,10 +818,10 @@ async function record(t: Thread, hold = false) {
   if (stopped) { await bridge.audioControl(false); return; }
   if (!ok) {
     cancel();
-    await voiceShow({ kind: 'text', title: tr('voiceTitle'), text: tr('micFailed'), onClick: () => closeVoice(), onBack: () => closeVoice() });
+    await voiceShow(tr('micFailed'), VOICE_RETURN, { onClick: () => { void closeVoice(); }, onBack: () => { void closeVoice(); } });
     return;
   }
-  diag('Recording — bottom voice panel.');
+  diag('Recording — full-screen voice page.');
   tick = setInterval(() => {
     if (stopped) return;
     const sec = Math.floor((Date.now() - t0) / 1000);
@@ -797,8 +835,7 @@ async function record(t: Thread, hold = false) {
         if (cancelled) return;
         lastBytes = pcm.length;
         caption = result.text.trim();
-        if (!stopped && caption) await voiceShow({ kind: 'text', title: '', text: caption,
-          onBack: () => { void stop(false); } });
+        if (!stopped && caption) await voiceShow(caption, VOICE_LISTENING, { onBack: () => { void stop(false); } }, true);
       } catch { /* Final transcription reports errors; transient preview failure is not a send. */ }
       finally { pending = null; }
     })();
