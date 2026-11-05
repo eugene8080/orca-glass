@@ -50,6 +50,13 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-05 Eugene reports he submitted the public release. Fresh read-only portal
+inspection in dedicated Eugene Chrome confirmsv1.0.36 In review, Review in progress,
+Submitted and Awaiting review. Public remains1.0.23; not approved/published yet.
+Updated store/listing.md and TODOS.md to wait on Even Hub review. Description
+remains saved1.0.36 text. Privacy attachment not reopened/replaced; prior inspection
+remains the last verified state. No agent submit, app/bridge/beta change or message.
+
 2026-11-05 public-release handoff: reached dedicated Eugene Chrome/window10228026
 through Orca computer-use (browser getTab fails timeoutMs). Saved exact1630-char
 store/description.txt and verified normalized persisted text after reload. Selected

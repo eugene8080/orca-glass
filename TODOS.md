@@ -36,15 +36,13 @@ Completed/superseded release notes: [history](docs/todo-history.md).
   in main .local/hermes-merged-preview. Physical reading and a real user-confirmed
   Hermes reply remain unverified; no autonomous live prompt/resume/reply sent.
   See [implementation](docs/hermes-bridge.md) and [review](docs/hermes-pr-review.md).
-- [ ] **General installation / public listing:** 2026-11-05 v1.0.36 selected
-  for public review; beta1.0.36 verified51,971bytes, public remains1.0.23.
-  Exact1,630-character description saved in Eugene Chrome and verified after reload.
-  Current attached generated three-page PDF rechecked: AI Used: No, phone/address,
-  developer retention/server-deletion language and reverse-engineering ban remain.
-  Corrected repo PDF is not attached. Final Submit for review NOT clicked; waiting
-  on Eugene's requested confirmation after these findings. Private-PC/Tailscale
-  limitation remains in description; arbitrary-PC self-service still open.
-  No app/bridge/beta changes or external messages. See [listing status](store/listing.md).
+- [ ] **General installation / public listing — awaiting Even Hub review:**
+ 2026-11-05 Eugene submitted1.0.36. Portal independently confirms In review,
+  Submitted and Awaiting review. Public remains1.0.23; approval/publication pending.
+  Exact1,630-character description saved/verified, private-PC/Tailscale limitation
+  retained; arbitrary-PC self-service remains open. Privacy attachment was last
+  inspected as the generated PDF; no replacement or reinspection in this status
+  check. No app/bridge/beta changes or messages. See [listing status](store/listing.md).
 - [ ] **Monitor native popup request:** [GitHub #44](https://github.com/even-realities/everything-evenhub/issues/44)
   and [Discord thread](https://discord.com/channels/1301124787740868620/1484753075590664332/threads/1567124600658202754).
   Await maintainer response/API guidance. Primary use case: hold-to-talk with more

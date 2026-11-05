@@ -3,6 +3,14 @@ Updated: 2026-11-05
 
 ## Current status
 
+2026-11-05 later update: Eugene reports he submitted the release. Fresh read-only
+portal inspection confirms candidate **v1.0.36 — In review**, **Review in progress**,
+**Submitted**, and **Awaiting review**. Public remains1.0.23; this is submission,
+not approval or publication of1.0.36. Description remains the saved1.0.36 text.
+The privacy attachment was not reopened or replaced during this status check;
+the inspection below is the last verified attachment state. No agent submission,
+app/bridge/beta change or external message. Wait for Even Hub's review outcome.
+
 2026-11-05: public-release preparation now completed in dedicated Eugene Chrome
 (window10228026), reached through Orca computer-use after browser connector error.
 Saved the exact1,630-character store/description.txt through Description > Edit >
