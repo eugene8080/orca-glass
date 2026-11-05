@@ -8,6 +8,16 @@ Completed/superseded release notes: [history](docs/todo-history.md).
 
 ## Open work
 
+- [ ] **Silent hold transcribed as 'you' / 'Thank you' — bridge restart, then G2:**
+  user report 2026-11-05. Reproduced: synthetic quiet noise (RMS 60) -> ' you'; the old
+  guard only drops digital silence (RMS<30) and Whisper's no_speech_prob is useless
+  (0.000005 on the hallucination, 0.85 on real speech). Fix: whisper-server --vad with
+  Silero ggml-silero-v5.1.2.bin (885,098 bytes, SHA-256 29940d98…a2cf, matches the
+  Hugging Face LFS hash), downloaded to .local/voice and added to
+  scripts/setup-voice.ps1. Bridge transcribe(): noise RMS 60/120/300 -> '', JFK sample
+  unchanged. Empty result shows the existing 'not heard' message. 127 tests pass.
+  Production bridge NOT restarted; fix inactive until restart. No app/beta change.
+
 - [ ] **Swipe down on last page refreshes the reader — G2 confirmation:**
   user reports sessions sometimes stop auto-refreshing. Cause: any page swipe freezes
   the snapshot until send/reopen, while the 1s poll skips frozen readers. Swipe down

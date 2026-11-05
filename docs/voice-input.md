@@ -361,3 +361,16 @@ its text. Scroll retention on such updates is unverified; it hides the whole cha
 not merely the panel footprint, and is not Even AI's native overlay. Not implemented.
 Current working layout unchanged. No SDK ticket, firmware modification, provider
 inference, Claude test, or simulator-launch retry performed for this investigation.
+
+## Silence must not become 'you' (2026-11-05)
+
+Whisper turns quiet microphone noise into short phrases such as `you` or
+`Thank you.`. The bridge's RMS<30 guard catches only digital silence, and the
+per-segment `no_speech_prob` is no help (it scored a hallucinated `you` at
+0.000005 and real speech at 0.85). `bridge/whisper.mjs` therefore starts
+`whisper-server` with `--vad -vm .local/voice/ggml-silero-v5.1.2.bin` whenever that
+model exists (`WHISPER_VAD_MODEL` overrides the path). Silero voice-activity
+detection removes non-speech audio before decoding, so a silent hold returns an
+empty transcript and the app shows its 'not heard' message. `scripts/setup-voice.ps1`
+downloads the model with a pinned SHA-256. Checked with synthetic noise (RMS 60, 120,
+300 -> empty) and the bundled JFK sample (unchanged).

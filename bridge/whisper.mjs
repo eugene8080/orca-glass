@@ -21,6 +21,12 @@ export const MODEL =
 
 export const WHISPER_SERVER = process.env.WHISPER_SERVER || join(dirname(WHISPER_BIN), process.platform === 'win32' ? 'whisper-server.exe' : 'whisper-server');
 export const voiceAvailable = () => existsSync(WHISPER_SERVER) && existsSync(MODEL);
+// Whisper invents short phrases ('you', 'Thank you.') for quiet microphone noise,
+// and its no-speech probability does not flag them. Silero voice-activity
+// detection skips non-speech audio before decoding; silence then yields ''.
+export const VAD_MODEL = process.env.WHISPER_VAD_MODEL || join(localVoice, 'ggml-silero-v5.1.2.bin');
+export const whisperArgs = (port, vad = existsSync(VAD_MODEL)) =>
+  ['-m', MODEL, '--host', '127.0.0.1', '--port', String(port), '-nt', '-sns', '-ng', ...(vad ? ['--vad', '-vm', VAD_MODEL] : [])];
 
 let worker, ready;
 let busy = false;
@@ -40,7 +46,7 @@ export function warmWhisper() {
     await new Promise((resolve, reject) => { reservation.once('error', reject); reservation.listen(0, '127.0.0.1', resolve); });
     const port = reservation.address().port;
     await new Promise(resolve => reservation.close(resolve));
-    const child = spawn(WHISPER_SERVER, ['-m', MODEL, '--host', '127.0.0.1', '--port', String(port), '-nt', '-sns', '-ng'], { windowsHide: true, stdio: ['ignore', 'ignore', 'pipe'] });
+    const child = spawn(WHISPER_SERVER, whisperArgs(port), { windowsHide: true, stdio: ['ignore', 'ignore', 'pipe'] });
     worker = child;
     let failure;
     child.stderr.on('data', () => {}); // Do not log microphone transcripts.

@@ -25,4 +25,7 @@ $binDir = Join-Path $voiceDir 'bin'
 New-Item -ItemType Directory -Force $binDir | Out-Null
 Get-ChildItem -LiteralPath $engine.DirectoryName -File | Copy-Item -Destination $binDir -Force
 Get-VerifiedFile 'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en.bin?download=true' (Join-Path $voiceDir 'ggml-base.en.bin') 'a03779c86df3323075f5e796cb2ce5029f00ec8869eee3fdfb897afe36c6d002'
+# Silero voice-activity model: without it Whisper turns quiet microphone noise into
+# 'you' / 'Thank you.'. The bridge enables --vad only when this file is present.
+Get-VerifiedFile 'https://huggingface.co/ggml-org/whisper-vad/resolve/main/ggml-silero-v5.1.2.bin?download=true' (Join-Path $voiceDir 'ggml-silero-v5.1.2.bin') '29940d98d42b91fbd05ce489f3ecf7c72f0a42f027e4875919a28fb4c04ea2cf'
 Write-Output 'Local English voice engine ready. No PATH, proxy, or agent settings changed.'
