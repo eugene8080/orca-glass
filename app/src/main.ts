@@ -38,7 +38,10 @@ const STATUS_ICON = { containerID: 7, containerName: 'status-icon', xPosition: 1
 const VOICE_BORDER_LEFT = { containerID: 8, containerName: 'voice-border-l', xPosition: 8, yPosition: 200, width: 280, height: 84 };
 const VOICE_BORDER_RIGHT = { containerID: 9, containerName: 'voice-border-r', xPosition: 288, yPosition: 200, width: 280, height: 84 };
 const USAGE_RESET = { containerID: 3, containerName: 'usage-reset', xPosition: 0, yPosition: 28, width: 576, height: 28 };
-const READER_HEIGHT = 162;
+// No title row: chat starts at the top frame and gains a seventh 27px row (y4..193).
+const READER_ROWS = 7;
+const READER_TOP = 4;
+const READER_HEIGHT = READER_ROWS * 27;
 const LIST_ITEM_BYTES = 63;
 const LIST_MAX = 20;
 const TEXT_BYTES = 999;
@@ -90,7 +93,7 @@ function readerLayout(s: TextScreen) {
     const ctx = document.createElement?.('canvas').getContext('2d');
     if (ctx) ctx.font = '21px Arial';
     // Wrap with the measured firmware font; Arial only sizes non-ASCII glyphs.
-    s.pages = readerPages(s.text, text => glassTextWidth(text, ch => ctx ? ctx.measureText(ch).width : 21), READER_WRAP_WIDTH);
+    s.pages = readerPages(s.text, text => glassTextWidth(text, ch => ctx ? ctx.measureText(ch).width : 21), READER_WRAP_WIDTH, READER_ROWS);
     s.pageText = s.text;
   }
   return s.pages;
@@ -102,7 +105,8 @@ function bodyText(s: TextScreen) {
   return sections[s.offset];
 }
 
-function screenTitle(s: Screen) { return s.title; }
+// The reader keeps its head container (stable IDs/layers) but leaves it blank.
+function screenTitle(s: Screen) { return s.kind === 'text' && s.reader ? ' ' : s.title; }
 
 function readerHint(s: TextScreen, seconds: number | null | undefined) {
   bodyText(s);
@@ -222,7 +226,7 @@ async function show(s: Screen, reloadText = false) {
         }
       : {
           containerTotalNum: s.reader ? 9 : s.usageMode ? 3 : 2,
-          textObject: [head, new TextContainerProperty({ ...BODY, ...(s.usageMode ? { yPosition: 64, height: 224 } : {}), ...(s.reader ? { xPosition: 8, yPosition: 32, width: 560, paddingLength: 0, zOrderIndex: 2, height: READER_HEIGHT } : {}), content: uploadText ? '' : content, isEventCapture: 1 }),
+          textObject: [head, new TextContainerProperty({ ...BODY, ...(s.usageMode ? { yPosition: 64, height: 224 } : {}), ...(s.reader ? { xPosition: 8, yPosition: READER_TOP, width: 560, paddingLength: 0, zOrderIndex: 2, height: READER_HEIGHT } : {}), content: uploadText ? '' : content, isEventCapture: 1 }),
             ...(s.usageMode ? [new TextContainerProperty({ ...USAGE_RESET, content: `Reset: ${resetModeLabel(s.usageMode)}  (Click to change)`, isEventCapture: 0 })] : []),
             ...(s.reader ? [
               new TextContainerProperty({ ...HINT, content: readerHint(s, s.reportedSeconds), textColor: 4, isEventCapture: 0, zOrderIndex: 8 }),

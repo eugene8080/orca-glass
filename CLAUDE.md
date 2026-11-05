@@ -50,6 +50,12 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-04 user requests chat view without session-name row and reports Page20/21
+of21 cut off on G2. Reader head blank (container retained), body starts y4 with
+seven rows; nativeRight slack6px.118 tests/build/doctor pass. Simulator synthetic
+146-line chat shows Page20/21 of21 fully; preview LEFT OPEN on Page20of21.
+No beta upload; approval and G2 pending.
+
 2026-11-04 user approves full-width text preview. Beta1.0.30 uploaded/promoted;
 channel verified50,632bytes, public remains1.0.23.118 tests pass; prototype
 dist restored. App-only release, no bridge restart. Simulator remains OPEN.

@@ -46,9 +46,9 @@ export function menuCursorText(rows: SessionColumns[], selected: number, frame =
 }
 // Native text has no alignment flag. Pad a dedicated right column using measured
 // proportional text widths; no labels are rasterized or transferred as images.
-// Simulator check: a 278px line wraps in a 280px hint, 277px fits, so keep 3px slack.
+// G2: 'Page 20 of 21' at 277px was cut in a 280px hint while 273px fit; keep 6px slack.
 export function nativeRight(text: string, width: number): string {
-  return ' '.repeat(Math.max(0, Math.floor((width - 3 - glassWidth(text)) / glassWidth(' ')))) + text;
+  return ' '.repeat(Math.max(0, Math.floor((width - 6 - glassWidth(text)) / glassWidth(' ')))) + text;
 }
 // Shorten the title head and keep any ' · handle' suffix so rows stay distinguishable.
 export function menuTitle(text: string, maxWidth = MENU_LEFT.width - 4): string {

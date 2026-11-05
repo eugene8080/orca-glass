@@ -288,16 +288,16 @@ test('text pages preserve long Unicode output within row and byte limits', () =>
   assert.ok(pages.every(p => new TextEncoder().encode(p).length <= 999 && p.split('\n').length <= 8));
 });
 
-test('reader flips six-row pages, shows position, clamps ends and freezes incoming text', async () => {
+test('reader flips seven-row pages, shows position, clamps ends and freezes incoming text', async () => {
   const h = await harness();
-  const output = Array.from({ length: 20 }, (_, i) => `Line ${i}`).join('\n');
+  const output = Array.from({ length: 22 }, (_, i) => `Line ${i}`).join('\n');
   h.api.thread = async () => ({ text: output });
   await h.pick(2);
-  assert.equal(h.pages.at(-1).textObject[1].content, 'Line 18\nLine 19');
+  assert.equal(h.pages.at(-1).textObject[1].content, 'Line 21');
   assert.match(h.pages.at(-1).textObject.find(c => c.containerName === 'hint').content.trim(), /Page 4 of 4$/);
   const body = () => h.upgrades.findLast(u => u.containerName === 'body')?.content;
   await h.scroll('up');
-  assert.equal(body(), 'Line 12\nLine 13\nLine 14\nLine 15\nLine 16\nLine 17');
+  assert.equal(body(), 'Line 14\nLine 15\nLine 16\nLine 17\nLine 18\nLine 19\nLine 20');
   assert.match(h.upgrades.findLast(u => u.containerName === 'hint').content.trim(), /Page 3 of 4/);
   await h.scroll('up'); await h.scroll('up');
   assert.match(h.upgrades.findLast(u => u.containerName === 'hint').content.trim(), /Page 1 of 4/);
@@ -311,7 +311,7 @@ test('reader flips six-row pages, shows position, clamps ends and freezes incomi
   assert.equal(h.pages.length, count);
   assert.equal(h.upgrades.length, writes);
   await h.scroll('down');
-  assert.equal(body(), 'Line 6\nLine 7\nLine 8\nLine 9\nLine 10\nLine 11');
+  assert.equal(body(), 'Line 7\nLine 8\nLine 9\nLine 10\nLine 11\nLine 12\nLine 13');
 });
 
 test('Unicode sections preserve all text within native update limit', () => {
@@ -363,7 +363,7 @@ test('saved history is reachable in both directions without dropped or renumbere
   const text = '> Open items:\n' + Array.from({ length: 19 }, (_, i) => `  ${i + 1}. Item ${i + 1}`).join('\n') + '\n  - Group\n    1. Nested one\n    2. Nested two';
   h.api.history = async () => ({ text, source: 'claude-transcript' });
   await h.pick(2);
-  const expected = [...textExports.readerPages(text, t => [...t].length * 12)];
+  const expected = [...textExports.readerPages(text, t => textExports.glassTextWidth(t), 552, 7)];
   const seen = [h.pages.at(-1).textObject[1].content];
   const pageCount = h.pages.length;
   for (let i = 1; i < expected.length; i++) {
@@ -397,7 +397,7 @@ test('rapid reader swipes serialize writes and never rebuild the page or send in
   const rebuilds = h.pages.length;
   await h.scroll('up'); await h.scroll('up'); await h.scroll('up');
   release(); await h.flush();
-  assert.equal(h.upgrades.findLast(u => u.containerName === 'body').content, 'Line 6\nLine 7\nLine 8\nLine 9\nLine 10\nLine 11');
+  assert.equal(h.upgrades.findLast(u => u.containerName === 'body').content, 'Line 7\nLine 8\nLine 9\nLine 10\nLine 11\nLine 12\nLine 13');
   assert.match(h.upgrades.findLast(u => u.containerName === 'hint').content.trim(), /Page 2 of 5/);
   assert.equal(h.pages.length, rebuilds);
   assert.equal(h.sends.length, 0);
@@ -653,13 +653,15 @@ test('compact session menu uses native text and one update per cursor move', asy
   assert.equal(h.pages.at(-1).textObject[1].content, 'Content terminal-0');
 });
 
-test('reader reserves six native chat rows and three input rows without overlap', async () => {
+test('reader has no title row and reserves seven native chat rows and three input rows', async () => {
   const h = await harness();
   await h.pick(2);
   const page = h.pages.at(-1);
   const body = page.textObject.find(c => c.containerName === 'body');
   const voice = page.textObject.find(c => c.containerName === 'voice');
-  assert.equal(body.height, 162);
+  assert.equal(page.textObject.find(c => c.containerName === 'head').content, ' ');
+  assert.equal(body.yPosition, 4);
+  assert.equal(body.height, 189);
   assert.equal(body.xPosition, 8);
   assert.equal(body.width, 560);
   assert.equal(body.paddingLength, 0);

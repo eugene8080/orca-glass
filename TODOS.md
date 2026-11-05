@@ -8,6 +8,13 @@ Completed/superseded release notes: [history](docs/todo-history.md).
 
 ## Open work
 
+- [ ] **Reader without title + seven rows; page counter fit — preview approval, then G2:**
+  user asked to drop the session name (chat starts on the first row) and reported
+  'Page 20/21 of 21' cut off on G2 in beta1.0.30. Head container kept blank for stable
+  IDs; body y4, seven27px rows (y4..193), pages of seven rows. Right-aligned text slack
+  3->6px (277px cut, 273px fit). 118 tests pass; simulator shows Page 20/21 of 21 in full.
+  Preview OPEN on Page20of21 (9900/8791). Not uploaded; beta1.0.30 unchanged.
+
 - [ ] **Full-width text (firmware font widths) — G2 confirmation:** user
   reported session screens stop 8-10 letters short of the right edge. Cause: reader
   wrap, list titles and right-aligned labels measured with browser Arial 21px, ~10-15%
