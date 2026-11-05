@@ -50,6 +50,10 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-05 user approves bridge restart for Whisper VAD. Verified supervisor33076/
+server49736/whisper62748, stopped task and tree, restarted. New supervisor33692,
+server21376, whisper84936 with --vad; local/stableHTTPS healthz ok. G2 check pending.
+
 2026-11-05 user reports a silent hold transcribing as 'you'/'Thank you'. Reproduced with
 synthetic noise; fixed with whisper-server --vad + Silero model (hash-verified download
 to .local/voice, added to setup-voice.ps1). 127 tests pass. Production bridge NOT
