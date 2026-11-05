@@ -1203,3 +1203,22 @@ test('workspace picker has no title, lists four recent workspaces first and the 
   await h.scroll('up');                                       // Back: previous page, last row.
   assert.match(h.pages.at(-1).textObject.find(c => c.containerName === 'body').content.split('\n')[9], /^> \[ \] ai-stock/);
 });
+
+test('with the Hermes agent filter the workspace picker lists only Hermes workspaces', async () => {
+  const h = await harness(0, false, 'tap', 'hermes', 0, false, '["porttracker-id"]');
+  h.api.threads = async () => [
+    { handle: 'codex-1', title: 'Codex work', agent: 'codex', state: 'idle', workspaceId: 'orca-glass-id', workspaceName: 'orca-glass', workspaceLabel: 'orca-glass', lastOutputAt: 50 },
+    { handle: 'hermes:1', title: 'Hermes chat', agent: 'hermes', state: 'idle', workspaceId: 'hermes-profile:abc', workspaceName: 'Hermes: default', workspaceLabel: 'Hermes: default', lastOutputAt: 40 },
+    { handle: 'hermes:2', title: 'Hermes pane', agent: 'hermes', state: 'idle', workspaceId: 'pc-settings-id', workspaceName: 'pc-settings', workspaceLabel: 'pc-settings', lastOutputAt: 30 },
+  ];
+  h.api.workspaces = async () => ['orca-glass', 'pc-settings', 'porttracker', 'zeta'].map((name, i) => ({ id: `${name}-id`, name, lastActivityAt: 100 - i }));
+  await h.menu(1001); await h.pick(1);
+  const items = [...menuItems(h)];
+  // Hermes profile group and the Orca pane workspace a Hermes session lives in;
+  // the earlier Orca selection stays visible (checked) so it can be cleared.
+  assert.ok(items.includes('[ ] Hermes: default'));
+  assert.ok(items.includes('[ ] pc-settings'));
+  assert.ok(items.includes('[x] porttracker'));
+  assert.ok(!items.some(s => /orca-glass|zeta/.test(s)), items.join(' | '));
+  assert.ok(!items.some(s => s.includes('unavailable')));
+});

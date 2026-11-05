@@ -103,3 +103,8 @@ Recency is Orca's worktree `lastActivityAt` (passed through `listWorkspaces`) or
 newer `lastOutputAt` of a session in that workspace. Headings are flush left, carry
 no cursor column and are skipped by swipes; a recent workspace is not repeated in
 the alphabetical list.
+
+With the agent filter set to Hermes, which is not part of Orca, the picker lists only
+the workspaces of Hermes sessions (the Orca workspace of a Hermes pane, or a Hermes
+profile group) instead of the Orca catalogue. Earlier selections remain visible so
+they can be cleared.

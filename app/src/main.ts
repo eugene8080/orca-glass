@@ -509,13 +509,21 @@ function workspaceOptions(page = 0, selected = 0) {
     const owner = current;
     const [threads, catalog] = await Promise.all([api.threads(), api.workspaces().catch(() => [])]);
     if (current !== owner) return;
-    const choices = new Map(catalog.map(w => [w.id, w.name]));
-    for (const t of threads) if (t.workspaceId) choices.set(t.workspaceId, t.workspaceLabel || t.workspaceName || 'Workspace');
-    for (const id of viewWorkspaces || []) if (!choices.has(id)) choices.set(id, `${workspaceNames.get(id) || id.replaceAll('\\', '/').split('/').pop() || 'Workspace'} (unavailable)`);
+    // Hermes is not part of Orca: with the Hermes agent filter, list only the
+    // workspaces its sessions belong to (an Orca pane's workspace or a Hermes
+    // profile group), not the whole Orca catalogue.
+    const hermesOnly = viewProvider === 'hermes';
+    const sessions = hermesOnly ? threads.filter(t => t.agent === 'hermes') : threads;
+    const choices = new Map(hermesOnly ? [] : catalog.map(w => [w.id, w.name]));
+    for (const t of sessions) if (t.workspaceId) choices.set(t.workspaceId, t.workspaceLabel || t.workspaceName || 'Workspace');
+    // Saved selections stay visible so they can be cleared; only truly missing
+    // workspaces are marked unavailable.
+    const known = new Map(catalog.map(w => [w.id, w.name]));
+    for (const id of viewWorkspaces || []) if (!choices.has(id)) choices.set(id, known.get(id) || `${workspaceNames.get(id) || id.replaceAll('\\', '/').split('/').pop() || 'Workspace'} (unavailable)`);
     // Recency: Orca's workspace activity time, or a newer session output in it.
     const activity = new Map<string, number>();
     for (const w of catalog) if (w.lastActivityAt) activity.set(w.id, w.lastActivityAt);
-    for (const t of threads) if (t.workspaceId && t.lastOutputAt) activity.set(t.workspaceId, Math.max(activity.get(t.workspaceId) || 0, t.lastOutputAt));
+    for (const t of sessions) if (t.workspaceId && t.lastOutputAt) activity.set(t.workspaceId, Math.max(activity.get(t.workspaceId) || 0, t.lastOutputAt));
     const recent = [...choices].filter(([id]) => activity.has(id))
       .sort((a, b) => activity.get(b[0])! - activity.get(a[0])! || a[1].localeCompare(b[1])).slice(0, RECENT_WORKSPACES);
     const recentIds = new Set(recent.map(([id]) => id));

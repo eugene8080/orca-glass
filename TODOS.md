@@ -18,7 +18,10 @@ Completed/superseded release notes: [history](docs/todo-history.md).
   lastActivityAt from 'orca worktree list' (needs restart; until then recency uses
   session output only). 128 tests pass; simulator verified page 1 layout, heading
   skip and page 2. Real Orca session workspaceId equals worktree id (checked).
-  Preview OPEN on page 1.
+  Hermes filter (user 2026-11-05): with the agent filter on Hermes, the picker lists
+  only Hermes sessions' workspaces (Orca pane workspace or Hermes profile group), not
+  the Orca catalogue; earlier Orca selections stay visible to clear. 129 tests pass.
+  User approved upload.
 
 - [ ] **Hermes — G2 confirmation:** PR #2 merged as5a48a6f; beta1.0.28 live
   (49,867 bytes), bridge restarted and stableHTTPS lists15 Hermes sessions.
