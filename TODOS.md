@@ -1,19 +1,20 @@
 # Orca Glass TODOs
 Updated: 2026-11-04
 
-Current beta: **1.0.30**.118 tests pass; text fills to the right edge.
+Current beta: **1.0.31**.118 tests pass; reader has no title row, seven chat rows.
 Workspace-filter preview approved, released and retired with merged worktree cleanup.
 Future visual changes require preview approval before beta upload.
 Completed/superseded release notes: [history](docs/todo-history.md).
 
 ## Open work
 
-- [ ] **Reader without title + seven rows; page counter fit — preview approval, then G2:**
+- [ ] **Reader without title + seven rows; page counter fit — G2 confirmation:**
   user asked to drop the session name (chat starts on the first row) and reported
   'Page 20/21 of 21' cut off on G2 in beta1.0.30. Head container kept blank for stable
   IDs; body y4, seven27px rows (y4..193), pages of seven rows. Right-aligned text slack
   3->6px (277px cut, 273px fit). 118 tests pass; simulator shows Page 20/21 of 21 in full.
-  Preview OPEN on Page20of21 (9900/8791). Not uploaded; beta1.0.30 unchanged.
+  User approved; beta1.0.31 uploaded/promoted, channel verified (50,650 bytes), public
+  remains1.0.23. App-only; no bridge restart. G2 check: seventh row and Page2x of2x.
 
 - [ ] **Full-width text (firmware font widths) — G2 confirmation:** user
   reported session screens stop 8-10 letters short of the right edge. Cause: reader

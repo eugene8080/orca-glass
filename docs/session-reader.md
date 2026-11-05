@@ -394,7 +394,7 @@ A right-padded 278px line wrapped in a 280px hint container while 277px fit, so
 and are fitted per row to end 8px before their own label. Hardware font fidelity is
 not yet confirmed on G2.
 
-## No title row, seven chat rows (2026-11-04, unreleased)
+## No title row, seven chat rows (2026-11-04, beta 1.0.31)
 
 The reader no longer shows the session name. Its head container stays in the page
 (container IDs and layers unchanged) with blank content. The body starts at y4 and

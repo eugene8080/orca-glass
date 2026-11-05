@@ -50,6 +50,10 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-04 user approves no-title/seven-row reader. Beta1.0.31 uploaded/promoted;
+channel verified50,650bytes, public remains1.0.23.118 tests pass; prototype dist
+restored. App-only, no bridge restart. Simulator remains OPEN. G2 check pending.
+
 2026-11-04 user requests chat view without session-name row and reports Page20/21
 of21 cut off on G2. Reader head blank (container retained), body starts y4 with
 seven rows; nativeRight slack6px.118 tests/build/doctor pass. Simulator synthetic
