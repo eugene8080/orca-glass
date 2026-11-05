@@ -20,6 +20,11 @@ export function parseChoices(lines) {
   let end = selected + 1;
   while (end < lines.length && pattern.test(lines[end])) end++;
   if (footer >= 0) end = footer;
+  // Claude echoes a sent message with the same ❯ marker (Codex: ›), so a typed
+  // "❯ 1) … / 2) …" list looks like a cursor menu. A live menu is the bottom UI:
+  // a later reply (●/⏺), another prompt row or the input-box footer means these
+  // rows are sent history or an unsent draft, never choices.
+  if (lines.slice(end).some(l => /^\s*(?:[●⏺]|[›❯])|⏵⏵|\? for shortcuts|shift\+tab to cycle/i.test(l))) return null;
   const options = [];
   for (const line of lines.slice(start, end)) {
     const match = line.match(pattern);

@@ -47,3 +47,23 @@ test('wrapped unverified prose or a changed Claude question is never submitted',
   const changed = parseChoices(claude.map(l => l.replace('Which approach', 'Which other approach')));
   assert.throws(() => validateChoice(changed, old.id, '1'), /Question changed/);
 });
+
+// Synthetic shapes of a user-typed numbered list in Claude Code (no real content).
+const sentList = ['● Earlier reply', '', '❯ 1) is the plan up to date [Image #1]',
+  '  2) what are the next steps?', '  ⎿  [Image #1]', '', '● Two parts: first I will check the plan.', '',
+  '────────────────────', '❯ ', '────────────────────', '  ⏵⏵ auto mode on (shift+tab to cycle)'];
+
+test('a sent numbered message followed by replies is not a choice menu', () => {
+  assert.equal(parseChoices(sentList), null);
+});
+
+test('an unsent numbered draft in the input box is not a choice menu', () => {
+  assert.equal(parseChoices(['● Earlier reply', '────────────────────', '❯ 1. first task',
+    '  2. second task', '────────────────────', '  ? for shortcuts']), null);
+});
+
+test('a real Claude menu below a sent numbered message is still recognized', () => {
+  const menu = parseChoices([...sentList.slice(0, 8), ...claude.slice(1)]);
+  assert.equal(menu.options.length, 5);
+  assert.equal(menu.options[0].label, 'Validate first (Recommended)');
+});

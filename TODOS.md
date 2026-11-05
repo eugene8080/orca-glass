@@ -1,30 +1,20 @@
 # Orca Glass TODOs
 Updated: 2026-11-04
 
-Current beta: **1.0.31**.118 tests pass; reader has no title row, seven chat rows.
+Current beta: **1.0.31** (G2-confirmed). Bridge choice-parser fix pending restart.
 Workspace-filter preview approved, released and retired with merged worktree cleanup.
 Future visual changes require preview approval before beta upload.
 Completed/superseded release notes: [history](docs/todo-history.md).
 
 ## Open work
 
-- [ ] **Reader without title + seven rows; page counter fit — G2 confirmation:**
-  user asked to drop the session name (chat starts on the first row) and reported
-  'Page 20/21 of 21' cut off on G2 in beta1.0.30. Head container kept blank for stable
-  IDs; body y4, seven27px rows (y4..193), pages of seven rows. Right-aligned text slack
-  3->6px (277px cut, 273px fit). 118 tests pass; simulator shows Page 20/21 of 21 in full.
-  User approved; beta1.0.31 uploaded/promoted, channel verified (50,650 bytes), public
-  remains1.0.23. App-only; no bridge restart. G2 check: seventh row and Page2x of2x.
-
-- [ ] **Full-width text (firmware font widths) — G2 confirmation:** user
-  reported session screens stop 8-10 letters short of the right edge. Cause: reader
-  wrap, list titles and right-aligned labels measured with browser Arial 21px, ~10-15%
-  wider than the native font. Glyph advances for ASCII measured in the native simulator
-  (.local/glyph-calibration); reader wraps at552 of560px, list titles extend to their
-  own label (handle suffix kept), labels/hint keep3px slack (278px wrapped in280px).
-  118 tests/build/doctor pass. User approved preview; beta1.0.30 uploaded/promoted,
-  channel verified (50,632 bytes), public remains1.0.23. App-only; no bridge restart.
-  G2 check pending: any row wrapping onto a second line means more slack is needed.
+- [ ] **Typed numbered list mistaken for a Claude choice menu — bridge restart, then G2:**
+  user's sent message '❯ 1) … / 2) …' in porttracker Campaign Orchestrator showed as
+  choices. Claude echoes sent messages with the same ❯ marker as a menu cursor.
+  bridge/choices.mjs now rejects a candidate menu with a later reply (●/⏺), prompt row
+  (❯/›) or input-box footer below it. 121 tests pass; read-only check of the live
+  Campaign screen keeps its real 5-option menu and rejects the typed list without it.
+  Production bridge NOT restarted; fix inactive until restart. No app/beta change.
 
 - [ ] **Book-style reader — G2 confirmation:** native six-row whole-page
   swipes; bottom Page X of Y, latest page on open, frozen snapshot while browsing.
@@ -96,6 +86,11 @@ Completed/superseded release notes: [history](docs/todo-history.md).
 
 ## Completed / confirmed
 
+- [x] Reader without title row, seven chat rows, two-digit Page X of Y fits (6px
+  right slack) — user confirms beta1.0.31 works on G2,2026-11-04.
+- [x] Full-width text with measured firmware glyph widths (reader wrap552/560px,
+  list titles to their label, flush-right labels) — confirmed with beta1.0.31 on G2,
+  2026-11-04. See [reader details](docs/session-reader.md).
 - [x] Even Hub description and repository README refreshed for beta1.0.27,
   with public1.0.23 distinction; saved portal text verified after reload2026-11-04.
   Hermes branch health/status checked without submitting agent input.

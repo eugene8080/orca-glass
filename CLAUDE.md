@@ -50,6 +50,13 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-04 user confirms beta1.0.31 (no title, seven rows, page counter, full-width
+text) works on G2; TODOS rows closed. User reports typed '❯ 1) / 2)' message in
+porttracker Campaign Orchestrator shown as Claude choices. bridge/choices.mjs now
+rejects menus with a later reply/prompt row/input footer below.121 tests pass;
+read-only live-screen check keeps real menu, rejects typed list. Production bridge
+NOT restarted (fix inactive). No live choice sent; no app/beta change.
+
 2026-11-04 user approves no-title/seven-row reader. Beta1.0.31 uploaded/promoted;
 channel verified50,650bytes, public remains1.0.23.118 tests pass; prototype dist
 restored. App-only, no bridge restart. Simulator remains OPEN. G2 check pending.
