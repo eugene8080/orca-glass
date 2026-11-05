@@ -12,7 +12,8 @@ Completed/superseded release notes: [history](docs/todo-history.md).
   2026-11-05: Orca Glass did not show Hermes' AMC question (2 questions, 2 options each)
   and a reply failed with 'session changed or needs attention'. Step 1 done: the bridge
   shows pending questions read-only with numbered options and a clear 'answer in
-  Telegram or Hermes Desktop for now' message (bridge restart, no beta). Step 2: Click/
+  Telegram or Hermes Desktop for now' message; bridge restarted 2026-11-05 (supervisor
+  8108, server57176, whisper84952 --vad), healthz ok; no beta change. Step 2: Click/
   voice number per question via clarify.lock + clarify.respond, synthetic tests first;
   the user's first real answer is the live test. See docs/hermes-bridge.md.
 

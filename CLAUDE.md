@@ -50,6 +50,9 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-05 bridge restarted for Hermes question display (old55704/80588/10560; new
+8108/57176/84952 --vad); local/stableHTTPS healthz ok.
+
 2026-11-05 user reports Hermes AMC clarify question missing in Orca Glass and reply
 failing. Cause: question is a clarify tool call (excluded) and resume reports a pending
 prompt. Read-only fix shows pending questions from SessionDB; send error now says to
