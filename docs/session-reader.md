@@ -410,3 +410,14 @@ the last page now calls `refreshReader`: it clears the freeze, shows `Refreshing
 in the page-counter row, runs one poll tick at once (`startReaderUpdates` returns its
 tick) and restores `Page X of Y`. New output jumps to the newest page; live polling
 then continues. Repeated swipes during a refresh are ignored.
+
+## Open at the top of the latest response (2026-11-04, unreleased)
+
+Reader text marks turns with `/ ` (user) and `> ` (assistant). A turn can contain
+several assistant messages (progress notes, then the final answer), so
+`latestResponseStart` in `app/src/text.ts` returns the start of the LAST assistant
+message after the last user line. `readerLayout` paginates the text before and from
+that point separately, so the response begins at the top of a page (the page before
+it can be short) and records `responsePage`. Opening a session (`openAtResponse`)
+shows that page once. Live updates and the swipe-down refresh still follow the
+newest page. Text without turn markers (terminal fallback) opens at the newest page.

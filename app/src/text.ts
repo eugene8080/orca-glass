@@ -134,6 +134,23 @@ export function textSections(text: string, limit = 900): string[] {
 
 // Explicit six-row pages fit above the voice panel. Keep every source character
 // and the hardware-proven byte budget; page boundaries never slice list numbers.
+// Reader text marks turns with '/ ' (user) and '> ' (assistant) at line start;
+// continuation lines are indented. A turn can hold several assistant messages
+// (progress notes, then the final answer); the latest response is the LAST
+// assistant message after the last user line. Returns its character index, or
+// -1 when no response follows the last user message (or no turn markers exist).
+export function latestResponseStart(text: string): number {
+  const lines = text.split('\n');
+  let start = -1;
+  let index = 0;
+  for (const line of lines) {
+    if (line.startsWith('/ ')) start = -1;
+    else if (line.startsWith('> ')) start = index;
+    index += line.length + 1;
+  }
+  return start;
+}
+
 export function readerPages(text: string, measure: (text: string) => number, width = 550, rowsPerPage = 6, byteLimit = 900): string[] {
   const rows: string[] = [];
   for (const line of text.split('\n')) {

@@ -8,6 +8,17 @@ Completed/superseded release notes: [history](docs/todo-history.md).
 
 ## Open work
 
+- [ ] **Open a session at the top of the latest response — preview approval, then G2:**
+  user wants opening to show the page starting the latest LLM response (e.g. the final
+  'Beta 1.0.32 is uploaded and promoted' message). latestResponseStart() picks the LAST
+  '> ' assistant message after the last '/ ' user line (Claude/Codex split a turn into
+  progress notes + final answer); the reader starts a fresh page there, so the page
+  before it may be short. Only the first render uses it; live updates and swipe-down
+  refresh still go to the newest page. No turn markers -> newest page as before.
+  123 tests/build pass; read-only check of this Claude session picks the expected
+  line; simulator opens on Page4of5 at the synthetic final answer. Preview OPEN
+  (9900/8791). Not uploaded; beta1.0.32 unchanged.
+
 - [ ] **Swipe down on last page refreshes the reader — G2 confirmation:**
   user reports sessions sometimes stop auto-refreshing. Cause: any page swipe freezes
   the snapshot until send/reopen, while the 1s poll skips frozen readers. Swipe down

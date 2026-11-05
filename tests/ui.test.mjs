@@ -364,17 +364,18 @@ test('saved history is reachable in both directions without dropped or renumbere
   h.api.history = async () => ({ text, source: 'claude-transcript' });
   await h.pick(2);
   const expected = [...textExports.readerPages(text, t => textExports.glassTextWidth(t), 552, 7)];
+  // A single response opens at its top (page 1); page down through the rest.
   const seen = [h.pages.at(-1).textObject[1].content];
   const pageCount = h.pages.length;
   for (let i = 1; i < expected.length; i++) {
-    await h.scroll('up');
-    seen.unshift(h.upgrades.findLast(u => u.containerName === 'body').content);
+    await h.scroll('down');
+    seen.push(h.upgrades.findLast(u => u.containerName === 'body').content);
   }
   assert.deepEqual(seen, expected);
   assert.equal(seen.join('\n'), text);
   for (let i = 1; i <= 19; i++) assert.ok(seen.join('\n').includes(`  ${i}. Item ${i}`));
-  for (let i = 1; i < expected.length; i++) await h.scroll('down');
-  assert.equal(h.upgrades.findLast(u => u.containerName === 'body').content, expected.at(-1));
+  for (let i = 1; i < expected.length; i++) await h.scroll('up');
+  assert.equal(h.upgrades.findLast(u => u.containerName === 'body').content, expected[0]);
   const writes = h.upgrades.length;
   h.api.history = async () => ({ text: text + '\nNew output', source: 'claude-transcript' });
   await [...h.timers.values()][0]();
@@ -1136,4 +1137,22 @@ test('swiping down on the last page resumes live updates and refreshes at once',
   h.api.thread = async () => ({ text: Array.from({ length: 17 }, (_, i) => `Line ${i}`).join('\n') });
   await [...h.timers.values()].at(-1)();      // Live polling continues afterwards.
   assert.equal(body(), 'Line 14\nLine 15\nLine 16');
+});
+
+test('opening a session shows the page that starts the latest response', async () => {
+  const h = await harness();
+  const earlier = Array.from({ length: 9 }, (_, i) => `  earlier line ${i}`).join('\n');
+  const latest = Array.from({ length: 9 }, (_, i) => `  latest line ${i}`).join('\n');
+  const text = `/ first question\n> First answer\n${earlier}\n/ second question\n> Progress note before the answer.\n> Latest answer starts here\n${latest}`;
+  h.api.history = async () => ({ text, source: 'claude-transcript' });
+  await h.pick(2);
+  const open = h.pages.at(-1);
+  assert.match(open.textObject[1].content, /^> Latest answer starts here\n/);
+  const hint = open.textObject.find(c => c.containerName === 'hint').content.trim();
+  const [, page, total] = hint.match(/Page (\d+) of (\d+)$/);
+  assert.ok(Number(page) < Number(total), 'long response opens before the last page');
+  // Earlier pages remain reachable and every character is kept.
+  assert.equal(textExports.latestResponseStart(text), text.indexOf('> Latest'));
+  assert.equal(textExports.latestResponseStart('/ only a question'), -1);
+  assert.equal(textExports.latestResponseStart('plain terminal text'), -1);
 });

@@ -50,6 +50,12 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-04 user requests opening a session at the top of the latest LLM response.
+Reader pages break before the last assistant message after the last user line and
+open there once; live/refresh still follow newest page.123 tests/build pass;
+read-only check of this Claude session and simulator Page4of5 verified. Preview
+LEFT OPEN; no beta upload.
+
 2026-11-04 user approves swipe-down refresh. Beta1.0.32 uploaded/promoted; channel
 verified50,727bytes, public remains1.0.23.122 tests pass; prototype dist restored.
 App-only, no bridge restart. Simulator remains OPEN. G2 check pending.

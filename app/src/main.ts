@@ -19,7 +19,7 @@ import {
 import { api, currentBase, setApiLang, setConnection, setDemo, type ChoiceMenu, type Provider, type Thread, type Usage, type Workspace } from './api';
 import { parseCode, resolveBase } from './pairing';
 import { applyPage, detectLang, setLang, t as tr } from './i18n';
-import { clipBytes, textSections, readerPages, choiceNumber, readerContent, glassTextWidth } from './text';
+import { clipBytes, textSections, readerPages, latestResponseStart, choiceNumber, readerContent, glassTextWidth } from './text';
 import { readerStatus, statusPixels, voiceBorderPixels, SPINNER } from './reader-status';
 import { footerHint } from './footer-hint';
 import { formatReset, RESET_MODES, resetModeLabel, type ResetMode } from './usage-reset';
@@ -49,7 +49,7 @@ const POLL_MS = 1000;
 
 type Screen =
   | { kind: 'list'; title: string; items: string[]; sessionList?: boolean; workspacePicker?: boolean; menuActions?: { id: number; label: string; run: () => unknown }[]; compat?: boolean; columns?: SessionColumns[]; connectedCount?: number; selected?: number; paintedSelection?: number; menuFrame?: number; paintedCursor?: string; cursorWriting?: boolean; paging?: boolean; onPreviousPage?: () => unknown; onNextPage?: () => unknown; onPick: (i: number) => void; onBack?: () => void }
-  | { kind: 'text'; title: string; text: string; usageMode?: ResetMode; conversationText?: string; choiceMenu?: ChoiceMenu | null; tail?: boolean; offset?: number; pageText?: string; pages?: string[]; pageTarget?: number; pageWriting?: boolean; reading?: boolean; refreshing?: boolean; activityLabel?: string; activityState?: string; reportedSeconds?: number | null; statusFrame?: number; statusStartedAt?: number; savedHistory?: boolean; reader?: Thread; onClick?: () => void; onBack?: () => void; onHold?: () => void; };
+  | { kind: 'text'; title: string; text: string; usageMode?: ResetMode; conversationText?: string; choiceMenu?: ChoiceMenu | null; tail?: boolean; offset?: number; pageText?: string; pages?: string[]; pageTarget?: number; pageWriting?: boolean; reading?: boolean; refreshing?: boolean; responsePage?: number; openAtResponse?: boolean; activityLabel?: string; activityState?: string; reportedSeconds?: number | null; statusFrame?: number; statusStartedAt?: number; savedHistory?: boolean; reader?: Thread; onClick?: () => void; onBack?: () => void; onHold?: () => void; };
 
 let bridge: EvenAppBridge;
 let current: Screen | null = null;
@@ -93,7 +93,12 @@ function readerLayout(s: TextScreen) {
     const ctx = document.createElement?.('canvas').getContext('2d');
     if (ctx) ctx.font = '21px Arial';
     // Wrap with the measured firmware font; Arial only sizes non-ASCII glyphs.
-    s.pages = readerPages(s.text, text => glassTextWidth(text, ch => ctx ? ctx.measureText(ch).width : 21), READER_WRAP_WIDTH, READER_ROWS);
+    const measure = (text: string) => glassTextWidth(text, ch => ctx ? ctx.measureText(ch).width : 21);
+    // Start a fresh page at the latest response so it opens at the page top.
+    const start = latestResponseStart(s.text);
+    const before = start > 0 ? readerPages(s.text.slice(0, start - 1), measure, READER_WRAP_WIDTH, READER_ROWS) : [];
+    s.pages = [...before, ...readerPages(start > 0 ? s.text.slice(start) : s.text, measure, READER_WRAP_WIDTH, READER_ROWS)];
+    s.responsePage = start >= 0 ? before.length : undefined;
     s.pageText = s.text;
   }
   return s.pages;
@@ -101,7 +106,11 @@ function readerLayout(s: TextScreen) {
 
 function bodyText(s: TextScreen) {
   const sections = s.reader ? readerLayout(s) : textSections(s.text);
-  s.offset = Math.max(0, Math.min(s.offset ?? (s.tail ? sections.length - 1 : 0), sections.length - 1));
+  // Opening a session shows the top of the latest response once; later live
+  // updates and refreshes follow the newest page.
+  const tail = s.openAtResponse && s.responsePage !== undefined ? s.responsePage : sections.length - 1;
+  s.openAtResponse = false;
+  s.offset = Math.max(0, Math.min(s.offset ?? (s.tail ? tail : 0), sections.length - 1));
   return sections[s.offset];
 }
 
@@ -316,7 +325,7 @@ async function updateText(title: string, text: string) {
     }
     if (current !== screen || (screen.reader && screen.reading)) return;
     if (!await bridge.textContainerUpgrade(new TextContainerUpgrade({ containerID: BODY.containerID, containerName: BODY.containerName, content }))) throw new Error('Glasses rejected the live text update. Retrying.');
-    if (current === screen && !(screen.reader && screen.reading)) { screen.title = title; screen.text = text; screen.offset = next.offset; screen.pages = next.pages; screen.pageText = next.pageText; if (screen.reader) await inputHint(true); }
+    if (current === screen && !(screen.reader && screen.reading)) { screen.title = title; screen.text = text; screen.offset = next.offset; screen.pages = next.pages; screen.pageText = next.pageText; screen.responsePage = next.responsePage; if (screen.reader) await inputHint(true); }
   };
   if (screen.reader) {
     const work = readerWrites.then(write);
@@ -502,7 +511,7 @@ function thread(t: Thread, note = '') {
       return { state: 'unknown', elapsedSeconds: null };
     });
     const text = readerContent(conversationText, snapshot.menu, snapshot.progress, t.agent === 'claude' && state.state === 'working');
-    await show({ kind: 'text', title: title(), text, conversationText, choiceMenu: snapshot.menu, tail: true, activityState: state.state, reportedSeconds: state.state === 'working' ? state.elapsedSeconds ?? null : null, activityLabel: activityLabel(state.state), savedHistory: useSaved, reader: t, onBack: home,
+    await show({ kind: 'text', title: title(), text, conversationText, choiceMenu: snapshot.menu, tail: true, openAtResponse: true, activityState: state.state, reportedSeconds: state.state === 'working' ? state.elapsedSeconds ?? null : null, activityLabel: activityLabel(state.state), savedHistory: useSaved, reader: t, onBack: home,
       onClick: () => { if (current?.kind === 'text' && current.choiceMenu) void replies(t); },
       onHold: () => { void record(t, true); } });
     startReaderUpdates(current);
