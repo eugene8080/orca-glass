@@ -1,21 +1,22 @@
 # Orca Glass TODOs
 Updated: 2026-11-04
 
-Current beta: **1.0.29**.116 tests pass for the book-style conversation reader.
+Current beta: **1.0.30**.118 tests pass; text fills to the right edge.
 Workspace-filter preview approved, released and retired with merged worktree cleanup.
 Future visual changes require preview approval before beta upload.
 Completed/superseded release notes: [history](docs/todo-history.md).
 
 ## Open work
 
-- [ ] **Full-width text (firmware font widths) — preview approval, then G2:** user
+- [ ] **Full-width text (firmware font widths) — G2 confirmation:** user
   reported session screens stop 8-10 letters short of the right edge. Cause: reader
   wrap, list titles and right-aligned labels measured with browser Arial 21px, ~10-15%
   wider than the native font. Glyph advances for ASCII measured in the native simulator
   (.local/glyph-calibration); reader wraps at552 of560px, list titles extend to their
   own label (handle suffix kept), labels/hint keep3px slack (278px wrapped in280px).
-  118 tests/build/doctor pass. Preview OPEN in simulator9900/fixture8791. Not uploaded;
-  beta1.0.29 unchanged. Hardware font fidelity unverified until G2 check.
+  118 tests/build/doctor pass. User approved preview; beta1.0.30 uploaded/promoted,
+  channel verified (50,632 bytes), public remains1.0.23. App-only; no bridge restart.
+  G2 check pending: any row wrapping onto a second line means more slack is needed.
 
 - [ ] **Book-style reader — G2 confirmation:** native six-row whole-page
   swipes; bottom Page X of Y, latest page on open, frozen snapshot while browsing.

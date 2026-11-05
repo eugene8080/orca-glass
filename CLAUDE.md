@@ -50,6 +50,11 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-04 user approves full-width text preview. Beta1.0.30 uploaded/promoted;
+channel verified50,632bytes, public remains1.0.23.118 tests pass; prototype
+dist restored. App-only release, no bridge restart. Simulator remains OPEN.
+G2 check pending (rows reach right edge without wrapping onto a second line).
+
 2026-11-04 user reports session screens stop8-10 letters short of right edge.
 Cause: Arial21px measurement wider than native font. Measured ASCII advances in
 native simulator; reader wraps at552/560px, list titles fill to own label, labels/

@@ -381,7 +381,7 @@ G2 rendering/voice checks remain pending; simulator screenshots are not proof of
 hardware optical depth. Filter Agents retains its existing normal-distance page;
 the SDK has no supported nested near-field submenu API.
 
-## Firmware font widths (2026-11-04, unreleased)
+## Firmware font widths (2026-11-04, beta 1.0.30)
 
 Reader pages, session-list titles and right-aligned labels now use measured native
 glyph advances (`glassTextWidth` in `app/src/text.ts`) instead of browser Arial 21px,
