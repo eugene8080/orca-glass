@@ -50,6 +50,12 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-05 user approves nine-row/status-row/full-screen voice. Beta1.0.34
+uploaded/promoted; channel verified51,240bytes, public remains1.0.23.126 tests
+pass; prototype dist restored. Bridge restarted after verifying ownership (old
+supervisor48356/server35092): new supervisor33076, server49736; local/stableHTTPS
+healthz ok. Simulator remains OPEN. G2 check pending.
+
 2026-11-05 user requests nine chat rows + one status row ('/Waiting Opus5.5
 [Tap&Hold for Input] Pg77/78') and a full-screen voice page that returns to the
 bottom chat page. Implemented with bridge model labels (transcript or Codex footer).

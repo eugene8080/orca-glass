@@ -1,15 +1,17 @@
 # Orca Glass TODOs
 Updated: 2026-11-04
 
-Current beta: **1.0.33** (open at latest response); 1.0.31 G2-confirmed.
+Current beta: **1.0.34** (nine rows + status row, full-screen voice); 1.0.33 G2-confirmed.
 Workspace-filter preview approved, released and retired with merged worktree cleanup.
 Future visual changes require preview approval before beta upload.
 Completed/superseded release notes: [history](docs/todo-history.md).
 
 ## Open work
 
-- [ ] **Nine chat rows + one status row; full-screen voice page — preview approval,
-  then release (app beta AND bridge restart), then G2:** user request 2026-11-05.
+- [ ] **Nine chat rows + one status row; full-screen voice page — G2 confirmation:**
+  user request 2026-11-05. Approved; beta1.0.34 uploaded/promoted (51,240 bytes),
+  public remains1.0.23; bridge restarted (supervisor33076, server49736),
+  local/stableHTTPS healthz ok.
   Reader: nine 27px rows (y4..247), divider y250, one status row y254: left
   '/Waiting Opus5.5' (spinner icon + working word + model while working), right
   '[Tap&Hold for Input] Pg77/78' (provider timer in front while working). The hint
@@ -24,20 +26,8 @@ Completed/superseded release notes: [history](docs/todo-history.md).
   IDs 1..7, layers 0..6; voice page 4 containers. Latest-response page break now only
   when the response does not already sit wholly on the last page. 126 tests/build/
   typecheck pass; simulator verified layout, listen/review/send (one synthetic send),
-  cancel (no send) and return to Pg6/6. Preview OPEN. Supersedes the 2026-11-02
+  cancel (no send) and return to Pg6/6. Supersedes the 2026-11-02
   no-rebuild voice overlay rule at the user's explicit request.
-
-- [ ] **Open a session at the top of the latest response — G2 confirmation:**
-  user wants opening to show the page starting the latest LLM response (e.g. the final
-  'Beta 1.0.32 is uploaded and promoted' message). latestResponseStart() picks the LAST
-  '> ' assistant message after the last '/ ' user line (Claude/Codex split a turn into
-  progress notes + final answer); the reader starts a fresh page there, so the page
-  before it may be short. Only the first render uses it; live updates and swipe-down
-  refresh still go to the newest page. No turn markers -> newest page as before.
-  123 tests/build pass; read-only check of this Claude session picks the expected
-  line; simulator opens on Page4of5 at the synthetic final answer. User approved;
-  beta1.0.33 uploaded/promoted, channel verified (50,898 bytes), public remains1.0.23.
-  App-only; no bridge restart. G2 check pending.
 
 - [ ] **Swipe down on last page refreshes the reader — G2 confirmation:**
   user reports sessions sometimes stop auto-refreshing. Cause: any page swipe freezes
@@ -118,6 +108,8 @@ Completed/superseded release notes: [history](docs/todo-history.md).
 
 ## Completed / confirmed
 
+- [x] Open a session at the top of the latest response — user confirms beta1.0.33
+  works on G2, 2026-11-05.
 - [x] Typed '❯ 1) / 2)' message no longer shown as Claude choices (bridge/choices.mjs
   rejects menus with later reply/prompt/input footer) — user confirms on G2 using
   this Claude session, 2026-11-04.

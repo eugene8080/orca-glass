@@ -422,7 +422,7 @@ it can be short) and records `responsePage`. Opening a session (`openAtResponse`
 shows that page once. Live updates and the swipe-down refresh still follow the
 newest page. Text without turn markers (terminal fallback) opens at the newest page.
 
-## Nine chat rows, one status row, full-screen voice (2026-11-05, unreleased)
+## Nine chat rows, one status row, full-screen voice (2026-11-05, beta 1.0.34)
 
 User request: allocate nine rows to chat and one bottom row reading, for example,
 `/Waiting Opus5.5 [Tap&Hold for Input] Pg77/78`. The reader body is nine 27px rows
