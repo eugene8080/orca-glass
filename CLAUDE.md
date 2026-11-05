@@ -50,6 +50,11 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-05 user approves 1.0.36 (separate Hermes/Orca filters + Hermes Bots/Sessions/
+Scheduled jobs). Beta1.0.36 uploaded/promoted51,971bytes, public1.0.23.132 tests pass.
+Bridge restarted (old5356/81532/70068; new55704/80588/10560 --vad); healthz ok.
+User asks to publish publicly: CLI cannot (portal only); confirmation of blockers pending.
+
 2026-11-05 user confirms 1.0.35 picker layout/heading skip on G2; Hermes-only list did not
 meet the need. Implemented separate Hermes/Orca agent filters, workspace pages and saved
 selections, and the new Filter by Agent text page with a non-selectable divider.

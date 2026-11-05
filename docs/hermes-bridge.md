@@ -72,7 +72,7 @@ interaction checks pass; preview remains open on8795/9902. Screenshot API captur
 is solid green, so user visual review is still required. Merge and deployment
 remain held; beta1.0.27/production unchanged. No real prompts/resumes/replies.
 
-## Bots, Sessions and Scheduled jobs (2026-11-05, unreleased)
+## Bots, Sessions and Scheduled jobs (2026-11-05, beta 1.0.36)
 
 Hermes Desktop groups conversations as Bots (one per profile), Sessions (Desktop chats)
 and Scheduled jobs (cron definitions). The bridge mirrors that: `mergeHermesThreads`

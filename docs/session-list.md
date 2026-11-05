@@ -109,7 +109,7 @@ the workspaces of Hermes sessions (the Orca workspace of a Hermes pane, or a Her
 profile group) instead of the Orca catalogue. Earlier selections remain visible so
 they can be cleared.
 
-## Separate Hermes and Orca filters (2026-11-05, unreleased)
+## Separate Hermes and Orca filters (2026-11-05, beta 1.0.36)
 
 Hermes is not part of Orca, so the two never mix. Filter by Agent is a native-text
 page: `<-`, `Hermes Agent`, a divider (not selectable), `All Orca Sessions`, `Claude`,

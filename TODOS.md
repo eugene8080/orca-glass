@@ -1,7 +1,7 @@
 # Orca Glass TODOs
 Updated: 2026-11-05
 
-Current beta: **1.0.35** (workspace picker: Recent first, Hermes-only list).
+Current beta: **1.0.36** (separate Hermes/Orca filters, Hermes Bots/Sessions/Scheduled jobs).
 Workspace-filter preview approved, released and retired with merged worktree cleanup.
 Future visual changes require preview approval before beta upload.
 Completed/superseded release notes: [history](docs/todo-history.md).
@@ -9,8 +9,9 @@ Completed/superseded release notes: [history](docs/todo-history.md).
 ## Open work
 
 - [ ] **Separate Hermes and Orca filters; Hermes picker Bots / Sessions / Scheduled jobs;
-  new Filter by Agent page -- preview approval, then release (beta AND bridge restart),
-  then G2:** user 2026-11-05: on 1.0.35 Hermes mode still mixed Orca items. Now Filter by
+  new Filter by Agent page -- G2 confirmation:** user approved; beta1.0.36 uploaded/promoted
+  (51,971 bytes), public remains1.0.23; bridge restarted (supervisor55704, server80588,
+  whisper10560 --vad), local/stableHTTPS healthz ok. user 2026-11-05: on 1.0.35 Hermes mode still mixed Orca items. Now Filter by
   Agent is a text page '<-, Hermes Agent, divider (not selectable), All Orca Sessions,
   Claude, Codex, other Orca agents'. Hermes Agent shows only Hermes sessions and opens
   the Hermes workspace page (selection saved as view-hermes-workspaces); every other
