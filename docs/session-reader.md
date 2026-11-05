@@ -402,7 +402,7 @@ holds seven 27px rows (y4..193) above the divider at y198; pages hold seven rows
 On G2 beta 1.0.30, 'Page 20 of 21' (277px with padding) was cut in the 280px hint,
 so `nativeRight` slack rose from 3px to 6px (maximum 274px).
 
-## Swipe down on the last page refreshes (2026-11-04, unreleased)
+## Swipe down on the last page refreshes (2026-11-04, beta 1.0.32)
 
 Browsing freezes the reader snapshot, and the 1s poll skips frozen readers, so a
 session looked stale after any swipe until a send or reopen. A swipe down while on

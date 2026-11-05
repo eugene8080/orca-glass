@@ -1,20 +1,21 @@
 # Orca Glass TODOs
 Updated: 2026-11-04
 
-Current beta: **1.0.31** (G2-confirmed). Swipe-down refresh preview pending.
+Current beta: **1.0.32** (swipe-down refresh); 1.0.31 G2-confirmed.
 Workspace-filter preview approved, released and retired with merged worktree cleanup.
 Future visual changes require preview approval before beta upload.
 Completed/superseded release notes: [history](docs/todo-history.md).
 
 ## Open work
 
-- [ ] **Swipe down on last page refreshes the reader — preview approval, then G2:**
+- [ ] **Swipe down on last page refreshes the reader — G2 confirmation:**
   user reports sessions sometimes stop auto-refreshing. Cause: any page swipe freezes
   the snapshot until send/reopen, while the 1s poll skips frozen readers. Swipe down
   on the last page now unfreezes, shows Refreshing… in the counter row, polls at once
   and jumps to the newest page; live polling continues. 122 tests/build pass;
-  simulator: frozen Page3of3 -> swipe -> Page5of5 with new lines. App-only; preview
-  OPEN on Page5of5 (9900/8791). Not uploaded; beta1.0.31 unchanged.
+  simulator: frozen Page3of3 -> swipe -> Page5of5 with new lines. User approved;
+  beta1.0.32 uploaded/promoted, channel verified (50,727 bytes), public remains1.0.23.
+  App-only; no bridge restart. G2 check pending.
 
 - [ ] **Book-style reader — G2 confirmation:** native six-row whole-page
   swipes; bottom Page X of Y, latest page on open, frozen snapshot while browsing.

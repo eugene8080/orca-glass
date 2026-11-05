@@ -8,14 +8,14 @@ This is Eugene's Windows/Android fork of [2ero20ne's Orca Glass](https://github.
 
 ## Availability
 
-As of 2026-11-04, the Even Hub **public build is 1.0.23** and the **latest beta is 1.0.31**. The newer controls described below require the beta. The installed build connects to a specific PC over Tailscale; it is not yet a self-service installation for arbitrary PCs. Orca and the companion bridge must remain running. The phone and glasses do not run the coding agent.
+As of 2026-11-04, the Even Hub **public build is 1.0.23** and the **latest beta is 1.0.32**. The newer controls described below require the beta. The installed build connects to a specific PC over Tailscale; it is not yet a self-service installation for arbitrary PCs. Orca and the companion bridge must remain running. The phone and glasses do not run the coding agent.
 
 The active app is the custom Orca Glass bridge. Earlier native Even Terminal experiments are historical. See [current work](TODOS.md) and [beta setup/release history](docs/beta-install.md).
 
 ## Features and controls
 
 - **Sessions:** filter by agent and by one or more Orca workspaces. Rows show `[workspace/Agent]`, for example `[porttracker/Claude]`. Swipe past the last/first row to change pages; there are no paging buttons in the sessions or workspace menus.
-- **Conversation:** read native text in whole-page swipes with a bottom `Page X of Y` counter and working/waiting status and `/` user / `>` assistant markers. Codex and Claude use verified saved history when available. Claude keeps previous chat visible during long runs and shows a short public activity summary. Browsing freezes the page snapshot; reopen the session to resume at the latest page. Sending a voice message also resumes live updates.
+- **Conversation:** read native text in whole-page swipes with a bottom `Page X of Y` counter and working/waiting status and `/` user / `>` assistant markers. Codex and Claude use verified saved history when available. Claude keeps previous chat visible during long runs and shows a short public activity summary. Browsing freezes the page snapshot; swipe down on the last page to refresh and resume live updates at the latest page. Sending a voice message also resumes live updates.
 - **Voice:** hold to talk, release to review up to three native text rows, click to send, double-click to cancel. Whisper transcribes on the PC. The conversation stays mounted above the review area.
 - **Numbered prompts:** Click opens choices only when the terminal is showing a recognized interactive prompt. Review the option and click to confirm, or hold to speak a number and review before sending. The bridge rejects stale questions. Select `Type something` first for a custom response. Outside prompts, voice remains the default and Click does nothing in a session.
 - **Usage:** view available Codex, Claude and Cursor allowances. Click the top Reset selector to cycle Computer time, Phone time and Absolute time (remaining duration, e.g. `2d5h12m`). The choice is remembered; missing reset timestamps are reported rather than guessed.

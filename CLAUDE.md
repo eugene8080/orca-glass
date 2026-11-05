@@ -50,6 +50,10 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-04 user approves swipe-down refresh. Beta1.0.32 uploaded/promoted; channel
+verified50,727bytes, public remains1.0.23.122 tests pass; prototype dist restored.
+App-only, no bridge restart. Simulator remains OPEN. G2 check pending.
+
 2026-11-04 user confirms typed-list fix on G2 (this Claude session); row closed.
 User requests swipe-down refresh: on the reader's last page it unfreezes, shows
 Refreshing…, polls at once, jumps to newest page.122 tests/build pass; simulator
