@@ -2,6 +2,11 @@
 
 ## Book-style paging — 2026-11-04
 
+Release update: user approved beta1.0.29. Upload/promotion verified50,436bytes;
+116 tests and beta/prototype builds pass. StableHTTPS health ok. App-only release;
+production bridge unchanged. Simulator remains OPEN. Physical G2 check pending.
+The implementation's held-release notes below are historical.
+
 Session readers now show six explicit native text rows per page, constrained to
 900 UTF-8 bytes and measured to550px inside the560px body. Long words split by
 Unicode code point; ordinary words and source list labels remain intact. Original

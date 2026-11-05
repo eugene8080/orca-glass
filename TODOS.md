@@ -1,20 +1,20 @@
 # Orca Glass TODOs
 Updated: 2026-11-04
 
-Current beta: **1.0.28**.113 tests/build/doctor passed for integrated Hermes support.
+Current beta: **1.0.29**.116 tests pass for the book-style conversation reader.
 Workspace-filter preview approved, released and retired with merged worktree cleanup.
 Future visual changes require preview approval before beta upload.
 Completed/superseded release notes: [history](docs/todo-history.md).
 
 ## Open work
 
-- [ ] **Book-style reader — preview/G2 confirmation:** native six-row whole-page
+- [ ] **Book-style reader — G2 confirmation:** native six-row whole-page
   swipes; bottom Page X of Y, latest page on open, frozen snapshot while browsing.
   Preserves source nested lists and complete two-digit numbers. Resolves previously
   unreachable900-byte sections.116 tests/build/doctor pass; synthetic native8-page
   traversal and voice cancel preservation pass. Preview OPEN on Page6of8 (8791/9900).
-  Screenshot API capture is solid green; user visual approval required before
-  beta upload. Current beta1.0.28 unchanged. See [reader details](docs/session-reader.md).
+  User approved upload; beta1.0.29 promoted and verified (50,436bytes).
+  Physical G2 confirmation pending. See [reader details](docs/session-reader.md).
 
 - [ ] **Usage reset-time modes â€” G2 confirmation:** beta1.0.27 live; selector cycles
   Computer time / Phone time / Absolute time (remaining duration, e.g.2d5h12m).
@@ -42,7 +42,7 @@ Completed/superseded release notes: [history](docs/todo-history.md).
   Hermes reply remain unverified; no autonomous live prompt/resume/reply sent.
   See [implementation](docs/hermes-bridge.md) and [review](docs/hermes-pr-review.md).
 - [ ] **General installation / public listing follow-up:** public1.0.23 is live;
-  beta1.0.28 is current. README/Even Hub description updated2026-11-04, saved and
+  beta1.0.29 is current. README/Even Hub description updated2026-11-04, saved and
   verified after reload. Packaged origin is still one configured private PC, so
   arbitrary-PC self-service setup remains open. Earlier submission/privacy notes
   are historical; current PDF contents were not rechecked in this task. See

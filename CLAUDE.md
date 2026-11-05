@@ -50,6 +50,13 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-04 user approves book-reader beta upload. Beta1.0.29 uploaded/promoted;
+channel verified50,436bytes, public remains1.0.23.116 tests pass; beta package
+and restored prototype builds pass. StableHTTPS health ok. App-only release,
+no production bridge restart needed. Native simulator remains OPEN. G2 page flip,
+bottom counter, nested list completeness and voice-position confirmation pending.
+No real provider input or public publication; unrelated screenshot retained.
+
 2026-11-04 user reports Campaign list numbering/missing items and requests Books-style
 reader pages. Read-only saved Claude history matches source nested bullets plus
 1-5 sublist; user corrected initial1-19 claim after supplying actual terminal
