@@ -13,6 +13,9 @@ vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../app/src/footer-hi
 const usageResetExports = {};
 vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../app/src/usage-reset.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, { exports: usageResetExports });
 
+const filterExports = {};
+vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../app/src/filters.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, { exports: filterExports });
+
 const listExports = {};
 vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../app/src/session-list.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, { exports: listExports, __APP_VERSION__: '1.0.12', require: () => textExports, TextEncoder, document: { createElement: () => ({ getContext: () => ({ font: '', measureText: t => ({ width: t.length * 10 }) }) }) } });
 
@@ -27,7 +30,8 @@ async function harness(count = 2, voice = false, mode = 'tap', savedView = '', s
   const threads = Array.from({ length: count }, (_, i) => ({ handle: `terminal-${i}`, title: `Session ${i}`, agent: 'codex', state: 'unknown' }));
   const pages = [], sends = [], choices = [], timers = new Map(), mic = [], upgrades = [], transcriptions = [], images = [];
   const animations = new Map();
-  let timerId = 0, event;
+  let timerId = 0, event, phoneDeps;
+  const phoneCalls = [];
   const api = {
     activity: async () => ({ state: 'unknown' }),
     threads: async () => threads,
@@ -61,6 +65,9 @@ async function harness(count = 2, voice = false, mode = 'tap', savedView = '', s
     './footer-hint': hintExports,
     './usage-reset': usageResetExports,
     './session-list': listExports,
+    './filters': filterExports,
+    // The phone page is DOM-only and checked in a browser preview; the glasses tests see a no-op.
+    './phone': { createPhone: deps => { phoneDeps = deps; return { connection: c => phoneCalls.push(['connection', c.state]), load() {}, render: () => phoneCalls.push(['render']) }; } },
   };
   const source = ts.transpileModule(readFileSync(new URL('../app/src/main.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
   vm.runInNewContext(source, {
@@ -71,7 +78,7 @@ async function harness(count = 2, voice = false, mode = 'tap', savedView = '', s
   });
   const flush = () => new Promise(resolve => setImmediate(resolve));
   await flush();
-  return { api, bridge, elements, pages, sends, choices, threads, timers, animations, mic, upgrades, images, transcriptions, flush,
+  return { api, bridge, elements, pages, sends, choices, threads, timers, animations, mic, upgrades, images, transcriptions, flush, phone: () => phoneDeps, phoneCalls,
     menu: async id => { event({ menuItemClickEvent: { itemID: id } }); await flush(); },
     system: async type => { event({ sysEvent: { eventType: type } }); await flush(); },
     press: () => { event({ sysEvent: { eventType: 9 } }); },
@@ -1271,4 +1278,41 @@ test('Hermes picker shows Bots, Sessions and Scheduled jobs instead of Orca work
   await h.pick(3); await h.pick(0);
   const list = [...menuItems(h)];
   assert.ok(list.some(s => s.includes('Chat')) && !list.some(s => s.includes('Plan') || s.includes('Run')), list.join(' | '));
+});
+
+test('phone filters and glasses share one saved selection and redraw each other', async () => {
+  const h = await harness();
+  h.api.threads = async () => [
+    { handle: 'codex', title: 'Codex chat', agent: 'codex', workspaceId: 'w1', workspaceName: 'alpha' },
+    { handle: 'claude', title: 'Claude chat', agent: 'claude', workspaceId: 'w2', workspaceName: 'beta' },
+    { handle: 'hermes:x', title: 'Bot chat', agent: 'hermes', workspaceId: 'hermes-bot:1', workspaceName: 'Bot', workspaceLabel: 'Bot', hermesGroup: 'bot' },
+  ];
+  const saved = [];
+  h.bridge.setLocalStorage = async (key, value) => { saved.push([key, value]); };
+  // Demo start reports the connection to the phone page.
+  assert.deepEqual(h.phoneCalls[0], ['connection', 'demo']);
+  const phone = h.phone();
+  const f0 = phone.filters();
+  assert.deepEqual([f0.provider, f0.orca, f0.hermes], ['all', null, null]);
+  // Phone picks an Orca workspace while the glasses show the session list: the list redraws.
+  const before = h.pages.length;
+  await phone.setWorkspaces(false, new Set(['w2']));
+  await h.flush();
+  assert.deepEqual(saved.at(-1), ['view-workspaces', '["w2"]']);
+  assert.ok(h.pages.length > before);
+  assert.match(menuItems(h).join(' | '), /Claude chat/);
+  assert.doesNotMatch(menuItems(h).join(' | '), /Codex chat/);
+  // Phone switches to Hermes Agent: Hermes keeps its own, separate selection.
+  await phone.setProvider('hermes');
+  await h.flush();
+  assert.deepEqual(saved.at(-1), ['view-provider', 'hermes']);
+  assert.match(menuItems(h).join(' | '), /Bot chat/);
+  const f1 = phone.filters();
+  assert.deepEqual([f1.provider, [...f1.orca], f1.hermes], ['hermes', ['w2'], null]);
+  // A glasses change redraws the phone page.
+  const renders = h.phoneCalls.filter(c => c[0] === 'render').length;
+  await h.pick(0);
+  await h.pick(3); // All Orca Sessions
+  assert.ok(h.phoneCalls.filter(c => c[0] === 'render').length > renders);
+  assert.equal(phone.filters().provider, 'all');
 });

@@ -23,6 +23,8 @@ import { clipBytes, tailBytes, textSections, readerPages, latestResponseStart, c
 import { readerStatus, statusPixels, SPINNER, WORKING_LABELS } from './reader-status';
 import { statusRight } from './footer-hint';
 import { formatReset, RESET_MODES, resetModeLabel, type ResetMode } from './usage-reset';
+import { orcaAgents, workspaceSections, toggleWorkspace, workspaceSummary, type PickerRow } from './filters';
+import { createPhone } from './phone';
 import { agentLabel, sessionRow, sessionListTitle, sessionHeading, MENU_LEFT, MENU_RIGHT, MENU_CURSOR, sessionAgentLabel, menuNativeText, menuCursorText, nativeRight, glassWidth, compactSessionTitle, type SessionColumns } from './session-list';
 
 // 画面 576x288。上に見出し(テキスト)、下に本文(リスト or テキスト)の2段構成で統一する。
@@ -79,8 +81,19 @@ let viewHermesWorkspaces: Set<string> | null = null;
 const hermesView = () => viewProvider === 'hermes';
 const activeWorkspaces = () => hermesView() ? viewHermesWorkspaces : viewWorkspaces;
 function setActiveWorkspaces(value: Set<string> | null) { if (hermesView()) viewHermesWorkspaces = value; else viewWorkspaces = value; }
-const saveActiveWorkspaces = () => { const value = activeWorkspaces();
-  return bridge.setLocalStorage(hermesView() ? 'view-hermes-workspaces' : 'view-workspaces', value === null ? 'all' : JSON.stringify([...value])); };
+const saveWorkspaces = (hermes: boolean, value: Set<string> | null) =>
+  bridge.setLocalStorage(hermes ? 'view-hermes-workspaces' : 'view-workspaces', value === null ? 'all' : JSON.stringify([...value]));
+// A glasses change also redraws the phone page's filters.
+const saveActiveWorkspaces = async () => { await saveWorkspaces(hermesView(), activeWorkspaces()); phone?.render(); };
+let phone: ReturnType<typeof createPhone> | null = null;
+
+// A phone change redraws whichever filter-dependent glasses page is showing.
+function refreshGlasses() {
+  const s = current;
+  if (s?.kind === 'list' && s.sessionList) void home();
+  else if (s?.kind === 'list' && s.workspacePicker) void workspaceOptions();
+  else if (s?.kind === 'list' && s.agentPicker) void viewOptions();
+}
 const providerFilterLabel = () => viewProvider === 'all' ? 'All Orca sessions' : agentLabel(viewProvider);
 let workspaceNames = new Map<string, string>();
 const providerName = agentLabel;
@@ -455,7 +468,7 @@ function home(page = 0, selected = 0) {
     const threads = allThreads.filter(t => (hermesView() ? t.agent === 'hermes' : t.agent !== 'hermes' && (viewProvider === 'all' || t.agent === viewProvider))
       && (selection === null || !!t.workspaceId && selection.has(t.workspaceId)));
     for (const t of allThreads) if (t.workspaceId) workspaceNames.set(t.workspaceId, (t.agent === 'hermes' ? t.workspaceLabel : t.workspaceName) || t.workspaceLabel || t.workspaceName || 'Workspace');
-    const workspaceFilter = selection === null ? 'All workspaces' : selection.size === 0 ? 'None' : selection.size === 1 ? workspaceNames.get([...selection][0]) || '1 selected' : `${selection.size} selected`;
+    const workspaceFilter = workspaceSummary(selection, workspaceNames);
     const pageSize = 7; // Nine native rows: two filters plus seven sessions.
     const pageCount = Math.max(1, Math.ceil(threads.length / pageSize));
     page = Math.max(0, Math.min(page, pageCount - 1));
@@ -492,12 +505,11 @@ function home(page = 0, selected = 0) {
 function viewOptions() {
   return guard('Filter by Agent', async () => {
     const threads = await api.threads();
-    const orca = ['all', 'claude', 'codex', ...new Set(threads.map(t => t.agent).filter(a => !!a && a !== 'hermes'))]
-      .filter((id, index, ids) => ids.indexOf(id) === index);
-    if (viewProvider !== 'hermes' && !orca.includes(viewProvider)) orca.push(viewProvider);
+    const orca = orcaAgents(threads, viewProvider);
     const choose = (id: string) => async () => {
       await bridge.setLocalStorage('view-provider', id);
       viewProvider = id;
+      phone?.render();
       await home();
     };
     const label = (id: string, name: string) => `${name}${viewProvider === id ? ' ✓' : ''}`;
@@ -521,8 +533,6 @@ function viewOptions() {
 // (alphabetical). Hermes (not part of Orca): Bots, Sessions, Scheduled jobs, as
 // in Hermes Desktop. Headings are not selectable and never end a page.
 const PICKER_ROWS = 10;
-const RECENT_WORKSPACES = 4;
-type PickerRow = [id: string, name: string];
 function workspaceOptions(page = 0, selected = 0) {
   return guard('Filter by Workspace', async () => {
     const owner = current;
@@ -530,36 +540,7 @@ function workspaceOptions(page = 0, selected = 0) {
     if (current !== owner) return;
     const hermesOnly = hermesView();
     const chosen = activeWorkspaces();
-    const sessions = threads.filter(t => (t.agent === 'hermes') === hermesOnly);
-    const entries = catalog.filter(w => !!w.hermes === hermesOnly);
-    const names = new Map<string, string>(entries.map(w => [w.id, w.name]));
-    const kinds = new Map<string, string>(entries.filter(w => w.hermes).map(w => [w.id, w.hermes!]));
-    for (const t of sessions) if (t.workspaceId) {
-      names.set(t.workspaceId, t.workspaceLabel || t.workspaceName || 'Workspace');
-      if (t.hermesGroup) kinds.set(t.workspaceId, t.hermesGroup);
-    }
-    // Recency: Orca's activity time, a job's last run, or a newer session output.
-    const activity = new Map<string, number>();
-    for (const w of entries) if (w.lastActivityAt) activity.set(w.id, w.lastActivityAt);
-    for (const t of sessions) if (t.workspaceId && t.lastOutputAt) activity.set(t.workspaceId, Math.max(activity.get(t.workspaceId) || 0, t.lastOutputAt));
-    const byRecency = (a: PickerRow, b: PickerRow) => (activity.get(b[0]) || 0) - (activity.get(a[0]) || 0) || a[1].localeCompare(b[1]);
-    const rows = [...names] as PickerRow[];
-    let sections: { title?: string; rows: PickerRow[] }[];
-    if (hermesOnly) {
-      sections = [['Bots', 'bot'], ['Sessions', 'session'], ['Scheduled jobs', 'job']]
-        .map(([title, kind]) => ({ title, rows: rows.filter(([id]) => (kinds.get(id) || 'session') === kind).sort(byRecency) }));
-    } else {
-      const recent = rows.filter(([id]) => activity.has(id)).sort(byRecency).slice(0, RECENT_WORKSPACES);
-      const recentIds = new Set(recent.map(([id]) => id));
-      const others = rows.filter(([id]) => !recentIds.has(id)).sort((a, b) => a[1].localeCompare(b[1]));
-      sections = recent.length ? [{ title: 'Recent workspaces', rows: recent }, { title: 'Other workspaces', rows: others }] : [{ rows: others }];
-    }
-    // Saved selections that no longer exist stay visible so they can be cleared.
-    const listed = new Set(rows.map(([id]) => id));
-    const known = new Map(catalog.map(w => [w.id, w.name]));
-    const elsewhere = [...chosen || []].filter(id => !listed.has(id)).map((id): PickerRow => [id,
-      known.get(id) || workspaceNames.get(id) || `${id.replaceAll('\\', '/').split('/').pop() || 'Workspace'} (unavailable)`]);
-    if (elsewhere.length) sections.push({ title: 'Unavailable', rows: elsewhere });
+    const sections = workspaceSections(threads, catalog, hermesOnly, chosen, workspaceNames);
     // Flatten to headings and rows, then page eight entries below Done/All.
     const flat: ({ heading: string } | { row: PickerRow })[] = sections.filter(x => x.rows.length)
       .flatMap(x => [...(x.title ? [{ heading: x.title }] : []), ...x.rows.map(row => ({ row }))]);
@@ -582,9 +563,7 @@ function workspaceOptions(page = 0, selected = 0) {
       if ('heading' in entry) { headings.push(index); actions.push({ label: entry.heading, run: () => {} }); continue; }
       const [id, name] = entry.row;
       actions.push({ label: `[${chosen?.has(id) ? 'x' : ' '}] ${name}`, run: async () => {
-        const next = activeWorkspaces() ?? new Set<string>();
-        if (next.has(id)) next.delete(id); else next.add(id);
-        setActiveWorkspaces(next);
+        setActiveWorkspaces(toggleWorkspace(activeWorkspaces(), id));
         const owner = current; await save(); if (current === owner) await workspaceOptions(page, index);
       } });
     }
@@ -941,6 +920,7 @@ function usage() {
           const next = RESET_MODES[(RESET_MODES.indexOf(usageResetMode) + 1) % RESET_MODES.length];
           await bridge.setLocalStorage('usage-reset-mode', next);
           usageResetMode = next;
+          phone?.render();
           screen.usageMode = next;
           if (current !== screen) return;
           await bridge.textContainerUpgrade(new TextContainerUpgrade({ containerID: USAGE_RESET.containerID, containerName: USAGE_RESET.containerName,
@@ -1137,21 +1117,27 @@ async function connect() {
   setDemo(code === 'demo');
   if (code === 'demo') {
     diag(tr('diagOk', 0, tr('viaDemo'), '-', 3));
+    phone?.connection({ state: 'demo' });
     return home();
   }
   if (!pairing) {
     diag(tr('notPairedDiag'));
+    phone?.connection({ state: 'unpaired' });
     return show({ kind: 'text', title: 'Orca Glass', text: tr('notPaired') });
   }
+  phone?.connection({ state: 'connecting' });
   try {
     const base = await resolveBase(pairing);
     if (!base) throw new Error(tr('noRelay'));
     setConnection({ token: pairing.token, base, resolve: () => resolveBase(pairing) });
     await api.health();
     const threads = await api.threads();
-    diag(tr('diagOk', Date.now() - t0, tr('viaCode'), currentBase(), threads.length));
+    const ms = Date.now() - t0;
+    diag(tr('diagOk', ms, tr('viaCode'), currentBase(), threads.length));
+    phone?.connection({ state: 'connected', ms });
   } catch (e) {
     diag(tr('diagNg', (e as Error).message, tr('viaCode'), currentBase()));
+    phone?.connection({ state: 'offline', error: (e as Error).message });
     return show({
       kind: 'text',
       title: tr('offlineTitle'),
@@ -1191,6 +1177,22 @@ async function main() {
     } catch { /* Older or corrupt preferences safely restore all workspaces. */ }
   }
   useLang(pref);
+  phone = createPhone({
+    filters: () => ({ provider: viewProvider, orca: viewWorkspaces, hermes: viewHermesWorkspaces }),
+    setProvider: async id => { await bridge.setLocalStorage('view-provider', id); viewProvider = id; refreshGlasses(); },
+    setWorkspaces: async (hermes, value) => {
+      if (hermes) viewHermesWorkspaces = value; else viewWorkspaces = value;
+      await saveWorkspaces(hermes, value);
+      refreshGlasses();
+    },
+    resetMode: () => usageResetMode,
+    setResetMode: async mode => {
+      await bridge.setLocalStorage('usage-reset-mode', mode);
+      usageResetMode = mode;
+      if (current?.kind === 'text' && current.usageMode) void usage();
+    },
+    agentName: providerName,
+  });
   const draft = document.getElementById('reply-text') as HTMLTextAreaElement;
   const send = document.getElementById('send-reply') as HTMLButtonElement;
   const status = document.getElementById('reply-status')!;

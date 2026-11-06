@@ -45,7 +45,7 @@ const dict = {
     badCode: 'NG Invalid pairing code (one line starting with eho1.)',
     pageIntro: 'View, reply to and start <a href="https://github.com/stablyai/orca">Orca</a> agent sessions on your PC from G2. <b>Setup on your PC is required.</b>',
     setupTitle: 'Getting started (on your PC)',
-    setupSteps: '<li>Install Orca on your PC</li><li>Ask Codex to "set up Orca Glass" (skill: <a href="https://github.com/eugene8080/orca-glass">github.com/eugene8080/orca-glass</a>)</li><li>Paste the pairing code it gives you below and save</li>',
+    setupSteps: '<li>Install Orca on your PC</li><li>Ask Codex to "set up Orca Glass" (skill: <a href="https://github.com/eugene8080/orca-glass">github.com/eugene8080/orca-glass</a>)</li><li>On Home, tap the connection bar, paste the pairing code it gives you and save</li>',
     opsTitle: 'On the glasses',
     opsList: '<li>Conversation: hold to talk directly; release to review. Click to send or double-click to cancel. No Reply menu is required. Double-click while recording to cancel.</li><li>Single click in a conversation does nothing. Double-click to return to sessions.</li><li>Scroll naturally within the text block.</li><li>Scrolling pauses updates. Return to the session list and reopen the session to resume.</li>',
     codeLabel: 'Pairing code (run <code>npm run pair</code> on your PC and paste)',

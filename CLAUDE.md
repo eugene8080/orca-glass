@@ -50,6 +50,14 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-06 user approves phone page rebuild (dark theme) modelled on OcuClaw's layout:
+Home = connection bar, Filter by Agent/Workspace (shared with glasses, two-way redraw),
+Usage with reset modes and bars, reply box; Settings = setup and log. app/src/phone.ts,
+app/src/filters.ts (glasses pickers now use the same helpers). 135 tests/build pass.
+Dev-only phone preview scripts/phone-preview.mjs (stub SDK scripts/phone-preview-sdk.ts)
+runs in Orca tab Phone Preview term_099ceb20 on 8796, LEFT OPEN. Claude in Chrome was not
+connected; screenshots via headless Chrome. No beta upload or bridge change yet.
+
 2026-11-05 user requests fresh1.0.36 screenshots/listing check, then takes over
 manual uploads. Portal in Eugene Chrome confirms public1.0.36 LIVE; newer portal
 "Orca + Hermes" description preserved/synchronized locally. Captured eight real

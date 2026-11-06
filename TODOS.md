@@ -8,6 +8,16 @@ Completed/superseded release notes: [history](docs/todo-history.md).
 
 ## Open work
 
+- [ ] **Phone page: Filter by Agent, Filter by Workspace, Usage -- preview approval pending:**
+  user 2026-11-06 asked for a more usable phone page after reviewing OcuClaw's phone app
+  (YouTube screenshots); dark theme kept. Built: Home (collapsible connection bar,
+  Filters, Usage with Computer/Phone/Absolute and bars, reply box) and Settings (setup,
+  log). Filters share the glasses' saved selections and redraw each other; shared helpers
+  in app/src/filters.ts. 135 tests/build pass. Phone preview (scripts/phone-preview.mjs,
+  Orca tab Phone Preview, http://127.0.0.1:8796/?code=demo) LEFT OPEN; headless captures
+  checked (demo, Hermes/Absolute, unpaired). App-only: beta upload after approval, no
+  bridge restart.
+
 - [ ] **Hermes questions (clarify): answer from the glasses -- first real answer pending:**
   user 2026-11-05 asked to build it after answering the AMC questions in Telegram.
   Built 2026-11-05: an open single-select question is the reader's choice menu (Click

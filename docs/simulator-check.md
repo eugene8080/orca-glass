@@ -127,3 +127,12 @@ If the simulator confirms movement, do not claim focused scroll retention or
 upload. Record the limitation and discuss a concrete interaction choice with the
 user. Mocks cannot verify native scrolling. Simulator success also cannot prove
 G2 firmware or Android background-timer behavior; keep those hardware checks open.
+
+## Phone page preview (2026-11-06)
+
+The G2 simulator shows only the glasses. To review the phone page (the Even app's
+WebView), run `node scripts/phone-preview.mjs` in a named Orca tab (`Phone Preview`) and
+open `http://127.0.0.1:8796/?code=demo` at phone width. It uses the app's own Vite config
+with the Even Hub SDK replaced by `scripts/phone-preview-sdk.ts`: glasses calls succeed
+and draw nothing, storage is the browser's localStorage. Demo data only; it is never part
+of the app bundle.

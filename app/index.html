@@ -5,47 +5,110 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Orca Glass</title>
     <style>
-      body { font: 15px/1.5 -apple-system, sans-serif; margin: 16px; background: #111; color: #eee; }
+      body { font: 15px/1.5 -apple-system, sans-serif; margin: 0; padding: 12px 12px 24px; background: #111; color: #eee; }
       label { display: block; margin-top: 12px; font-size: 13px; color: #aaa; }
       input, select, textarea { width: 100%; box-sizing: border-box; padding: 8px; font-size: 14px; background: #222; color: #eee; border: 1px solid #444; border-radius: 6px; }
       button:disabled { opacity: .5; }
       button { margin-top: 14px; padding: 10px 16px; font-size: 15px; border: 0; border-radius: 6px; background: #3a7; color: #fff; }
       pre { white-space: pre-wrap; word-break: break-all; background: #1b1b1b; padding: 10px; border-radius: 6px; font-size: 12px; }
       a { color: #7cd; }
+      h3 { margin: 0; font-size: 18px; }
+      h4 { margin: 0; font-size: 15px; }
+      .top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+      .tabs { display: flex; gap: 6px; }
+      .tab { margin: 0; padding: 6px 12px; font-size: 14px; background: #222; color: #ccc; border: 1px solid #333; }
+      .tab.on { background: #3a7; color: #fff; border-color: #3a7; }
+      .card { background: #1b1b1b; border: 1px solid #2a2a2a; border-radius: 10px; padding: 12px; margin-bottom: 10px; }
+      .status { display: flex; align-items: center; gap: 8px; width: 100%; margin: 0; padding: 10px 12px; background: #222; color: #eee; text-align: left; }
+      .status #conn-text { flex: 1; }
+      .dot { width: 9px; height: 9px; border-radius: 50%; background: #777; flex: none; }
+      .dot.ok { background: #3c6; }
+      .dot.bad { background: #d55; }
+      .row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px; }
+      .row > span { color: #ccc; flex: none; }
+      .row select, .row .pick { width: auto; max-width: 60%; margin: 0; }
+      .pick { padding: 8px 10px; font-size: 14px; background: #222; color: #eee; border: 1px solid #444; }
+      #ws-list { margin-top: 8px; border-top: 1px solid #2a2a2a; }
+      .check { display: flex; align-items: center; gap: 10px; margin: 0; padding: 7px 2px; font-size: 15px; color: #eee; }
+      .check input { width: 18px; height: 18px; margin: 0; flex: none; }
+      .section { margin-top: 10px; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: #888; }
+      .seg { display: flex; background: #222; border-radius: 6px; padding: 2px; }
+      .seg-item { margin: 0; padding: 4px 8px; font-size: 13px; background: transparent; color: #aaa; }
+      .seg-item.on { background: #3a7; color: #fff; }
+      .provider { margin-top: 12px; }
+      .provider-name { font-weight: 600; }
+      .limit { margin-top: 4px; }
+      .pct { font-size: 20px; }
+      .muted { color: #999; font-size: 13px; margin: 2px 0; }
+      .bar { height: 4px; background: #333; border-radius: 2px; margin-top: 3px; }
+      .fill { height: 100%; background: #3a7; border-radius: 2px; }
+      .note { color: #888; font-size: 12px; margin: 10px 0 0; }
+      #usage-refresh { margin-top: 12px; padding: 6px 12px; font-size: 13px; background: #333; }
     </style>
   </head>
   <body>
-    <h3 id="app-heading">Orca Glass</h3>
-    <p id="menu-layout" aria-live="polite"></p>
-    <section id="composer" hidden>
-      <h4 id="reply-target"></h4>
-      <p>Type a sentence or use your Android keyboard’s microphone, then review it before sending.</p>
-      <form id="reply-form">
-        <label for="reply-text">Message</label>
-        <textarea id="reply-text" rows="4" maxlength="2000"></textarea>
-        <button id="review-reply" type="submit">Review message</button>
-        <button id="send-reply" type="button" hidden>Send to this session</button>
-      </form>
-      <p id="reply-status" role="status"></p>
-    </section>
-    <p data-i18n="pageIntro"></p>
-    <details open>
-      <summary style="font-weight:bold" data-i18n="setupTitle"></summary>
-      <ol style="padding-left:20px;font-size:14px" data-i18n="setupSteps"></ol>
-    </details>
-    <details>
-      <summary style="font-weight:bold" data-i18n="opsTitle"></summary>
-      <ul style="padding-left:20px;font-size:14px" data-i18n="opsList"></ul>
-    </details>
-    <form id="conn">
-      <label data-i18n="codeLabel"></label>
-      <input id="code" placeholder="eho1.…" autocomplete="off" />
-      <p>In a conversation, hold to talk and release to review. Click to send or double-click to cancel. Double-click while recording to cancel.</p>
-      <button type="submit" data-i18n="save"></button>
-      <button type="button" id="demo" data-i18n="tryDemo" style="background:#555"></button>
-    </form>
-    <label data-i18n="diagLabel"></label>
-    <pre id="diag">…</pre>
+    <header class="top">
+      <h3 id="app-heading">Orca Glass</h3>
+      <nav class="tabs">
+        <button type="button" id="tab-home" class="tab on">Home</button>
+        <button type="button" id="tab-settings" class="tab">Settings</button>
+      </nav>
+    </header>
+    <main id="page-home">
+      <section class="card">
+        <button type="button" id="conn-toggle" class="status"><span id="conn-dot" class="dot"></span><span id="conn-text">Connecting…</span><span id="conn-chevron">▾</span></button>
+        <div id="conn-body" hidden>
+          <form id="conn">
+            <label data-i18n="codeLabel"></label>
+            <input id="code" placeholder="eho1.…" autocomplete="off" />
+            <button type="submit" data-i18n="save"></button>
+            <button type="button" id="demo" data-i18n="tryDemo" style="background:#555"></button>
+          </form>
+        </div>
+      </section>
+      <section class="card" id="filters-card" hidden>
+        <h4>Filters</h4>
+        <div class="row"><span>Filter by Agent</span><select id="agent-filter" aria-label="Filter by Agent"></select></div>
+        <div class="row"><span id="ws-label">Filter by Workspace</span><button type="button" id="ws-toggle" class="pick">All workspaces ▾</button></div>
+        <div id="ws-list" hidden></div>
+        <p class="note">Shared with the glasses session list.</p>
+      </section>
+      <section class="card" id="usage-card" hidden>
+        <div class="row" style="margin-top:0"><h4>Usage</h4><div class="seg" id="reset-mode" role="group" aria-label="Reset time"></div></div>
+        <div id="usage-body"></div>
+        <button type="button" id="usage-refresh">Refresh</button>
+      </section>
+      <section class="card" id="composer" hidden>
+        <h4 id="reply-target"></h4>
+        <p class="muted">Type a sentence or use your Android keyboard’s microphone, then review it before sending.</p>
+        <form id="reply-form">
+          <label for="reply-text">Message</label>
+          <textarea id="reply-text" rows="4" maxlength="2000"></textarea>
+          <button id="review-reply" type="submit">Review message</button>
+          <button id="send-reply" type="button" hidden>Send to this session</button>
+        </form>
+        <p id="reply-status" role="status"></p>
+      </section>
+    </main>
+    <main id="page-settings" hidden>
+      <section class="card">
+        <p data-i18n="pageIntro"></p>
+        <p>In a conversation, hold to talk and release to review. Click to send or double-click to cancel. Double-click while recording to cancel.</p>
+        <details open>
+          <summary style="font-weight:bold" data-i18n="setupTitle"></summary>
+          <ol style="padding-left:20px;font-size:14px" data-i18n="setupSteps"></ol>
+        </details>
+        <details>
+          <summary style="font-weight:bold" data-i18n="opsTitle"></summary>
+          <ul style="padding-left:20px;font-size:14px" data-i18n="opsList"></ul>
+        </details>
+      </section>
+      <section class="card">
+        <p id="menu-layout" aria-live="polite"></p>
+        <label data-i18n="diagLabel"></label>
+        <pre id="diag">…</pre>
+      </section>
+    </main>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
