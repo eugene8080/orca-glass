@@ -1,14 +1,16 @@
 # Orca Glass TODOs
 Updated: 2026-11-05
 
-Current beta: **1.0.36** (separate Hermes/Orca filters, Hermes Bots/Sessions/Scheduled jobs).
+Current beta: **1.0.37** (phone page: shared filters, usage). Public: **1.0.36**.
 Workspace-filter preview approved, released and retired with merged worktree cleanup.
 Future visual changes require preview approval before beta upload.
 Completed/superseded release notes: [history](docs/todo-history.md).
 
 ## Open work
 
-- [ ] **Phone page: Filter by Agent, Filter by Workspace, Usage -- preview approval pending:**
+- [ ] **Phone page: Filter by Agent, Filter by Workspace, Usage -- phone/G2 check pending:**
+  2026-11-06 user approved preview; beta1.0.37 uploaded/promoted (54,819 bytes), public
+  1.0.36 Published. 135 tests pass; prototype dist restored; no bridge restart.
   user 2026-11-06 asked for a more usable phone page after reviewing OcuClaw's phone app
   (YouTube screenshots); dark theme kept. Built: Home (collapsible connection bar,
   Filters, Usage with Computer/Phone/Absolute and bars, reply box) and Settings (setup,

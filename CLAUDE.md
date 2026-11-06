@@ -50,6 +50,10 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-06 user approves phone page ("looks good. public beta"). Beta1.0.37 uploaded/promoted,
+CLI verified beta channel 54,819 bytes; public now 1.0.36 Published. 135 tests pass;
+prototype dist restored. App-only, no bridge restart. Phone/G2 check pending.
+
 2026-11-06 Claude in Chrome connected (one browser). Only Chrome Profile 5 'AI - Dedicated
 Proxy' has the Claude extension, so the connection is Profile 5. Its proxy is the ZeroOmega
 extension (no Chrome proxy pref); stored profile 'Vancouver - van-brume' = 127.0.0.1:18889 =
