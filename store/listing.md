@@ -3,6 +3,18 @@ Updated: 2026-11-05
 
 ## Current status
 
+2026-11-05 screenshot refresh: dedicated Eugene Chrome now confirms **public1.0.36
+is Live** (no longer awaiting release review). Preserved the newer portal wording
+"Orca + Hermes" in store/description.txt. Captured eight fresh native1.0.36 images
+with fictional data; app tree unchanged from release d352cbf. All576x288 RGB upload
+images verified pixel-identical to native RGBA composited on black. The previously
+solid-green-looking captures are alpha-channel exports, not a screenshot failure.
+Gallery refreshed. User explicitly takes over uploads; NEW SCREENSHOTS NOT SAVED
+TO PORTAL by agent. Preview editor was opened and old images removed only in its
+unsaved dialog; later Escape cancels that edit. User should replace the old set
+with the eight files linked below. No Confirm/review submission/channel/bridge/app
+change. Native store preview8792/9899 remains OPEN in named Orca tabs.
+
 2026-11-05 later update: Eugene reports he submitted the release. Fresh read-only
 portal inspection confirms candidate **v1.0.36 — In review**, **Review in progress**,
 **Submitted**, and **Awaiting review**. Public remains1.0.23; this is submission,
@@ -123,42 +135,35 @@ Name, tagline and description saved through the authenticated Even Hub CLI on 20
 
 The description and README credit the original author and link the upstream project. Root `LICENSE` retains `Copyright (c) 2026 2ero20ne` and the full MIT text. `app/vite.config.ts` now emits `LICENSE.txt` and `ATTRIBUTION.txt` in production builds; the built license was checked byte-for-byte against the original. This packaging change is not yet in beta1.0.21; include it in the next release candidate.
 
-## Screenshots
+## Screenshots — 1.0.36
 
-Official native simulator captures using the unchanged 1.0.21 app renderer and fictional data. The list includes Cursor, Pi, Claude, Codex and OpenCode at the user's request; the reader/voice example is Codex. List discovery does not establish reader compatibility for every provider. All glasses images are 576 × 288. No real conversations, credentials, account usage or microphone audio appear. These are simulator captures, not G2 photographs.
+Eight current upload files, using the real native app renderer and fictional data.
+No real chats, account usage, credentials or microphone audio. Not G2 photographs.
 
-| Order | Image | Content |
-| --- | --- | --- |
-| 1 | [Sessions](screenshots/1-threads.png) | Names, activity, provider labels and filter |
-| 2 | [Conversation](screenshots/2-answer.png) | Native reader and waiting status |
-| 3 | [Voice review](screenshots/3-reply.png) | Transcription below the preserved conversation |
-| 4 | [Usage](screenshots/4-usage.png) | Example allowance usage |
-| 5 | [New session](screenshots/5-new-session.png) | Workspace picker |
-| 6 | [Actions](screenshots/6-actions.png) | Refresh sessions, New Session and Usage |
+| Order | Upload PNG |
+| --- | --- |
+| 1 | [Orca session list](screenshots/1-threads.png) |
+| 2 | [Nine-row reader](screenshots/2-answer.png) |
+| 3 | [Full-screen voice review](screenshots/3-reply.png) |
+| 4 | [Codex/Claude/Cursor usage](screenshots/4-usage.png) |
+| 5 | [Orca workspace filter](screenshots/5-workspaces.png) |
+| 6 | [Separate agent filter](screenshots/7-agent-filter.png) |
+| 7 | [Hermes workspace groups](screenshots/8-hermes-workspaces.png) |
+| 8 | [Hermes session list](screenshots/9-hermes-sessions.png) |
 
-Untouched RGBA exports are in [screenshots/native](screenshots/native). The linked RGB copies composite the same pixels onto black for ordinary image viewers. No text, layout or content was retouched. The simulator omits OS contextual entries; image 6 is supplemental and does not represent the complete hardware menu.
-
-Open [the gallery](gallery.html) to review. `store/works-eyecatch.png` and `store/screenshots/phone-setup.png` are historical upstream assets, excluded from this release set.
+Upload the opaque RGB PNGs in store/screenshots, not the transparent files in
+store/screenshots/native. Original RGBA captures are retained unchanged; the upload
+copies only composite alpha onto black. Supplemental6-actions is not one of these
+eight: the simulator omits G2 system contextual entries. Gallery: [review](gallery.html).
+User performs portal upload; confirmation of the persisted new set remains pending.
 
 ## Capture again
 
-Use named PowerShell terminals in this repo's Orca workspace; reuse or close confirmed old preview processes first.
-
-1. Run `node scripts/store-preview.mjs` (loopback 8792).
-2. Run `app/node_modules/@evenrealities/sim-win32-x64/bin/evenhub-simulator.exe` with URL `http://127.0.0.1:8792/?code=demo&lang=en` and `--automation-port 9899`.
-3. Starting at the fresh session list, run:
-
-```powershell
-node scripts/store-capture.mjs 1-threads
-node scripts/store-capture.mjs 2-answer down down down down click
-node scripts/store-capture.mjs 3-reply long_press long_press_release
-node scripts/store-capture.mjs 6-actions double_click double_click context_menu
-node scripts/store-capture.mjs 4-usage down down click
-node scripts/store-capture.mjs 5-new-session double_click context_menu down click
-python scripts/store-previews.py
-```
-
-The Python step requires Pillow. Verify each image visually. The fixture replaces data and microphone capture only; native rendering/gestures use the real app and SDK. Send and Launch are disabled. Leave the simulator open for review.
+Run scripts/store-preview.mjs in a named Orca pwsh terminal (8792), then the native
+simulator on9899 against http://127.0.0.1:8792/?code=demo&lang=en. The real app is
+unchanged; fixture replaces API/audio only and disables Send/Launch. Use
+scripts/store-capture.mjs with names above, then python scripts/store-previews.py
+to composite alpha. Inspect every image. Existing named store preview is left OPEN.
 
 ## Public release preparation
 

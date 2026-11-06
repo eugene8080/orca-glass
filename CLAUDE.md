@@ -50,6 +50,20 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-05 user requests fresh1.0.36 screenshots/listing check, then takes over
+manual uploads. Portal in Eugene Chrome confirms public1.0.36 LIVE; newer portal
+"Orca + Hermes" description preserved/synchronized locally. Captured eight real
+native renderer images with fictional data; app tree identical to releasedd352cbf.
+Capture exports store green in RGB and text in alpha; composite onto black for
+viewable uploads. Eight576x288 RGB images visually inspected and pixel-verified
+against source RGBA. New store fixture8792 and simulator9899 in named Orca tabs
+(term_bb340eb4-486a-4bbe-8273-3cbb3af71c85 / term_8a6a2f1a-c915-47b3-bd1a-4d5871088067)
+LEFT OPEN. Gallery/listing updated. User uploads files in store/screenshots, not
+native. No new screenshot set SAVED to portal by agent. Preview removals were
+unsaved; Escape subsequently cancels. Do not claim portal assets updated until
+user confirms or rechecked. No review submission/channel/app/bridge change or
+real provider input. Generated-policy findings remain unresolved.
+
 2026-11-05 user answered AMC questions in Telegram and asks to build answering from the
 glasses. Open single-select Hermes question is now the reader choice menu (bridge only):
 clarify.respond with the exact choice text, only if gateway prompt id still matches;

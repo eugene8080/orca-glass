@@ -1,6 +1,6 @@
-Read your Orca sessions. Speak your next step.
+Read your Orca + Hermes sessions. Speak your next step.
 
-Orca Glass connects G2 glasses to agents running in Orca on your Windows PC, and to a local Hermes Agent. Read conversations, see working/waiting status and the model, and review spoken replies before sending.
+Orca Glass connects G2 glasses to agents running in Orca on your Windows PC, and to Hermes Agent. Read conversations, see working/waiting status and the model, and review spoken replies before sending.
 
 Version 1.0.36:
 - Filter by agent: Hermes Agent, or All Orca Sessions / Claude / Codex / other Orca agents. Hermes and Orca sessions stay separate.
