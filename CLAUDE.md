@@ -50,6 +50,16 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-06 Claude in Chrome connected (one browser). Only Chrome Profile 5 'AI - Dedicated
+Proxy' has the Claude extension, so the connection is Profile 5. Its proxy is the ZeroOmega
+extension (no Chrome proxy pref); stored profile 'Vancouver - van-brume' = 127.0.0.1:18889 =
+route.json proxyUrl, bypass 127.0.0.1/[::1]/localhost. Active ZeroOmega profile NOT verified
+(extension pages blocked to the agent). Browser ipify = 50.64.106.129 = expectedExitIp, but
+Tailscale whole-PC exit is ON and direct curl also exits 50.64.106.129, so the IP cannot prove
+proxy use: external browsing NOT cleared, none done beyond the IP check. Localhost phone preview
+verified in Profile 5 (workspace toggle, Absolute resets); restored to defaults, tab LEFT OPEN.
+Headless screenshot script removed at user request.
+
 2026-11-06 user approves phone page rebuild (dark theme) modelled on OcuClaw's layout:
 Home = connection bar, Filter by Agent/Workspace (shared with glasses, two-way redraw),
 Usage with reset modes and bars, reply box; Settings = setup and log. app/src/phone.ts,
