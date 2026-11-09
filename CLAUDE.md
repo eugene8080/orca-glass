@@ -50,6 +50,13 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-09 user: 'upload beta'. Bridge restarted after ownership check (old 72872/71132/
+71672; new supervisor46344, server10480, whisper85852 --vad); local and stable HTTPS
+healthz ok. Beta1.0.42 uploaded/promoted, CLI verified beta channel 126,930 bytes. 143
+tests pass; prototype dist restored. G2 check pending: Cursor and OpenCode 2 sessions,
+aligned tables. Pi not found on this PC (asked user how it is started); OpenClaude,
+OpenCode and Hermes CLI panes not yet seen live.
+
 2026-11-09 user: tables should line up (app pads Markdown tables in small modes),
 solid test patches blotchy too (panel/waveguide, recorded), Cursor showed 'conversation-
 only text unavailable'; make it work for Cursor, OpenCode, OpenCode 2, Pi, OpenClaude,
