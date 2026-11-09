@@ -50,6 +50,10 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-09 user: 'upload beta'. Beta1.0.38 (small-text reader) uploaded/promoted, CLI
+verified beta channel 94,654 bytes. 136 tests pass; prototype dist restored. App-only,
+no bridge restart. G2 legibility (6x12) and page-turn time pending.
+
 2026-11-09 small-text reader built (preview, not released): reader long-press menu
 Text native/small pixel/small mono; pages drawn as four 280x122 image tiles (Spleen 6x12
 93x20, JetBrains Mono 11px on/off 84x18). Status row stays native; Braille spinner image

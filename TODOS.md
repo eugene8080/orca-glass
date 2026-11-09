@@ -1,14 +1,15 @@
 # Orca Glass TODOs
 Updated: 2026-11-05
 
-Current beta: **1.0.37** (phone page: shared filters, usage). Public: **1.0.36**.
+Current beta: **1.0.38** (small-text reader). Public: **1.0.36**.
 Workspace-filter preview approved, released and retired with merged worktree cleanup.
 Future visual changes require preview approval before beta upload.
 Completed/superseded release notes: [history](docs/todo-history.md).
 
 ## Open work
 
-- [ ] **Small text in the reader (pixel / mono image tiles) -- preview approval pending:**
+- [ ] **Small text in the reader (pixel / mono image tiles) -- G2 check pending:**
+  2026-11-09 user approved; beta1.0.38 uploaded/promoted (94,654 bytes; fonts add ~40KB).
   user 2026-11-09 asked for more text per page at about half size, switchable from the
   long-press menu, JetBrains Mono plus a monospace pixel font, status row smaller only
   if it uses no tiles and keeps an animated spinner. Built for the reader: Spleen 6x12
