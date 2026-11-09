@@ -50,6 +50,10 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-09 user: 'upload beta'. Beta1.0.41 uploaded/promoted, CLI verified beta channel
+126,496 bytes. 137 tests pass; prototype dist restored. App-only. G2 pending: solid
+patches (brightness), new fonts. Global rule added: chat tables as padded monospace.
+
 2026-11-09 user asks to test uneven brightness and add five more mono pixel fonts with
 sizes in the menu. Built (unreleased): Cozette, Terminus, GohuFont, scientifica, Misc
 Fixed from official sources via a generic BDF reader (old tables byte-identical); menu
