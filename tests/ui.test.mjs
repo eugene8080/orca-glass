@@ -66,6 +66,16 @@ async function harness(count = 2, voice = false, mode = 'tap', savedView = '', s
     './usage-reset': usageResetExports,
     './session-list': listExports,
     './filters': filterExports,
+    // Small-text rendering needs a browser canvas; the glasses tests check the
+    // controller with a stand-in that encodes each page's first row as tile data.
+    './fine-text': {
+      FINE_TILES: [0, 1, 2, 3].map(i => ({ xPosition: 8 + (i % 2) * 280, yPosition: 4 + Math.floor(i / 2) * 122, width: 280, height: 122 })),
+      FINE_AREA: { x: 8, y: 4, width: 560, height: 244 },
+      FINE_METRICS: { pixel: { advance: 6, line: 12, rows: 20, px: 12 }, mono: { advance: 6.6, line: 13, rows: 18, px: 11 } },
+      fineMeasure: font => text => [...text].length * (font === 'pixel' ? 6 : 6.6),
+      loadFineFont: async () => true,
+      renderFinePage: text => [0, 1, 2, 3].map(i => i === 0 ? [...text.split(String.fromCharCode(10))[0]].map(c => c.codePointAt(0)) : [i]),
+    },
     // The phone page is DOM-only and checked in a browser preview; the glasses tests see a no-op.
     './phone': { createPhone: deps => { phoneDeps = deps; return { connection: c => phoneCalls.push(['connection', c.state]), load() {}, render: () => phoneCalls.push(['render']) }; } },
   };
@@ -787,7 +797,9 @@ test('contextual actions refresh roster, open workspace picker and display usage
   assert.equal(h.pages.at(-1).textObject[0].content, 'usageTitle');
   assert.match(h.pages.at(-1).textObject[1].content, /25%/);
   await h.back(); await h.pick(2);
-  assert.equal(h.pages.at(-1).menuObject, undefined);
+  // The reader's own menu only switches text size; session-list actions do nothing there.
+  assert.equal(JSON.stringify(h.pages.at(-1).menuObject.menuItems.map(i => [i.itemID, i.itemName])),
+    JSON.stringify([[1101, 'Text: native (on)'], [1102, 'Text: small pixel'], [1103, 'Text: small mono']]));
   const pages = h.pages.length;
   await h.menu(1002);
   assert.equal(h.pages.length, pages);
@@ -1315,4 +1327,42 @@ test('phone filters and glasses share one saved selection and redraw each other'
   await h.pick(3); // All Orca Sessions
   assert.ok(h.phoneCalls.filter(c => c[0] === 'render').length > renders);
   assert.equal(phone.filters().provider, 'all');
+});
+
+test('reader menu switches to small text drawn as four image tiles and back', async () => {
+  const h = await harness();
+  const output = Array.from({ length: 50 }, (_, i) => `Line ${i}`).join(String.fromCharCode(10));
+  h.api.thread = async () => ({ text: output });
+  const saved = [];
+  h.bridge.setLocalStorage = async (key, value) => { saved.push([key, value]); };
+  await h.pick(2);
+  const pageHint = () => h.pages.at(-1).textObject.find(c => c.containerName === 'hint').content.trim();
+  assert.match(pageHint(), /Pg6\/6$/);
+  // Switch to the small pixel font: one rebuild with four image tiles, no status icon.
+  await h.menu(1102);
+  const page = h.pages.at(-1);
+  assert.deepEqual(saved.at(-1), ['reader-text', 'pixel']);
+  assert.equal(page.containerTotalNum, 10);
+  assert.equal(JSON.stringify(page.imageObject.map(i => [i.containerID, i.xPosition, i.yPosition, i.width, i.height])),
+    JSON.stringify([[7, 8, 4, 280, 122], [8, 288, 4, 280, 122], [9, 8, 126, 280, 122], [10, 288, 126, 280, 122]]));
+  assert.equal(page.textObject[1].content, ' ');
+  assert.match(page.menuObject.menuItems[1].itemName, /small pixel \(on\)/);
+  // Twenty rows per page: 50 lines fit on three pages and it stays on the newest.
+  assert.match(pageHint(), /Pg3\/3$/);
+  const tiles = h.images.filter(i => /^fine-/.test(i.containerName));
+  assert.equal(tiles.length, 4);
+  assert.equal(String.fromCodePoint(...tiles[0].imageData), 'Line 40');
+  // A page turn re-sends only tiles that changed (the stand-in changes tile 1 only).
+  await h.scroll('up');
+  await h.flush();
+  const turned = h.images.filter(i => /^fine-/.test(i.containerName)).slice(4);
+  assert.equal(JSON.stringify(turned.map(i => i.containerName)), JSON.stringify(['fine-0']));
+  assert.equal(String.fromCodePoint(...turned[0].imageData), 'Line 20');
+  assert.match(statusHint(h), /Pg2\/3$/);
+  assert.ok(!h.upgrades.some(u => u.containerName === 'body' && u.content !== ' '));
+  // Back to native text on the page that holds the same first line.
+  await h.menu(1101);
+  assert.deepEqual(saved.at(-1), ['reader-text', 'native']);
+  assert.equal(h.pages.at(-1).containerTotalNum, 7);
+  assert.match(h.pages.at(-1).textObject[1].content, /^Line 18/);
 });

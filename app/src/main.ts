@@ -25,6 +25,7 @@ import { statusRight } from './footer-hint';
 import { formatReset, RESET_MODES, resetModeLabel, type ResetMode } from './usage-reset';
 import { orcaAgents, workspaceSections, toggleWorkspace, workspaceSummary, type PickerRow } from './filters';
 import { createPhone } from './phone';
+import { FINE_TILES, FINE_METRICS, FINE_AREA, fineMeasure, loadFineFont, renderFinePage, type FineFont } from './fine-text';
 import { agentLabel, sessionRow, sessionListTitle, sessionHeading, MENU_LEFT, MENU_RIGHT, MENU_CURSOR, sessionAgentLabel, menuNativeText, menuCursorText, nativeRight, glassWidth, compactSessionTitle, type SessionColumns } from './session-list';
 
 // 画面 576x288。上に見出し(テキスト)、下に本文(リスト or テキスト)の2段構成で統一する。
@@ -48,6 +49,9 @@ const VOICE_BODY = { containerID: 1, containerName: 'voice-body', xPosition: 8, 
 const VOICE_HINT = { containerID: 2, containerName: 'voice-hint', xPosition: 16, yPosition: STATUS_ROW_Y, width: 544, height: 28 };
 const VOICE_FRAME = { ...FRAME, containerID: 3, containerName: 'voice-frame' };
 const VOICE_DIVIDER = { ...DIVIDER, containerID: 4, containerName: 'voice-divider' };
+// Small-text reader: four image tiles over the chat area (IDs follow the six
+// text containers; they replace the status icon, as a page holds at most four images).
+const FINE_TILE_IDS = FINE_TILES.map((tile, i) => ({ ...tile, containerID: 7 + i, containerName: `fine-${i}` }));
 const USAGE_RESET = { containerID: 3, containerName: 'usage-reset', xPosition: 0, yPosition: 28, width: 576, height: 28 };
 const LIST_ITEM_BYTES = 63;
 const LIST_MAX = 20;
@@ -56,7 +60,7 @@ const POLL_MS = 1000;
 
 type Screen =
   | { kind: 'list'; title: string; items: string[]; sessionList?: boolean; workspacePicker?: boolean; agentPicker?: boolean; headings?: number[]; menuActions?: { id: number; label: string; run: () => unknown }[]; compat?: boolean; columns?: SessionColumns[]; connectedCount?: number; selected?: number; paintedSelection?: number; menuFrame?: number; paintedCursor?: string; cursorWriting?: boolean; paging?: boolean; onPreviousPage?: () => unknown; onNextPage?: () => unknown; onPick: (i: number) => void; onBack?: () => void }
-  | { kind: 'text'; title: string; text: string; usageMode?: ResetMode; conversationText?: string; choiceMenu?: ChoiceMenu | null; tail?: boolean; offset?: number; pageText?: string; pages?: string[]; pageTarget?: number; pageWriting?: boolean; reading?: boolean; refreshing?: boolean; responsePage?: number; openAtResponse?: boolean; model?: string; voice?: boolean; voiceHint?: string; voiceTail?: boolean; activityLabel?: string; activityState?: string; reportedSeconds?: number | null; statusFrame?: number; statusStartedAt?: number; savedHistory?: boolean; reader?: Thread; onClick?: () => void; onBack?: () => void; onHold?: () => void; };
+  | { kind: 'text'; title: string; text: string; usageMode?: ResetMode; conversationText?: string; choiceMenu?: ChoiceMenu | null; tail?: boolean; offset?: number; pageText?: string; pages?: string[]; pageTarget?: number; pageWriting?: boolean; reading?: boolean; refreshing?: boolean; responsePage?: number; openAtResponse?: boolean; model?: string; voice?: boolean; voiceHint?: string; voiceTail?: boolean; activityLabel?: string; activityState?: string; reportedSeconds?: number | null; statusFrame?: number; statusStartedAt?: number; savedHistory?: boolean; reader?: Thread; fine?: FineFont; pagesFine?: FineFont; tiles?: number[][]; menuActions?: { id: number; label: string; run: () => unknown }[]; onClick?: () => void; onBack?: () => void; onHold?: () => void; };
 
 let bridge: EvenAppBridge;
 let current: Screen | null = null;
@@ -74,6 +78,9 @@ let sending = false;
 let holding = false;
 let releaseCapture: (() => void) | null = null;
 let viewProvider = 'all';
+// Reader text: the firmware's native font, or small text drawn as image tiles.
+type ReaderText = 'native' | FineFont;
+let readerText: ReaderText = 'native';
 let usageResetMode: ResetMode = 'computer';
 let viewWorkspaces: Set<string> | null = null;
 // Hermes is not part of Orca: it has its own workspace selection and page.
@@ -114,7 +121,25 @@ function selectThread(t: Thread | null) {
 const READER_WRAP_WIDTH = 552;
 type TextScreen = Extract<Screen, { kind: 'text' }>;
 function readerLayout(s: TextScreen) {
-  if (s.pageText !== s.text || !s.pages) {
+  if (s.pageText !== s.text || !s.pages || s.pagesFine !== s.fine) {
+    s.pagesFine = s.fine;
+    if (s.fine) {
+      // Monospace small text: wrap by cells; images have no native byte limit.
+      const measure = fineMeasure(s.fine);
+      const width = FINE_AREA.width, rows = FINE_METRICS[s.fine].rows;
+      const start = latestResponseStart(s.text);
+      const whole = readerPages(s.text, measure, width, rows, Infinity);
+      const chars = (text: string) => text.replaceAll('\n', '').length;
+      if (start < 0) { s.pages = whole; s.responsePage = undefined; }
+      else if (chars(s.text.slice(0, start)) >= chars(whole.slice(0, -1).join(''))) { s.pages = whole; s.responsePage = whole.length - 1; }
+      else {
+        const before = start > 0 ? readerPages(s.text.slice(0, start - 1), measure, width, rows, Infinity) : [];
+        s.pages = [...before, ...readerPages(s.text.slice(start), measure, width, rows, Infinity)];
+        s.responsePage = before.length;
+      }
+      s.pageText = s.text;
+      return s.pages;
+    }
     const ctx = document.createElement?.('canvas').getContext('2d');
     if (ctx) ctx.font = '21px Arial';
     // Wrap with the measured firmware font; Arial only sizes non-ASCII glyphs.
@@ -171,9 +196,12 @@ function screenTitle(s: Screen) { return s.kind === 'text' && s.reader ? ' ' : s
 
 // Left part of the status row: '/Waiting Opus5.5'. A working label starts with
 // its spinner glyph, drawn as a separate 20px image, so four spaces replace it.
-function statusLeft(label: string, model?: string) {
+function statusLeft(label: string, model?: string, icon = true) {
   const line = model ? `${label} ${model}` : label;
-  return label[0] !== '/' && label.length > 2 ? '    ' + line.slice(2) : line;
+  // Small-text pages use all four image slots, so the Braille spinner image is
+  // unavailable; a native ASCII spinner turns at the same frame rate instead.
+  if (label[0] !== '/' && label.length > 2) return (icon ? '    ' : `${'|/-\\'[Math.max(0, SPINNER.indexOf(label[0])) % 4]} `) + line.slice(2);
+  return line;
 }
 
 // Right part: '[Tap&hold] Pg77/78', right-aligned in its own layer on the same
@@ -182,8 +210,8 @@ function statusLeft(label: string, model?: string) {
 function readerHint(s: TextScreen, seconds: number | null | undefined) {
   bodyText(s);
   const left = s.activityState === 'working'
-    ? Math.max(...WORKING_LABELS.map(word => glassWidth(statusLeft(`. ${word}...`, s.model))))
-    : glassWidth(statusLeft(s.activityLabel || readerStatus('unknown'), s.model));
+    ? Math.max(...WORKING_LABELS.map(word => glassWidth(statusLeft(`. ${word}...`, s.model, !s.fine))))
+    : glassWidth(statusLeft(s.activityLabel || readerStatus('unknown'), s.model, !s.fine));
   const room = Math.min(VOICE.width - 6 - left - 10, HINT.width - 6);
   const page = s.refreshing ? 'Refreshing…' : `Pg${s.offset! + 1}/${s.pages!.length}`;
   return nativeRight(statusRight(seconds, !!s.choiceMenu, page, text => glassWidth(text) <= room), HINT.width);
@@ -202,7 +230,8 @@ function flipReader(s: TextScreen, delta: number) {
       const target = s.pageTarget!;
       const next = { ...s, offset: target };
       const content = bodyText(next);
-      if (!await bridge.textContainerUpgrade(new TextContainerUpgrade({ containerID: BODY.containerID, containerName: BODY.containerName, content }))) throw new Error('Glasses rejected the page. Swipe to retry.');
+      if (s.fine) { if (!await paintFine(s, content)) return; }
+      else if (!await bridge.textContainerUpgrade(new TextContainerUpgrade({ containerID: BODY.containerID, containerName: BODY.containerName, content }))) throw new Error('Glasses rejected the page. Swipe to retry.');
       if (current !== s) return;
       s.offset = target;
       await inputHint();
@@ -240,7 +269,8 @@ function writePanel(label: string, active: () => boolean = () => true) {
   const owner = current;
   const write = panelWrites.then(async () => {
     if (!active() || owner?.kind !== 'text' || !owner.reader) return false;
-    let visible = statusLeft(label, owner.model);
+    let visible = statusLeft(label, owner.model, !owner.fine);
+    if (owner.fine) return bridge.textContainerUpgrade(new TextContainerUpgrade({ containerID: VOICE.containerID, containerName: VOICE.containerName, content: visible || ' ', textColor: 4 }));
     try {
       await bridge.updateImageRawData(new ImageRawDataUpdate({ containerID: STATUS_ICON.containerID, containerName: STATUS_ICON.containerName,
         imageData: statusPixels(label[0] !== '/' ? label[0] : '') }));
@@ -274,13 +304,20 @@ async function show(s: Screen, reloadText = false) {
   clearInterval(menuAnimation);
   clearInterval(menuPoll);
   if (s.kind === 'text' && s.reader) s.activityLabel ??= readerStatus('unknown');
+  if (s.kind === 'text' && s.reader && !s.voice) {
+    s.fine = readerText === 'native' ? undefined : readerText;
+    s.tiles = undefined; // A rebuild clears every image container.
+    s.menuActions = readerMenu();
+    if (s.fine) await loadFineFont(s.fine);
+  }
   const previous = current;
   current = s;
   const content = s.kind === 'text' ? (s.voice ? voiceBodyText(s) : bodyText(s)) : '';
-  const uploadText = reloadText || (s.kind === 'text' && !!s.reader && s.text.length > 900) || new TextEncoder().encode(content).length > 999;
+  const fine = s.kind === 'text' && !!s.reader && !!s.fine;
+  const uploadText = !fine && (reloadText || (s.kind === 'text' && !!s.reader && s.text.length > 900) || new TextEncoder().encode(content).length > 999);
   const head = new TextContainerProperty({ ...HEAD, ...(s.kind === 'text' && s.usageMode ? { height: 28 } : {}), ...(s.kind === 'text' && s.reader ? { xPosition: 16, yPosition: 2, width: 544, height: 28, zOrderIndex: 1 } : {}), content: s.kind === 'list' && s.sessionList ? sessionHeading() : clipBytes(screenTitle(s), TEXT_BYTES), isEventCapture: 0 });
   // Firmware retains Display off, Brightness and Close alongside these actions.
-  const menu = s.kind === 'list' && s.sessionList ? { menuObject: new MenuContainerProperty({
+  const menu = (s.kind === 'list' && s.sessionList) || (s.kind === 'text' && s.menuActions) ? { menuObject: new MenuContainerProperty({
     menuItems: s.menuActions!.map(action => new MenuItemProperty({ itemID: action.id, itemName: action.label })),
   }) } : {};
   let page =
@@ -308,16 +345,20 @@ async function show(s: Screen, reloadText = false) {
           ] }),
         }
       : {
-          containerTotalNum: s.reader ? 7 : s.usageMode ? 3 : 2,
-          textObject: [head, new TextContainerProperty({ ...BODY, ...(s.usageMode ? { yPosition: 64, height: 224 } : {}), ...(s.reader ? { xPosition: 8, yPosition: READER_TOP, width: 560, paddingLength: 0, zOrderIndex: 2, height: READER_HEIGHT } : {}), content: uploadText ? '' : content, isEventCapture: 1 }),
+          containerTotalNum: s.reader ? (fine ? 10 : 7) : s.usageMode ? 3 : 2,
+          ...menu,
+          // Small text keeps the body as the (blank) swipe target under the tiles.
+          textObject: [head, new TextContainerProperty({ ...BODY, ...(s.usageMode ? { yPosition: 64, height: 224 } : {}), ...(s.reader ? { xPosition: 8, yPosition: READER_TOP, width: 560, paddingLength: 0, zOrderIndex: 2, height: READER_HEIGHT } : {}), content: fine ? ' ' : uploadText ? '' : content, isEventCapture: 1 }),
             ...(s.usageMode ? [new TextContainerProperty({ ...USAGE_RESET, content: `Reset: ${resetModeLabel(s.usageMode)}  (Click to change)`, isEventCapture: 0 })] : []),
             ...(s.reader ? [
               new TextContainerProperty({ ...HINT, content: readerHint(s, s.reportedSeconds), textColor: 4, isEventCapture: 0, paddingLength: 0, zOrderIndex: 6 }),
-              new TextContainerProperty({ ...VOICE, content: statusLeft(s.activityLabel!, s.model), textColor: 4, isEventCapture: 0, paddingLength: 0, zOrderIndex: 5 }),
+              new TextContainerProperty({ ...VOICE, content: statusLeft(s.activityLabel!, s.model, !s.fine), textColor: 4, isEventCapture: 0, paddingLength: 0, zOrderIndex: 5 }),
               new TextContainerProperty({ ...FRAME, content: ' ', textColor: 4, borderWidth: 2, borderColor: 15, borderRadius: 0, isEventCapture: 0, zOrderIndex: 0 }),
               new TextContainerProperty({ ...DIVIDER, content: ' ', textColor: 4, borderWidth: 2, borderColor: 15, isEventCapture: 0, zOrderIndex: 3 }),
             ] : [])],
-          ...(s.reader ? { imageObject: [new ImageContainerProperty({ ...STATUS_ICON, zOrderIndex: 4 })] } : {}),
+          ...(s.reader ? { imageObject: fine
+            ? FINE_TILE_IDS.map((tile, i) => new ImageContainerProperty({ ...tile, zOrderIndex: [4, 7, 8, 9][i] }))
+            : [new ImageContainerProperty({ ...STATUS_ICON, zOrderIndex: 4 })] } : {}),
         };
   if (s.kind === 'text' && s.voice) page = voicePage(s, content) as typeof page;
   try {
@@ -353,7 +394,8 @@ async function show(s: Screen, reloadText = false) {
     }
     if (s.kind === 'list' && s.sessionList && !s.compat) startMenuSpinner(s);
     if (s.kind === 'text' && s.reader) {
-      await bridge.updateImageRawData(new ImageRawDataUpdate({ containerID: STATUS_ICON.containerID, containerName: STATUS_ICON.containerName, imageData: statusPixels(s.activityLabel![0] === '/' ? '' : s.activityLabel![0]) })).catch(e => diag((e as Error).message));
+      if (s.fine && !s.voice) await paintFine(s, content);
+      else await bridge.updateImageRawData(new ImageRawDataUpdate({ containerID: STATUS_ICON.containerID, containerName: STATUS_ICON.containerName, imageData: statusPixels(s.activityLabel![0] === '/' ? '' : s.activityLabel![0]) })).catch(e => diag((e as Error).message));
       startReaderUpdates(s);
     }
   } catch (e) {
@@ -361,6 +403,54 @@ async function show(s: Screen, reloadText = false) {
     diag((e as Error).message);
     throw e;
   }
+}
+
+// Draw a small-text page and upload only the tiles that changed. Returns false
+// when the screen changed meanwhile; throws if the glasses reject a tile.
+async function paintFine(s: TextScreen, content: string): Promise<boolean> {
+  const t0 = Date.now();
+  const tiles = renderFinePage(content, s.fine!);
+  let sent = 0;
+  for (let i = 0; i < tiles.length; i++) {
+    if (current !== s) return false;
+    const before = s.tiles?.[i];
+    if (before && before.length === tiles[i].length && before.every((v, p) => v === tiles[i][p])) continue;
+    const tile = FINE_TILE_IDS[i];
+    const result = await bridge.updateImageRawData(new ImageRawDataUpdate({ containerID: tile.containerID, containerName: tile.containerName, imageData: tiles[i] }));
+    if (result !== ImageRawDataUpdateResult.success) throw new Error(`Glasses rejected small-text tile ${i + 1} (${result}).`);
+    (s.tiles ??= [])[i] = tiles[i];
+    sent++;
+  }
+  diag(`Small text (${s.fine}): ${sent} tile(s) in ${Date.now() - t0} ms`);
+  return current === s;
+}
+
+// Reader long-press menu: switch between native text and the two small fonts.
+// The glasses OS adds its own Display off / Brightness / Close entries.
+function readerMenu() {
+  const option = (id: number, mode: ReaderText, label: string) => ({ id, label: `${label}${readerText === mode ? ' (on)' : ''}`, run: () => setReaderText(mode) });
+  return [option(1101, 'native', 'Text: native'), option(1102, 'pixel', 'Text: small pixel'), option(1103, 'mono', 'Text: small mono')];
+}
+
+// Switch fonts in place and keep the reader near the same text: the first
+// character of the current page stays on screen; the newest page stays newest.
+async function setReaderText(mode: ReaderText) {
+  await bridge.setLocalStorage('reader-text', mode);
+  readerText = mode;
+  const s = current;
+  if (s?.kind !== 'text' || !s.reader || s.voice) return;
+  const pages = readerLayout(s);
+  const atEnd = (s.offset ?? 0) >= pages.length - 1;
+  const chars = (text: string) => text.replaceAll('\n', '').length;
+  const before = chars(pages.slice(0, s.offset ?? 0).join(''));
+  s.fine = mode === 'native' ? undefined : mode;
+  if (s.fine) await loadFineFont(s.fine);
+  const next = readerLayout(s);
+  let index = 0, seen = 0;
+  while (index < next.length - 1 && seen + chars(next[index]) <= before) seen += chars(next[index++]);
+  s.offset = atEnd ? next.length - 1 : index;
+  s.openAtResponse = false;
+  await show(s);
 }
 
 async function updateText(title: string, text: string) {
@@ -375,7 +465,8 @@ async function updateText(title: string, text: string) {
       if (!await bridge.textContainerUpgrade(new TextContainerUpgrade({ containerID: HEAD.containerID, containerName: HEAD.containerName, content: clipBytes(screenTitle(next), TEXT_BYTES) }))) throw new Error('Glasses rejected the title update.');
     }
     if (current !== screen || (screen.reader && screen.reading)) return;
-    if (!await bridge.textContainerUpgrade(new TextContainerUpgrade({ containerID: BODY.containerID, containerName: BODY.containerName, content }))) throw new Error('Glasses rejected the live text update. Retrying.');
+    if (screen.fine) { if (!await paintFine(screen, content)) return; }
+    else if (!await bridge.textContainerUpgrade(new TextContainerUpgrade({ containerID: BODY.containerID, containerName: BODY.containerName, content }))) throw new Error('Glasses rejected the live text update. Retrying.');
     if (current === screen && !(screen.reader && screen.reading)) { screen.title = title; screen.text = text; screen.offset = next.offset; screen.pages = next.pages; screen.pageText = next.pageText; screen.responsePage = next.responsePage; if (screen.reader) await inputHint(); }
   };
   if (screen.reader) {
@@ -1019,6 +1110,9 @@ function onEvent(e: EvenHubEvent) {
     if (screen?.kind === 'list' && screen.sessionList) {
       const action = screen.menuActions?.find(a => a.id === e.menuItemClickEvent!.itemID);
       if (action) void sessionCursorWrites.then(() => { if (current === screen) action.run(); });
+    } else if (screen?.kind === 'text' && screen.reader && !screen.voice) {
+      const action = screen.menuActions?.find(a => a.id === e.menuItemClickEvent!.itemID);
+      if (action) void readerWrites.then(() => { if (current === screen) return action.run(); }).catch(err => diag((err as Error).message));
     }
     return;
   }
@@ -1168,6 +1262,8 @@ async function main() {
   const pref = 'en';
   await bridge.setLocalStorage('lang', 'en');
   viewProvider = (await bridge.getLocalStorage('view-provider')) || 'all';
+  const savedText = await bridge.getLocalStorage('reader-text');
+  if (savedText === 'pixel' || savedText === 'mono') readerText = savedText;
   const resetMode = await bridge.getLocalStorage('usage-reset-mode');
   if (RESET_MODES.includes(resetMode as ResetMode)) usageResetMode = resetMode as ResetMode;
   for (const [key, set] of [['view-workspaces', (v: Set<string>) => { viewWorkspaces = v; }], ['view-hermes-workspaces', (v: Set<string>) => { viewHermesWorkspaces = v; }]] as const) {

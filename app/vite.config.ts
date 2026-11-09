@@ -22,6 +22,15 @@ export default defineConfig({
           + 'Copyright (c) 2026 2ero20ne\n'
           + 'Used under the MIT License; see LICENSE.txt.\n',
       });
+      // Small-text reader fonts ship with their licences (OFL-1.1 and BSD-2-Clause
+      // both require the notice to travel with the font).
+      this.emitFile({
+        type: 'asset', fileName: 'FONT-LICENSES.txt',
+        source: 'JetBrains Mono 2.304 (subset), SIL Open Font License 1.1:\n\n'
+          + readFileSync(new URL('./src/fonts/JETBRAINS-MONO-OFL.txt', import.meta.url), 'utf8')
+          + '\n\nSpleen 6x12 2.2.0 (glyph table), BSD 2-Clause License:\n\n'
+          + readFileSync(new URL('./src/fonts/SPLEEN-LICENSE.txt', import.meta.url), 'utf8'),
+      });
     },
   }],
   // Match the simulator's explicit IPv4 URL; Windows localhost may bind ::1 only.

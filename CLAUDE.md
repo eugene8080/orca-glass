@@ -50,6 +50,14 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-09 small-text reader built (preview, not released): reader long-press menu
+Text native/small pixel/small mono; pages drawn as four 280x122 image tiles (Spleen 6x12
+93x20, JetBrains Mono 11px on/off 84x18). Status row stays native; Braille spinner image
+replaced by native ASCII spinner in small mode (5th image not allowed). User constraint:
+status row may shrink only without tiles and with an animated Braille spinner -- not
+possible within the 4-image limit; reported. Simulator restarted in tab term_34a87732
+(app/node_modules/.bin/evenhub-simulator.cmd); verified paging, menu, diagrams. 136 tests.
+
 2026-11-06 user approves phone page ("looks good. public beta"). Beta1.0.37 uploaded/promoted,
 CLI verified beta channel 54,819 bytes; public now 1.0.36 Published. 135 tests pass;
 prototype dist restored. App-only, no bridge restart. Phone/G2 check pending.

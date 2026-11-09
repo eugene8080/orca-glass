@@ -445,3 +445,27 @@ or cancel rebuilds the chat at its newest page, not the latest-response page. Th
 supersedes the earlier rule that voice must never rebuild the chat; the user chose
 full-screen review explicitly. The voice-border images are gone, so the reader page
 has seven containers (IDs 1..7, layers 0..6) and the voice page four.
+
+## Small text (2026-11-09)
+
+The Even SDK has no font or size control for native text, so small text is drawn on
+the phone and sent as four greyscale image tiles (the SDK maximum: four images, each
+at most 288x144). The tiles are a 2x2 grid of 280x122 over the chat area x8..568,
+y4..248; the body text container stays underneath, blank, as the swipe target.
+The long-press menu on the reader switches `Text: native` / `Text: small pixel` /
+`Text: small mono`, saved as `reader-text`; switching keeps the first character of
+the current page on screen. Code: app/src/fine-text.ts.
+
+- pixel: Spleen 6x12 (monospace bitmap, BSD-2-Clause) drawn pixel-exact from a glyph
+  table at its native size, 93 x 20 per page. Spleen also has 8x16 (70 x 15) if
+  6x12 is too small on the G2; use whole bitmap sizes, never scaled.
+- mono: JetBrains Mono 11px (OFL-1.1, Latin subset), 84 x 18, cut to on/off pixels
+  at half coverage. The display shows even its dimmest grey at about 38% (simulator
+  alpha 96), so anti-aliasing read as bold smudges.
+- Only tiles whose pixels changed are re-sent on a page turn or live update.
+- The status row stays native text (one fixed size). Its Braille spinner is a fifth
+  image, which a small-text page cannot hold, so it turns as a native `| / - \`.
+- Fonts are built by scripts/build-fine-fonts.py; FONT-LICENSES.txt ships in the app.
+- Simulator 2026-11-09: native 12 pages vs pixel 4 / mono 5 for the same chat; four
+  tiles in 34 ms (no Bluetooth). ASCII diagrams align in both; box-drawing lines are
+  continuous in pixel, dotted in mono. G2 legibility and page-turn time unmeasured.

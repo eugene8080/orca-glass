@@ -8,6 +8,16 @@ Completed/superseded release notes: [history](docs/todo-history.md).
 
 ## Open work
 
+- [ ] **Small text in the reader (pixel / mono image tiles) -- preview approval pending:**
+  user 2026-11-09 asked for more text per page at about half size, switchable from the
+  long-press menu, JetBrains Mono plus a monospace pixel font, status row smaller only
+  if it uses no tiles and keeps an animated spinner. Built for the reader: Spleen 6x12
+  and JetBrains Mono 11px as four image tiles; status row stays native (cannot shrink;
+  spinner native ASCII because the four tiles use all image slots). 136 tests/build pass.
+  Simulator verified (captures in .local/), preview LEFT OPEN. Pending: approval, beta,
+  G2 legibility and page-turn speed. Voice review/Usage not converted yet. See
+  docs/session-reader.md.
+
 - [ ] **Phone page: Filter by Agent, Filter by Workspace, Usage -- phone/G2 check pending:**
   2026-11-06 user approved preview; beta1.0.37 uploaded/promoted (54,819 bytes), public
   1.0.36 Published. 135 tests pass; prototype dist restored; no bridge restart.
