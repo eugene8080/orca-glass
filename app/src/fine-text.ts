@@ -5,28 +5,33 @@
 //
 // Every font is a fixed cell of whole pixels, copied pixel-exact from a glyph
 // table (app/src/fonts/glyphs.ts): no canvas text and no anti-aliasing.
-//   pixel:   Spleen 6x12 (bitmap)                     93 columns
-//   pixel16: Spleen 8x16 (bitmap)                     70 columns
-//   mono:    JetBrains Mono 10px, FreeType mono 6x14  93 columns
-// Characters missing from a font fall back to the WebView's monospace font,
-// thresholded to on/off pixels; Braille is drawn as dots; East Asian wide
-// characters take two cells.
-import { SPLEEN_6X12, SPLEEN_8X16, JETBRAINS_MONO_10 } from './fonts/glyphs';
+// All monospace, each at its own native pixel grid (the G2 shows the 576x288
+// canvas 1:1, confirmed with the display test pattern on 2026-11-09):
+//   pixel:     Spleen 6x12 (bitmap)                          93 columns
+//   pixel16:   Spleen 8x16 (bitmap)                          70 columns
+//   mono:      JetBrains Mono 10px, FreeType mono, 6x14       93 columns
+//   departure: Departure Mono at its 11px grid, 7x14         80 columns
+//   monogram:  monogram (author's bitmap table), 6x12        93 columns
+//   pixeloid:  Pixeloid Mono at its 9px grid, 6x11           93 columns
+// Missing characters: box drawing as geometric lines and Braille as dots, both
+// fitted to the cell; anything else via the WebView monospace font, thresholded
+// to on/off pixels. East Asian wide characters take two cells.
+import { SPLEEN_6X12, SPLEEN_8X16, JETBRAINS_MONO_10, DEPARTURE_MONO, MONOGRAM, PIXELOID_MONO } from './fonts/glyphs';
 
-export type FineFont = 'pixel' | 'pixel16' | 'mono';
-export const FINE_FONTS: FineFont[] = ['pixel', 'pixel16', 'mono'];
+export type FineFont = 'pixel' | 'pixel16' | 'mono' | 'departure' | 'monogram' | 'pixeloid';
+export const FINE_FONTS: FineFont[] = ['pixel', 'pixel16', 'mono', 'departure', 'monogram', 'pixeloid'];
 
-const TABLES = { pixel: SPLEEN_6X12, pixel16: SPLEEN_8X16, mono: JETBRAINS_MONO_10 };
+const TABLES = { pixel: SPLEEN_6X12, pixel16: SPLEEN_8X16, mono: JETBRAINS_MONO_10, departure: DEPARTURE_MONO, monogram: MONOGRAM, pixeloid: PIXELOID_MONO };
 export const SCREEN = { width: 576, height: 288 };
 export const FINE_TILES = [0, 1, 2, 3].map(i => ({ xPosition: (i % 2) * 288, yPosition: Math.floor(i / 2) * 144, width: 288, height: 144 }));
 
 // Layout in whole cells: a 2px frame, chat rows from y4, a 2px divider, then one
 // status row at the bottom. Chat and status share the 560px text column at x8.
-const TEXT_X = 8, TEXT_WIDTH = 560, TOP = 4, FRAME = 2;
+const TEXT_X = 8, TEXT_WIDTH = 560, TOP = 4, FRAME = 1;
 export function fineLayout(font: FineFont) {
   const { width: cell, height: line } = TABLES[font];
   const statusY = SCREEN.height - FRAME - 2 - line;
-  const dividerY = statusY - 4;
+  const dividerY = statusY - 3;
   const rows = Math.floor((dividerY - 2 - TOP) / line);
   return { cell, line, rows, columns: Math.floor(TEXT_WIDTH / cell), statusY, dividerY };
 }
@@ -47,6 +52,14 @@ function glyph(font: FineFont, code: number): number[] | undefined {
 
 // Two cells for East Asian wide/fullwidth characters and emoji; zero for
 // combining marks and joiners; one otherwise.
+// Light, heavy, double and rounded box drawing share one single-pixel line style.
+const BOX: Record<string, string> = {};
+for (const [chars, arms] of [
+  ['─━═╌╍┄┅┈┉', 'lr'], ['│┃║╎╏┆┇┊┋', 'ud'], ['┌┏╔╭┍┎╒╓', 'dr'], ['┐┓╗╮┑┒╕╖', 'dl'], ['└┗╚╰┕┖╘╙', 'ur'], ['┘┛╝╯┙┚╛╜', 'ul'],
+  ['├┣╠┝┞┟┠┡┢╞╟', 'udr'], ['┤┫╣┥┦┧┨┩┪╡╢', 'udl'], ['┬┳╦┭┮┯┰┱┲╤╥', 'dlr'], ['┴┻╩┵┶┷┸┹┺╧╨', 'ulr'],
+  ['┼╋╬┽┾┿╀╁╂╃╄╅╆╇╈╉╊╪╫', 'udlr'], ['╴', 'l'], ['╶', 'r'], ['╵', 'u'], ['╷', 'd'], ['▶►', 'lr>'],
+] as const) for (const c of chars) BOX[c] = arms;
+
 export function cellWidth(ch: string): number {
   const c = ch.codePointAt(0) || 0;
   if (/\p{Mn}|\p{Me}|‍|️/u.test(ch)) return 0;
@@ -79,6 +92,8 @@ class Surface {
       const bitmap = glyph(this.font, code);
       if (bitmap) {
         for (let gy = 0; gy < bitmap.length; gy++) for (let gx = 0; gx < cw; gx++) if (bitmap[gy] & (0x80 >> gx)) this.set(px + gx, y + gy);
+      } else if (BOX[c]) {
+        this.box(BOX[c], px, y, cw, ch);
       } else if (code >= 0x2800 && code <= 0x28ff) {
         this.braille(code - 0x2800, px, y, cw, ch);
       } else if (c.trim()) {
@@ -90,6 +105,15 @@ class Surface {
       col += cells;
     }
     return col;
+  }
+  // Box drawing from the cell centre to its edges: 'udlr' = up, down, left, right.
+  private box(arms: string, x: number, y: number, cw: number, ch: number) {
+    const cx = x + Math.floor((cw - 1) / 2), cy = y + Math.floor((ch - 1) / 2);
+    if (arms.includes('u')) this.rect(cx, y, 1, cy - y + 1);
+    if (arms.includes('d')) this.rect(cx, cy, 1, y + ch - cy);
+    if (arms.includes('l')) this.rect(x, cy, cx - x + 1, 1);
+    if (arms.includes('r')) this.rect(cx, cy, x + cw - cx, 1);
+    if (arms.includes('>')) for (let i = 0; i < 3; i++) this.rect(x + cw - 2 - i, cy - i, 1, 2 * i + 1);
   }
   // Braille cells as 2x4 single-pixel dots centred in the cell (dot numbering 1-8).
   private braille(bits: number, x: number, y: number, cw: number, ch: number) {
@@ -132,7 +156,7 @@ export function renderFineScreen(text: string, font: FineFont, status: { left: s
   s.rect(0, 0, SCREEN.width, FRAME); s.rect(0, SCREEN.height - FRAME, SCREEN.width, FRAME);
   s.rect(0, 0, FRAME, SCREEN.height); s.rect(SCREEN.width - FRAME, 0, FRAME, SCREEN.height);
   text.split('\n').slice(0, rows).forEach((row, r) => s.text(row, TEXT_X, TOP + r * line, columns));
-  s.rect(TEXT_X + 8, dividerY, TEXT_WIDTH - 16, 2);
+  s.rect(TEXT_X + 8, dividerY, TEXT_WIDTH - 16, 1);
   const rightCells = Math.min(fineCells(status.right), columns);
   s.text(status.right, TEXT_X + (columns - rightCells) * TABLES[font].width, statusY, rightCells);
   s.text(status.left, TEXT_X, statusY, Math.max(0, columns - rightCells - 1));
@@ -161,8 +185,15 @@ export function renderTestPattern(font: FineFont): number[][] {
     label(`horizontal ${gap + 1}px`, x0, y1);
     for (let y = y1 + line + 2; y < y1 + line + 52; y += gap + 1) s.rect(x0, y, 120, 1);
   });
-  label(`checker ${SCREEN.width}x${SCREEN.height}`, 428, top);
-  for (let y = top + line + 2; y < y1 + line + 52; y++) for (let x = 428; x < 568; x++) if ((x + y) % 2 === 0) s.set(x, y);
+  // Checkerboards of 1, 2 and 3px squares. Blotches only in the 1px board point
+  // to the pixels/optics; blotches in the same bands in all three to resampling.
+  const checkTop = top + line + 2, checkBottom = y1 + line + 52, band = Math.floor((checkBottom - checkTop - 2 * line) / 3);
+  [1, 2, 3].forEach((size, i) => {
+    const y0 = checkTop + i * (band + line);
+    label(`checker ${size}px`, 428, y0 - line - 1 + (i ? 0 : -1));
+    for (let y = y0; y < y0 + band; y++) for (let x = 428; x < 568; x++)
+      if ((Math.floor((x - 428) / size) + Math.floor((y - y0) / size)) % 2 === 0) s.set(x, y);
+  });
   label('Swipe to return to the chat.', 8, SCREEN.height - 6 - line);
   return s.tiles();
 }

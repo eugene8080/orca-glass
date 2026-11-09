@@ -50,6 +50,12 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-09 user adds Departure Mono, monogram, Pixeloid Mono (mono only) and asks for 1px
+borders/dividers everywhere. Built (unreleased): all six small fonts as bitmap tables at
+native grids, monospace enforced; geometric box drawing; native frame/divider 1px; test
+pattern adds 2px/3px checkers. G2: gratings uniform, 1px checker blotchy. Pixeloid RFN
+flagged. 136 tests; simulator verified all three new fonts and 1px native lines.
+
 2026-11-09 user: 'Upload Beta.' Beta1.0.39 uploaded/promoted, CLI verified beta channel
 75,794 bytes. 136 tests pass; prototype dist restored. App-only, no bridge restart. G2
 checks pending: test pattern (1:1 vs scaled), three fonts, page-turn time.

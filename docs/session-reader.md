@@ -481,3 +481,15 @@ no anti-aliasing. Each font uses its own native cell, never a scaled size.
 - Status row order (2026-11-09): model first, then status, so the model never moves
   while the working words rotate. Native: the spinner image sits after the model
   name (x = 16 + its measured width); a model change rebuilds the page.
+- Fonts added 2026-11-09 (user request; monospace only, enforced by the builder):
+  Departure Mono 1.500 (OFL-1.1, Helena Zhang; native 11px grid, 7x14, 80 x 18, has
+  box drawing), monogram (MIT per its GitLab source, datagoblin; author's bitmap table,
+  6x12, 93 x 22), Pixeloid Mono (OFL-1.1, GGBotNet, from the author's DaFont release;
+  native 9px grid, 6x11, 93 x 24). Pixeloid reserves its font name and our glyph
+  table is a converted version: the menu names it only to identify the source; review
+  before any public release. Box drawing missing from a font is drawn geometrically.
+- Borders: frame and divider are single-pixel lines in native text (borderWidth 1,
+  divider height 1) and in small text (2026-11-09 user request). Spleen 6x12 now 93 x 22.
+- G2 2026-11-09: user reports the test pattern lines uniform (no visible scaling), but
+  the 1px checkerboard looks blotchy ("camouflage"). 2px and 3px checkerboards added
+  to tell pixel/optics limits from resampling.

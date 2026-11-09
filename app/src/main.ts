@@ -25,7 +25,7 @@ import { statusRight } from './footer-hint';
 import { formatReset, RESET_MODES, resetModeLabel, type ResetMode } from './usage-reset';
 import { orcaAgents, workspaceSections, toggleWorkspace, workspaceSummary, type PickerRow } from './filters';
 import { createPhone } from './phone';
-import { FINE_TILES, FINE_TEXT_WIDTH, fineLayout, fineMeasure, fineCells, renderFineScreen, renderTestPattern, type FineFont } from './fine-text';
+import { FINE_FONTS, FINE_TILES, FINE_TEXT_WIDTH, fineLayout, fineMeasure, fineCells, renderFineScreen, renderTestPattern, type FineFont } from './fine-text';
 import { agentLabel, sessionRow, sessionListTitle, sessionHeading, MENU_LEFT, MENU_RIGHT, MENU_CURSOR, sessionAgentLabel, menuNativeText, menuCursorText, nativeRight, glassWidth, compactSessionTitle, type SessionColumns } from './session-list';
 
 // 画面 576x288。上に見出し(テキスト)、下に本文(リスト or テキスト)の2段構成で統一する。
@@ -40,7 +40,8 @@ const READER_HEIGHT = READER_ROWS * 27;
 const STATUS_ROW_Y = 254;
 const VOICE = { containerID: 3, containerName: 'voice', xPosition: 16, yPosition: STATUS_ROW_Y, width: 544, height: 28 };
 const FRAME = { containerID: 4, containerName: 'frame', xPosition: 0, yPosition: 0, width: 576, height: 288 };
-const DIVIDER = { containerID: 5, containerName: 'divider', xPosition: 16, yPosition: 250, width: 544, height: 2 };
+// Frame and divider are single-pixel lines (user request 2026-11-09).
+const DIVIDER = { containerID: 5, containerName: 'divider', xPosition: 16, yPosition: 250, width: 544, height: 1 };
 const HINT = { containerID: 6, containerName: 'hint', xPosition: 280, yPosition: STATUS_ROW_Y, width: 280, height: 28 };
 const STATUS_ICON = { containerID: 7, containerName: 'status-icon', xPosition: 16, yPosition: STATUS_ROW_Y, width: 20, height: 28 };
 // Full-screen voice page: the same nine rows hold the scrollable transcript and
@@ -187,8 +188,8 @@ function voicePage(s: TextScreen, content: string) {
   return { containerTotalNum: 4, textObject: [
     new TextContainerProperty({ ...VOICE_BODY, content, paddingLength: 0, isEventCapture: 1, zOrderIndex: 1 }),
     new TextContainerProperty({ ...VOICE_HINT, content: s.voiceHint || ' ', textColor: 4, paddingLength: 0, isEventCapture: 0, zOrderIndex: 3 }),
-    new TextContainerProperty({ ...VOICE_FRAME, content: ' ', textColor: 4, borderWidth: 2, borderColor: 15, borderRadius: 0, isEventCapture: 0, zOrderIndex: 0 }),
-    new TextContainerProperty({ ...VOICE_DIVIDER, content: ' ', textColor: 4, borderWidth: 2, borderColor: 15, isEventCapture: 0, zOrderIndex: 2 }),
+    new TextContainerProperty({ ...VOICE_FRAME, content: ' ', textColor: 4, borderWidth: 1, borderColor: 15, borderRadius: 0, isEventCapture: 0, zOrderIndex: 0 }),
+    new TextContainerProperty({ ...VOICE_DIVIDER, content: ' ', textColor: 4, borderWidth: 1, borderColor: 15, isEventCapture: 0, zOrderIndex: 2 }),
   ] };
 }
 
@@ -356,8 +357,8 @@ async function show(s: Screen, reloadText = false) {
             ...(s.reader ? [
               new TextContainerProperty({ ...HINT, content: readerHint(s, s.reportedSeconds), textColor: 4, isEventCapture: 0, paddingLength: 0, zOrderIndex: 6 }),
               new TextContainerProperty({ ...VOICE, content: statusLeft(s.activityLabel!, s.model), textColor: 4, isEventCapture: 0, paddingLength: 0, zOrderIndex: 5 }),
-              new TextContainerProperty({ ...FRAME, content: ' ', textColor: 4, borderWidth: 2, borderColor: 15, borderRadius: 0, isEventCapture: 0, zOrderIndex: 0 }),
-              new TextContainerProperty({ ...DIVIDER, content: ' ', textColor: 4, borderWidth: 2, borderColor: 15, isEventCapture: 0, zOrderIndex: 3 }),
+              new TextContainerProperty({ ...FRAME, content: ' ', textColor: 4, borderWidth: 1, borderColor: 15, borderRadius: 0, isEventCapture: 0, zOrderIndex: 0 }),
+              new TextContainerProperty({ ...DIVIDER, content: ' ', textColor: 4, borderWidth: 1, borderColor: 15, isEventCapture: 0, zOrderIndex: 3 }),
             ] : [])],
           ...(s.reader ? { imageObject: [new ImageContainerProperty({ ...STATUS_ICON, xPosition: statusIconX(s.model), zOrderIndex: 4 })] } : {}),
         };
@@ -463,7 +464,8 @@ function requestFineStatus(s: TextScreen) {
 function readerMenu() {
   const option = (id: number, mode: ReaderText, label: string) => ({ id, label: `${label}${readerText === mode ? ' (on)' : ''}`, run: () => setReaderText(mode) });
   return [option(1101, 'native', 'Text: native'), option(1102, 'pixel', 'Text: Spleen 6x12'), option(1103, 'pixel16', 'Text: Spleen 8x16'),
-    option(1104, 'mono', 'Text: JetBrains Mono'),
+    option(1104, 'mono', 'Text: JetBrains Mono'), option(1106, 'departure', 'Text: Departure Mono'),
+    option(1107, 'monogram', 'Text: Monogram'), option(1108, 'pixeloid', 'Text: Pixeloid Mono'),
     ...(readerText === 'native' ? [] : [{ id: 1105, label: 'Display test pattern', run: () => showTestPattern() }])];
 }
 
@@ -1308,7 +1310,7 @@ async function main() {
   await bridge.setLocalStorage('lang', 'en');
   viewProvider = (await bridge.getLocalStorage('view-provider')) || 'all';
   const savedText = await bridge.getLocalStorage('reader-text');
-  if (savedText === 'pixel' || savedText === 'pixel16' || savedText === 'mono') readerText = savedText;
+  if (FINE_FONTS.includes(savedText as FineFont)) readerText = savedText as FineFont;
   const resetMode = await bridge.getLocalStorage('usage-reset-mode');
   if (RESET_MODES.includes(resetMode as ResetMode)) usageResetMode = resetMode as ResetMode;
   for (const [key, set] of [['view-workspaces', (v: Set<string>) => { viewWorkspaces = v; }], ['view-hermes-workspaces', (v: Set<string>) => { viewHermesWorkspaces = v; }]] as const) {

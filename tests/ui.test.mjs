@@ -592,8 +592,9 @@ test('a rejected live text update is retried instead of marking unseen text as d
   const divider = h.pages.at(-1).textObject.find(c => c.containerName === 'divider');
   assert.equal(frame.borderColor, 15);
   assert.equal(divider.borderColor, 15);
-  assert.equal(frame.borderWidth, 2);
-  assert.equal(divider.height, 2);
+  assert.equal(frame.borderWidth, 1);
+  assert.equal(divider.borderWidth, 1);
+  assert.equal(divider.height, 1);
   assert.equal(h.pages.at(-1).textObject.find(c => c.containerName === 'voice').content, '/Status unknown');
 });
 
@@ -794,7 +795,7 @@ test('contextual actions refresh roster, open workspace picker and display usage
   await h.back(); await h.pick(2);
   // The reader's own menu only switches text size; session-list actions do nothing there.
   assert.equal(JSON.stringify(h.pages.at(-1).menuObject.menuItems.map(i => [i.itemID, i.itemName])),
-    JSON.stringify([[1101, 'Text: native (on)'], [1102, 'Text: Spleen 6x12'], [1103, 'Text: Spleen 8x16'], [1104, 'Text: JetBrains Mono']]));
+    JSON.stringify([[1101, 'Text: native (on)'], [1102, 'Text: Spleen 6x12'], [1103, 'Text: Spleen 8x16'], [1104, 'Text: JetBrains Mono'], [1106, 'Text: Departure Mono'], [1107, 'Text: Monogram'], [1108, 'Text: Pixeloid Mono']]));
   const pages = h.pages.length;
   await h.menu(1002);
   assert.equal(h.pages.length, pages);
@@ -1345,21 +1346,24 @@ test('small text draws the whole screen, status row included, as four tiles and 
   assert.equal(JSON.stringify(page.imageObject.map(i => [i.containerID, i.xPosition, i.yPosition, i.width, i.height])),
     JSON.stringify([[2, 0, 0, 288, 144], [3, 288, 0, 288, 144], [4, 0, 144, 288, 144], [5, 288, 144, 288, 144]]));
   assert.equal(JSON.stringify(page.menuObject.menuItems.map(i => i.itemName)),
-    JSON.stringify(['Text: native', 'Text: Spleen 6x12 (on)', 'Text: Spleen 8x16', 'Text: JetBrains Mono', 'Display test pattern']));
+    JSON.stringify(['Text: native', 'Text: Spleen 6x12 (on)', 'Text: Spleen 8x16', 'Text: JetBrains Mono', 'Text: Departure Mono', 'Text: Monogram', 'Text: Pixeloid Mono', 'Display test pattern']));
   const layout = fineExports.fineLayout('pixel');
-  assert.deepEqual([layout.columns, layout.rows], [93, 21]);
-  // 50 lines at 21 rows: three pages, opening on the newest. The tiles sent are
+  assert.deepEqual([layout.columns, layout.rows], [93, 22]);
+  // Every font on its own whole-pixel grid.
+  assert.equal(JSON.stringify(Object.fromEntries(fineExports.FINE_FONTS.map(f => { const l = fineExports.fineLayout(f); return [f, [l.cell, l.line, l.columns, l.rows]]; }))),
+    JSON.stringify({ pixel: [6, 12, 93, 22], pixel16: [8, 16, 70, 16], mono: [6, 14, 93, 18], departure: [7, 14, 80, 18], monogram: [6, 12, 93, 22], pixeloid: [6, 11, 93, 24] }));
+  // 50 lines at 22 rows: three pages, opening on the newest. The tiles sent are
   // exactly the rendered screen with the status row drawn in.
   const sent = () => h.images.filter(i => /^fine-/.test(i.containerName));
-  const expected = (from, pageNo) => fineExports.renderFineScreen(Array.from({ length: Math.min(21, 50 - from) }, (_, i) => `Line ${from + i}`).join(nl),
+  const expected = (from, pageNo) => fineExports.renderFineScreen(Array.from({ length: Math.min(22, 50 - from) }, (_, i) => `Line ${from + i}`).join(nl),
     'pixel', { left: '/Status unknown', right: `[Tap&Hold for Input] Pg${pageNo}/3` });
   assert.equal(sent().length, 4);
-  assert.equal(JSON.stringify(sent().map(i => i.imageData)), JSON.stringify(expected(42, 3)));
+  assert.equal(JSON.stringify(sent().map(i => i.imageData)), JSON.stringify(expected(44, 3)));
   // A page turn re-sends only tiles that changed and keeps native text untouched.
   const before = sent().length;
   await h.scroll('up'); await h.flush();
   const turned = sent().slice(before);
-  const want = expected(21, 2);
+  const want = expected(22, 2);
   assert.ok(turned.length >= 1 && turned.length <= 4);
   for (const tile of turned) assert.equal(JSON.stringify(tile.imageData), JSON.stringify(want[Number(tile.containerName.slice(5))]));
   assert.ok(!h.upgrades.some(u => ['body', 'voice', 'hint'].includes(u.containerName)));
