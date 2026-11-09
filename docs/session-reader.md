@@ -493,3 +493,7 @@ no anti-aliasing. Each font uses its own native cell, never a scaled size.
 - G2 2026-11-09: user reports the test pattern lines uniform (no visible scaling), but
   the 1px checkerboard looks blotchy ("camouflage"). 2px and 3px checkerboards added
   to tell pixel/optics limits from resampling.
+- Thinking indicator (2026-11-09 user choice "Scanner sweep"): tile modes draw a
+  scanner light (8 segments, 5px each, head plus three dimmer grey tail levels)
+  between the model and the status words, one step per frame (1 frame/s, 14-frame
+  round trip). Native text keeps the spinning Braille image.

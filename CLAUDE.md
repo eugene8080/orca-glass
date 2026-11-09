@@ -50,6 +50,10 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-09 user picks 'Scanner sweep' as the tile-mode thinking indicator (native keeps
+Braille). Built: 8-segment light with grey tail, steps with the 1/s status frame; only the
+bottom-left tile changes per frame. 137 tests; simulator verified. Unreleased.
+
 2026-11-09 user adds Departure Mono, monogram, Pixeloid Mono (mono only) and asks for 1px
 borders/dividers everywhere. Built (unreleased): all six small fonts as bitmap tables at
 native grids, monospace enforced; geometric box drawing; native frame/divider 1px; test

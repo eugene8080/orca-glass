@@ -78,8 +78,8 @@ class Surface {
   private canvas: CanvasRenderingContext2D | null = null;
   private canvasUsed = false;
   constructor(private font: FineFont) {}
-  set(x: number, y: number) { if (x >= 0 && y >= 0 && x < SCREEN.width && y < SCREEN.height) this.pixels[y * SCREEN.width + x] = 255; }
-  rect(x: number, y: number, w: number, h: number) { for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) this.set(x + i, y + j); }
+  set(x: number, y: number, level = 255) { if (x >= 0 && y >= 0 && x < SCREEN.width && y < SCREEN.height) this.pixels[y * SCREEN.width + x] = level; }
+  rect(x: number, y: number, w: number, h: number, level = 255) { for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) this.set(x + i, y + j, level); }
   // Draw text from (x, y) in whole cells; stops at maxCells. Returns cells used.
   text(text: string, x: number, y: number, maxCells: number): number {
     const { width: cw, height: ch } = TABLES[this.font];
@@ -150,7 +150,26 @@ class Surface {
 
 // One full screen: frame, chat rows (already wrapped to fineLayout().columns),
 // divider and the status row (left text, right text right-aligned).
-export function renderFineScreen(text: string, font: FineFont, status: { left: string; right: string }): number[][] {
+// Thinking indicator for tile modes (native text keeps the Braille spinner): a
+// scanner light sweeping across SCANNER_SEGMENTS segments and back, with a tail in
+// three dimmer greys. One step per frame; a full sweep there and back is 14 frames.
+export const SCANNER_SEGMENTS = 8;
+const SCANNER_SEGMENT = 5, SCANNER_GAP = 1, SCANNER_LEVELS = [255, 176, 112, 64];
+export const SCANNER_WIDTH = SCANNER_SEGMENTS * (SCANNER_SEGMENT + SCANNER_GAP) - SCANNER_GAP;
+export function scannerLevels(frame: number): number[] {
+  const period = 2 * (SCANNER_SEGMENTS - 1);
+  const step = ((frame % period) + period) % period;
+  const forward = step < SCANNER_SEGMENTS - 1 || step === period;
+  const head = step < SCANNER_SEGMENTS ? step : period - step;
+  // The tail trails behind the direction of travel.
+  return Array.from({ length: SCANNER_SEGMENTS }, (_, i) => {
+    const behind = forward ? head - i : i - head;
+    return behind >= 0 && behind < SCANNER_LEVELS.length ? SCANNER_LEVELS[behind] : 0;
+  });
+}
+
+export type FineStatus = { left: string; right: string; model?: string; scanner?: number };
+export function renderFineScreen(text: string, font: FineFont, status: FineStatus): number[][] {
   const s = new Surface(font);
   const { line, rows, columns, statusY, dividerY } = fineLayout(font);
   s.rect(0, 0, SCREEN.width, FRAME); s.rect(0, SCREEN.height - FRAME, SCREEN.width, FRAME);
@@ -159,7 +178,17 @@ export function renderFineScreen(text: string, font: FineFont, status: { left: s
   s.rect(TEXT_X + 8, dividerY, TEXT_WIDTH - 16, 1);
   const rightCells = Math.min(fineCells(status.right), columns);
   s.text(status.right, TEXT_X + (columns - rightCells) * TABLES[font].width, statusY, rightCells);
-  s.text(status.left, TEXT_X, statusY, Math.max(0, columns - rightCells - 1));
+  const leftCells = Math.max(0, columns - rightCells - 1);
+  if (status.scanner === undefined) s.text(status.left, TEXT_X, statusY, leftCells);
+  else {
+    // 'Opus5.5 [scanner] Thinking...': the model stays put, the light sweeps.
+    const cw = TABLES[font].width;
+    const modelCells = status.model ? s.text(`${status.model} `, TEXT_X, statusY, leftCells) : 0;
+    const x0 = TEXT_X + modelCells * cw, barCells = Math.ceil(SCANNER_WIDTH / cw) + 1;
+    const h = Math.max(3, Math.floor(line / 3)), y0 = statusY + Math.floor((line - h) / 2);
+    scannerLevels(status.scanner).forEach((level, i) => { if (level) s.rect(x0 + i * (SCANNER_SEGMENT + SCANNER_GAP), y0, SCANNER_SEGMENT, h, level); });
+    s.text(status.left, x0 + barCells * cw, statusY, Math.max(0, leftCells - modelCells - barCells));
+  }
   return s.tiles();
 }
 

@@ -25,7 +25,7 @@ import { statusRight } from './footer-hint';
 import { formatReset, RESET_MODES, resetModeLabel, type ResetMode } from './usage-reset';
 import { orcaAgents, workspaceSections, toggleWorkspace, workspaceSummary, type PickerRow } from './filters';
 import { createPhone } from './phone';
-import { FINE_FONTS, FINE_TILES, FINE_TEXT_WIDTH, fineLayout, fineMeasure, fineCells, renderFineScreen, renderTestPattern, type FineFont } from './fine-text';
+import { FINE_FONTS, FINE_TILES, FINE_TEXT_WIDTH, SCANNER_WIDTH, fineLayout, fineMeasure, fineCells, renderFineScreen, renderTestPattern, type FineFont, type FineStatus } from './fine-text';
 import { agentLabel, sessionRow, sessionListTitle, sessionHeading, MENU_LEFT, MENU_RIGHT, MENU_CURSOR, sessionAgentLabel, menuNativeText, menuCursorText, nativeRight, glassWidth, compactSessionTitle, type SessionColumns } from './session-list';
 
 // 画面 576x288。上に見出し(テキスト)、下に本文(リスト or テキスト)の2段構成で統一する。
@@ -434,15 +434,21 @@ async function paintFine(s: TextScreen, content: string, page: number, pattern =
 // Status row drawn in the small font: '⠋ Thinking... Opus5.5' left, '13m
 // [Tap&Hold for Input] Pg3/5' right. The timer shows whole minutes so the row
 // changes (and is re-sent) at most once a minute while idle text stays put.
-function fineStatus(s: TextScreen, page: number) {
+function fineStatus(s: TextScreen, page: number): FineStatus {
   const label = s.fineLabel ?? s.activityLabel ?? readerStatus('unknown');
-  const left = s.model ? `${s.model} ${label}` : label;
+  // Working labels start with a Braille spinner frame; tile modes draw the
+  // scanner sweep in its place, stepping with the same frame counter.
+  const working = label[0] !== '/' && label.length > 2;
+  const words = working ? label.slice(2) : label;
+  const scannerCells = working ? Math.ceil(SCANNER_WIDTH / fineLayout(s.fine!).cell) + 1 : 0;
+  const leftCells = (s.model ? fineCells(s.model) + 1 : 0) + scannerCells + fineCells(words);
   const pages = readerLayout(s).length;
   const where = s.refreshing ? 'Refreshing…' : `Pg${page + 1}/${pages}`;
   const minutes = s.activityState === 'working' && s.reportedSeconds != null ? `${Math.floor(s.reportedSeconds / 60)}m` : '';
-  const room = fineLayout(s.fine!).columns - fineCells(left) - 1;
-  const right = statusRight(null, !!s.choiceMenu, where, text => fineCells([minutes, text].filter(Boolean).join(' ')) <= room);
-  return { left, right: [minutes, right].filter(Boolean).join(' ') };
+  const room = fineLayout(s.fine!).columns - leftCells - 1;
+  const right = [minutes, statusRight(null, !!s.choiceMenu, where, text => fineCells([minutes, text].filter(Boolean).join(' ')) <= room)].filter(Boolean).join(' ');
+  return working ? { model: s.model, scanner: s.statusFrame || 0, left: words, right }
+    : { left: s.model ? `${s.model} ${label}` : label, right };
 }
 
 // Coalesced repaint of the current small-text page (status changes, dismissing

@@ -1381,3 +1381,16 @@ test('small text draws the whole screen, status row included, as four tiles and 
   assert.deepEqual(saved.at(-1), ['reader-text', 'native']);
   assert.equal(h.pages.at(-1).containerTotalNum, 7);
 });
+
+test('tile modes sweep a scanner light where native text shows the Braille spinner', () => {
+  const heads = Array.from({ length: 15 }, (_, f) => fineExports.scannerLevels(f).indexOf(255));
+  // Sweeps 0..7 and back, one segment per frame.
+  assert.equal(JSON.stringify(heads), JSON.stringify([0, 1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2, 1, 0]));
+  // A fading tail follows the light: right-moving at frame 3, left-moving at frame 10.
+  assert.equal(JSON.stringify(fineExports.scannerLevels(3)), JSON.stringify([64, 112, 176, 255, 0, 0, 0, 0]));
+  assert.equal(JSON.stringify(fineExports.scannerLevels(10)), JSON.stringify([0, 0, 0, 0, 255, 176, 112, 64]));
+  // Two frames differ only in the bottom-left tile, where the status row starts.
+  const frame = n => fineExports.renderFineScreen('Line', 'pixel', { model: 'Opus5.5', scanner: n, left: 'Thinking...', right: 'Pg1/1' });
+  const a = frame(0), b = frame(1);
+  assert.equal(JSON.stringify([0, 1, 2, 3].map(i => JSON.stringify(a[i]) === JSON.stringify(b[i]))), JSON.stringify([true, true, false, true]));
+});
