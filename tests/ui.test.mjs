@@ -71,8 +71,8 @@ async function harness(count = 2, voice = false, mode = 'tap', savedView = '', s
     './fine-text': {
       FINE_TILES: [0, 1, 2, 3].map(i => ({ xPosition: 8 + (i % 2) * 280, yPosition: 4 + Math.floor(i / 2) * 122, width: 280, height: 122 })),
       FINE_AREA: { x: 8, y: 4, width: 560, height: 244 },
-      FINE_METRICS: { pixel: { advance: 6, line: 12, rows: 20, px: 12 }, mono: { advance: 6.6, line: 13, rows: 18, px: 11 } },
-      fineMeasure: font => text => [...text].length * (font === 'pixel' ? 6 : 6.6),
+      FINE_METRICS: { pixel: { advance: 6, line: 12, rows: 20, px: 12 }, mono: { advance: 6, line: 13, rows: 18, px: 10 } },
+      fineMeasure: () => text => [...text].length * 6,
       loadFineFont: async () => true,
       renderFinePage: text => [0, 1, 2, 3].map(i => i === 0 ? [...text.split(String.fromCharCode(10))[0]].map(c => c.codePointAt(0)) : [i]),
     },

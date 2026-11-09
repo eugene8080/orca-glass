@@ -4,7 +4,7 @@
 //
 //   pixel: Spleen 6x12, a monospace bitmap font, drawn pixel-exact from its glyph
 //          table (no canvas smoothing). 93 columns x 20 rows.
-//   mono:  JetBrains Mono at 11px with greyscale anti-aliasing. 84 columns x 18 rows.
+//   mono:  JetBrains Mono at 10px on its own 6x13 grid, cut to on/off pixels. 93 x 18.
 //
 // Characters outside a font fall back to the WebView's monospace font in the
 // same cell; East Asian wide characters take two cells.
@@ -22,7 +22,9 @@ export const FINE_TILES = [0, 1, 2, 3].map(i => ({
 
 export const FINE_METRICS: Record<FineFont, { advance: number; line: number; rows: number; px: number }> = {
   pixel: { advance: 6, line: 12, rows: 20, px: 12 },
-  mono: { advance: 6.6, line: 13, rows: 18, px: 11 },
+  // JetBrains Mono is 0.6em wide with a 1.32em line: at 10px the cell is exactly
+  // 6px and the line 13.2px, so glyphs and box-drawing joins land on whole pixels.
+  mono: { advance: 6, line: 13, rows: 18, px: 10 },
 };
 export const fineColumns = (font: FineFont) => Math.floor(FINE_AREA.width / FINE_METRICS[font].advance);
 

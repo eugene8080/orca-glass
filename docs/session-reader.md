@@ -459,8 +459,9 @@ the current page on screen. Code: app/src/fine-text.ts.
 - pixel: Spleen 6x12 (monospace bitmap, BSD-2-Clause) drawn pixel-exact from a glyph
   table at its native size, 93 x 20 per page. Spleen also has 8x16 (70 x 15) if
   6x12 is too small on the G2; use whole bitmap sizes, never scaled.
-- mono: JetBrains Mono 11px (OFL-1.1, Latin subset), 84 x 18, cut to on/off pixels
-  at half coverage. The display shows even its dimmest grey at about 38% (simulator
+- mono: JetBrains Mono at 10px (OFL-1.1, Latin subset) on its own grid: 0.6em
+  advance and 1.32em line give an exact 6x13 cell, 93 x 18, cut to on/off pixels at
+  half coverage. (11px gave a 6.6px cell: uneven spacing, dotted box lines.) The display shows even its dimmest grey at about 38% (simulator
   alpha 96), so anti-aliasing read as bold smudges.
 - Only tiles whose pixels changed are re-sent on a page turn or live update.
 - The status row stays native text (one fixed size). Its Braille spinner is a fifth
@@ -468,4 +469,4 @@ the current page on screen. Code: app/src/fine-text.ts.
 - Fonts are built by scripts/build-fine-fonts.py; FONT-LICENSES.txt ships in the app.
 - Simulator 2026-11-09: native 12 pages vs pixel 4 / mono 5 for the same chat; four
   tiles in 34 ms (no Bluetooth). ASCII diagrams align in both; box-drawing lines are
-  continuous in pixel, dotted in mono. G2 legibility and page-turn time unmeasured.
+  continuous in both after the 10px change. G2 legibility and page-turn time unmeasured.
