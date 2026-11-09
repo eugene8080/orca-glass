@@ -499,3 +499,9 @@ no anti-aliasing. Each font uses its own native cell, never a scaled size.
   round trip). Native text keeps the spinning Braille image.
 - 2026-11-09 user removed Spleen 8x16 (menu, glyph table, builder). A saved
   'pixel16' choice falls back to native text.
+- G2 beta 1.0.40 (user, 2026-11-09): fonts look fine; 1px frame good; all three
+  checkerboards (1/2/3px) blotchy; line gratings uniform; page turn visibly draws the
+  four tiles one by one; scanner not yet seen (needs a working agent). Even's docs
+  pace image sends at 100 ms each (SDK 0.0.14+), so a full four-tile page cannot
+  appear at once. Blotches at every checker size with uniform gratings point to
+  display/optics brightness non-uniformity rather than resampling (unconfirmed).

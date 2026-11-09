@@ -9,6 +9,8 @@ Completed/superseded release notes: [history](docs/todo-history.md).
 ## Open work
 
 - [ ] **Small text in the reader (pixel / mono image tiles) -- G2 check pending:**
+  2026-11-09 G2 1.0.40: fonts fine, 1px frame good, all checkerboards blotchy, tiles draw
+  one by one on page turn, scanner not yet seen. Page-turn ms from Settings log pending.
   2026-11-09 beta1.0.39 uploaded/promoted (75,794 bytes). Revision: whole screen incl. status row as four 288x144 tiles;
   Spleen 6x12 / 8x16 / JetBrains Mono (FreeType mono bitmap) menu names; display test
   pattern for the 640x350-panel vs 576x288-canvas question. 136 tests; simulator verified.
