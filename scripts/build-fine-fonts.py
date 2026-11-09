@@ -1,7 +1,7 @@
 """Build the small-text reader glyph tables from upstream releases (run by hand).
 
 Inputs (downloaded release archives, unpacked):
-  --spleen-dir  spleen-2.2.0/            (BSD-2-Clause, Frederic Cambus): spleen-6x12.bdf, spleen-8x16.bdf
+  --spleen-dir  spleen-2.2.0/            (BSD-2-Clause, Frederic Cambus): spleen-6x12.bdf
   --mono        JetBrainsMono-2.304 fonts/ttf/JetBrainsMono-Regular.ttf   (OFL-1.1, JetBrains)
   --departure   DepartureMono-1.500/DepartureMono-Regular.otf   (OFL-1.1, Helena Zhang)
   --monogram    gitlab.com/datagoblin/monogram source/bitmap/monogram-bitmap.json   (MIT, Vinicius Menezio)
@@ -163,7 +163,6 @@ def main() -> None:
     ap.add_argument("--pixeloid", type=Path, required=True)
     args = ap.parse_args()
     s12 = spleen(args.spleen_dir / "spleen-6x12.bdf", 6, 12)
-    s16 = spleen(args.spleen_dir / "spleen-8x16.bdf", 8, 16)
     mw, mh, mono = outline(args.mono, 10)
     dsize, psize = pixel_grid_size(args.departure), pixel_grid_size(args.pixeloid)
     dw, dh, departure = outline(args.departure, dsize, all_codes(args.departure))
@@ -179,7 +178,6 @@ def main() -> None:
         "// Pixeloid Mono (c) GGBotNet, OFL-1.1: fonts/PIXELOID-OFL.txt.\n"
         "// Entry: hex code point ':' then one byte per row (bit 7 = leftmost pixel).\n"
         f"export const SPLEEN_6X12 = {{ width: 6, height: 12, glyphs: '{';'.join(s12)}' }};\n"
-        f"export const SPLEEN_8X16 = {{ width: 8, height: 16, glyphs: '{';'.join(s16)}' }};\n"
         f"export const JETBRAINS_MONO_10 = {{ width: {mw}, height: {mh}, glyphs: '{';'.join(mono)}' }};\n"
         f"export const DEPARTURE_MONO = {{ width: {dw}, height: {dh}, glyphs: '{';'.join(departure)}' }};\n"
         f"export const MONOGRAM = {{ width: {gw}, height: {gh}, glyphs: '{';'.join(mgram)}' }};\n"

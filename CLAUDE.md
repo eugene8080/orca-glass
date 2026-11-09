@@ -50,6 +50,9 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-09 user: remove Spleen 8x16. Removed from menu, fonts, glyph table and builder;
+137 tests pass; simulator menu verified. Unreleased.
+
 2026-11-09 user picks 'Scanner sweep' as the tile-mode thinking indicator (native keeps
 Braille). Built: 8-segment light with grey tail, steps with the 1/s status frame; only the
 bottom-left tile changes per frame. 137 tests; simulator verified. Unreleased.

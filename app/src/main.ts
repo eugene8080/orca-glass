@@ -469,7 +469,7 @@ function requestFineStatus(s: TextScreen) {
 // The glasses OS adds its own Display off / Brightness / Close entries.
 function readerMenu() {
   const option = (id: number, mode: ReaderText, label: string) => ({ id, label: `${label}${readerText === mode ? ' (on)' : ''}`, run: () => setReaderText(mode) });
-  return [option(1101, 'native', 'Text: native'), option(1102, 'pixel', 'Text: Spleen 6x12'), option(1103, 'pixel16', 'Text: Spleen 8x16'),
+  return [option(1101, 'native', 'Text: native'), option(1102, 'pixel', 'Text: Spleen 6x12'),
     option(1104, 'mono', 'Text: JetBrains Mono'), option(1106, 'departure', 'Text: Departure Mono'),
     option(1107, 'monogram', 'Text: Monogram'), option(1108, 'pixeloid', 'Text: Pixeloid Mono'),
     ...(readerText === 'native' ? [] : [{ id: 1105, label: 'Display test pattern', run: () => showTestPattern() }])];

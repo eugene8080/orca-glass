@@ -8,7 +8,6 @@
 // All monospace, each at its own native pixel grid (the G2 shows the 576x288
 // canvas 1:1, confirmed with the display test pattern on 2026-11-09):
 //   pixel:     Spleen 6x12 (bitmap)                          93 columns
-//   pixel16:   Spleen 8x16 (bitmap)                          70 columns
 //   mono:      JetBrains Mono 10px, FreeType mono, 6x14       93 columns
 //   departure: Departure Mono at its 11px grid, 7x14         80 columns
 //   monogram:  monogram (author's bitmap table), 6x12        93 columns
@@ -16,12 +15,12 @@
 // Missing characters: box drawing as geometric lines and Braille as dots, both
 // fitted to the cell; anything else via the WebView monospace font, thresholded
 // to on/off pixels. East Asian wide characters take two cells.
-import { SPLEEN_6X12, SPLEEN_8X16, JETBRAINS_MONO_10, DEPARTURE_MONO, MONOGRAM, PIXELOID_MONO } from './fonts/glyphs';
+import { SPLEEN_6X12, JETBRAINS_MONO_10, DEPARTURE_MONO, MONOGRAM, PIXELOID_MONO } from './fonts/glyphs';
 
-export type FineFont = 'pixel' | 'pixel16' | 'mono' | 'departure' | 'monogram' | 'pixeloid';
-export const FINE_FONTS: FineFont[] = ['pixel', 'pixel16', 'mono', 'departure', 'monogram', 'pixeloid'];
+export type FineFont = 'pixel' | 'mono' | 'departure' | 'monogram' | 'pixeloid';
+export const FINE_FONTS: FineFont[] = ['pixel', 'mono', 'departure', 'monogram', 'pixeloid'];
 
-const TABLES = { pixel: SPLEEN_6X12, pixel16: SPLEEN_8X16, mono: JETBRAINS_MONO_10, departure: DEPARTURE_MONO, monogram: MONOGRAM, pixeloid: PIXELOID_MONO };
+const TABLES = { pixel: SPLEEN_6X12, mono: JETBRAINS_MONO_10, departure: DEPARTURE_MONO, monogram: MONOGRAM, pixeloid: PIXELOID_MONO };
 export const SCREEN = { width: 576, height: 288 };
 export const FINE_TILES = [0, 1, 2, 3].map(i => ({ xPosition: (i % 2) * 288, yPosition: Math.floor(i / 2) * 144, width: 288, height: 144 }));
 

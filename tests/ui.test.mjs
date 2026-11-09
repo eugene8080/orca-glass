@@ -795,7 +795,7 @@ test('contextual actions refresh roster, open workspace picker and display usage
   await h.back(); await h.pick(2);
   // The reader's own menu only switches text size; session-list actions do nothing there.
   assert.equal(JSON.stringify(h.pages.at(-1).menuObject.menuItems.map(i => [i.itemID, i.itemName])),
-    JSON.stringify([[1101, 'Text: native (on)'], [1102, 'Text: Spleen 6x12'], [1103, 'Text: Spleen 8x16'], [1104, 'Text: JetBrains Mono'], [1106, 'Text: Departure Mono'], [1107, 'Text: Monogram'], [1108, 'Text: Pixeloid Mono']]));
+    JSON.stringify([[1101, 'Text: native (on)'], [1102, 'Text: Spleen 6x12'], [1104, 'Text: JetBrains Mono'], [1106, 'Text: Departure Mono'], [1107, 'Text: Monogram'], [1108, 'Text: Pixeloid Mono']]));
   const pages = h.pages.length;
   await h.menu(1002);
   assert.equal(h.pages.length, pages);
@@ -1346,12 +1346,12 @@ test('small text draws the whole screen, status row included, as four tiles and 
   assert.equal(JSON.stringify(page.imageObject.map(i => [i.containerID, i.xPosition, i.yPosition, i.width, i.height])),
     JSON.stringify([[2, 0, 0, 288, 144], [3, 288, 0, 288, 144], [4, 0, 144, 288, 144], [5, 288, 144, 288, 144]]));
   assert.equal(JSON.stringify(page.menuObject.menuItems.map(i => i.itemName)),
-    JSON.stringify(['Text: native', 'Text: Spleen 6x12 (on)', 'Text: Spleen 8x16', 'Text: JetBrains Mono', 'Text: Departure Mono', 'Text: Monogram', 'Text: Pixeloid Mono', 'Display test pattern']));
+    JSON.stringify(['Text: native', 'Text: Spleen 6x12 (on)', 'Text: JetBrains Mono', 'Text: Departure Mono', 'Text: Monogram', 'Text: Pixeloid Mono', 'Display test pattern']));
   const layout = fineExports.fineLayout('pixel');
   assert.deepEqual([layout.columns, layout.rows], [93, 22]);
   // Every font on its own whole-pixel grid.
   assert.equal(JSON.stringify(Object.fromEntries(fineExports.FINE_FONTS.map(f => { const l = fineExports.fineLayout(f); return [f, [l.cell, l.line, l.columns, l.rows]]; }))),
-    JSON.stringify({ pixel: [6, 12, 93, 22], pixel16: [8, 16, 70, 16], mono: [6, 14, 93, 18], departure: [7, 14, 80, 18], monogram: [6, 12, 93, 22], pixeloid: [6, 11, 93, 24] }));
+    JSON.stringify({ pixel: [6, 12, 93, 22], mono: [6, 14, 93, 18], departure: [7, 14, 80, 18], monogram: [6, 12, 93, 22], pixeloid: [6, 11, 93, 24] }));
   // 50 lines at 22 rows: three pages, opening on the newest. The tiles sent are
   // exactly the rendered screen with the status row drawn in.
   const sent = () => h.images.filter(i => /^fine-/.test(i.containerName));
@@ -1373,10 +1373,7 @@ test('small text draws the whole screen, status row included, as four tiles and 
   await h.scroll('down'); await h.flush();
   const restored = new Map(sent().slice(-4).map(i => [i.containerName, i.imageData]));
   for (const [name, data] of restored) assert.equal(JSON.stringify(data), JSON.stringify(want[Number(name.slice(5))]));
-  // Spleen 8x16 and back to native text on the page holding the same first line.
-  await h.menu(1103);
-  assert.deepEqual(saved.at(-1), ['reader-text', 'pixel16']);
-  assert.deepEqual([fineExports.fineLayout('pixel16').columns, fineExports.fineLayout('pixel16').rows], [70, 16]);
+  // Back to native text on the page holding the same first line.
   await h.menu(1101);
   assert.deepEqual(saved.at(-1), ['reader-text', 'native']);
   assert.equal(h.pages.at(-1).containerTotalNum, 7);

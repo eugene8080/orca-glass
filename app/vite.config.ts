@@ -28,7 +28,7 @@ export default defineConfig({
         type: 'asset', fileName: 'FONT-LICENSES.txt',
         source: 'JetBrains Mono 2.304 (subset), SIL Open Font License 1.1:\n\n'
           + readFileSync(new URL('./src/fonts/JETBRAINS-MONO-OFL.txt', import.meta.url), 'utf8')
-          + '\n\nSpleen 6x12 and 8x16 2.2.0 (glyph tables), BSD 2-Clause License:\n\n'
+          + '\n\nSpleen 6x12 2.2.0 (glyph table), BSD 2-Clause License:\n\n'
           + readFileSync(new URL('./src/fonts/SPLEEN-LICENSE.txt', import.meta.url), 'utf8')
           + '\n\nDeparture Mono 1.500 (glyph table), SIL Open Font License 1.1:\n\n'
           + readFileSync(new URL('./src/fonts/DEPARTURE-MONO-OFL.txt', import.meta.url), 'utf8')

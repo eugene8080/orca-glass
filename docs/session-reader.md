@@ -497,3 +497,5 @@ no anti-aliasing. Each font uses its own native cell, never a scaled size.
   scanner light (8 segments, 5px each, head plus three dimmer grey tail levels)
   between the model and the status words, one step per frame (1 frame/s, 14-frame
   round trip). Native text keeps the spinning Braille image.
+- 2026-11-09 user removed Spleen 8x16 (menu, glyph table, builder). A saved
+  'pixel16' choice falls back to native text.
