@@ -7,20 +7,28 @@
 // table (app/src/fonts/glyphs.ts): no canvas text and no anti-aliasing.
 // All monospace, each at its own native pixel grid (the G2 shows the 576x288
 // canvas 1:1, confirmed with the display test pattern on 2026-11-09):
-//   pixel:     Spleen 6x12 (bitmap)                          93 columns
-//   mono:      JetBrains Mono 10px, FreeType mono, 6x14       93 columns
-//   departure: Departure Mono at its 11px grid, 7x14         80 columns
-//   monogram:  monogram (author's bitmap table), 6x12        93 columns
-//   pixeloid:  Pixeloid Mono at its 9px grid, 6x11           93 columns
+// cell sizes below; a page is 560px / cell width columns. Bitmap fonts come from
+// their BDF files, outline pixel fonts are rasterised at their own pixel grid,
+// JetBrains Mono by FreeType in monochrome mode (see scripts/build-fine-fonts.py).
 // Missing characters: box drawing as geometric lines and Braille as dots, both
 // fitted to the cell; anything else via the WebView monospace font, thresholded
 // to on/off pixels. East Asian wide characters take two cells.
-import { SPLEEN_6X12, JETBRAINS_MONO_10, DEPARTURE_MONO, MONOGRAM, PIXELOID_MONO } from './fonts/glyphs';
+import { SPLEEN_6X12, JETBRAINS_MONO_10, DEPARTURE_MONO, MONOGRAM, PIXELOID_MONO, COZETTE, TERMINUS, GOHU, SCIENTIFICA, FIXED } from './fonts/glyphs';
 
-export type FineFont = 'pixel' | 'mono' | 'departure' | 'monogram' | 'pixeloid';
-export const FINE_FONTS: FineFont[] = ['pixel', 'mono', 'departure', 'monogram', 'pixeloid'];
-
-const TABLES = { pixel: SPLEEN_6X12, mono: JETBRAINS_MONO_10, departure: DEPARTURE_MONO, monogram: MONOGRAM, pixeloid: PIXELOID_MONO };
+// Menu order: the 6px-wide fonts by height, then the narrower and wider ones.
+const TABLES = {
+  pixel: SPLEEN_6X12, terminus: TERMINUS, monogram: MONOGRAM, fixed: FIXED, cozette: COZETTE,
+  gohu: GOHU, pixeloid: PIXELOID_MONO, scientifica: SCIENTIFICA, departure: DEPARTURE_MONO, mono: JETBRAINS_MONO_10,
+};
+export type FineFont = keyof typeof TABLES;
+export const FINE_FONTS = Object.keys(TABLES) as FineFont[];
+const NAMES: Record<FineFont, string> = {
+  pixel: 'Spleen', terminus: 'Terminus', monogram: 'Monogram', fixed: 'Misc Fixed', cozette: 'Cozette',
+  gohu: 'GohuFont', pixeloid: 'Pixeloid', scientifica: 'Scientifica', departure: 'Departure', mono: 'JetBrains',
+};
+// 'Cozette 6x13': short name and native cell. The glasses menu truncates labels
+// beyond about 210px, so names are short (Pixeloid Mono -> Pixeloid).
+export const fineLabel = (font: FineFont) => `${NAMES[font]} ${TABLES[font].width}x${TABLES[font].height}`;
 export const SCREEN = { width: 576, height: 288 };
 export const FINE_TILES = [0, 1, 2, 3].map(i => ({ xPosition: (i % 2) * 288, yPosition: Math.floor(i / 2) * 144, width: 288, height: 144 }));
 
@@ -221,6 +229,14 @@ export function renderTestPattern(font: FineFont): number[][] {
     label(`checker ${size}px`, 428, y0 - line - 1 + (i ? 0 : -1));
     for (let y = y0; y < y0 + band; y++) for (let x = 428; x < 568; x++)
       if ((Math.floor((x - 428) / size) + Math.floor((y - y0) / size)) % 2 === 0) s.set(x, y);
+  });
+  // Solid patches at full, half and quarter brightness. Blotches in a solid
+  // fill cannot come from resampling: they are panel or waveguide brightness.
+  const solidTop = checkBottom + line + 6, solidBottom = SCREEN.height - 10 - line;
+  [[255, '100%'], [128, '50%'], [64, '25%']].forEach(([level, name], i) => {
+    const x0 = 8 + i * 186;
+    label(`solid ${name}`, x0, solidTop - line - 1);
+    s.rect(x0, solidTop, 176, Math.max(8, solidBottom - solidTop), level as number);
   });
   label('Swipe to return to the chat.', 8, SCREEN.height - 6 - line);
   return s.tiles();

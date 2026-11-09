@@ -795,7 +795,7 @@ test('contextual actions refresh roster, open workspace picker and display usage
   await h.back(); await h.pick(2);
   // The reader's own menu only switches text size; session-list actions do nothing there.
   assert.equal(JSON.stringify(h.pages.at(-1).menuObject.menuItems.map(i => [i.itemID, i.itemName])),
-    JSON.stringify([[1101, 'Text: native (on)'], [1102, 'Text: Spleen 6x12'], [1104, 'Text: JetBrains Mono'], [1106, 'Text: Departure Mono'], [1107, 'Text: Monogram'], [1108, 'Text: Pixeloid Mono']]));
+    JSON.stringify([[1101, 'Text: native (on)'], [1102, 'Small: Spleen 6x12'], [1103, 'Next: Terminus 6x12'], [1104, 'Prev: JetBrains 6x14']]));
   const pages = h.pages.length;
   await h.menu(1002);
   assert.equal(h.pages.length, pages);
@@ -1340,25 +1340,36 @@ test('small text draws the whole screen, status row included, as four tiles and 
   // Spleen 6x12: one blank full-screen swipe target plus four 288x144 tiles.
   await h.menu(1102);
   const page = h.pages.at(-1);
-  assert.deepEqual(saved.at(-1), ['reader-text', 'pixel']);
+  assert.deepEqual(saved.slice(-2), [['reader-text', 'pixel'], ['reader-font', 'pixel']]);
   assert.equal(page.containerTotalNum, 5);
   assert.equal(JSON.stringify(page.textObject.map(t => [t.containerID, t.width, t.height, t.isEventCapture, t.content])), JSON.stringify([[1, 576, 288, 1, ' ']]));
   assert.equal(JSON.stringify(page.imageObject.map(i => [i.containerID, i.xPosition, i.yPosition, i.width, i.height])),
     JSON.stringify([[2, 0, 0, 288, 144], [3, 288, 0, 288, 144], [4, 0, 144, 288, 144], [5, 288, 144, 288, 144]]));
   assert.equal(JSON.stringify(page.menuObject.menuItems.map(i => i.itemName)),
-    JSON.stringify(['Text: native', 'Text: Spleen 6x12 (on)', 'Text: JetBrains Mono', 'Text: Departure Mono', 'Text: Monogram', 'Text: Pixeloid Mono', 'Display test pattern']));
+    JSON.stringify(['Text: native', 'Using: Spleen 6x12', 'Next: Terminus 6x12', 'Prev: JetBrains 6x14', 'Display test pattern']));
+  // Every possible label fits the menu without truncation (about 210px in the firmware font).
+  for (const f of fineExports.FINE_FONTS) for (const prefix of ['Small', 'Using', 'Next', 'Prev'])
+    assert.ok(listExports.glassWidth(`${prefix}: ${fineExports.fineLabel(f)}`) <= 210, `${prefix}: ${fineExports.fineLabel(f)}`);
   const layout = fineExports.fineLayout('pixel');
   assert.deepEqual([layout.columns, layout.rows], [93, 22]);
   // Every font on its own whole-pixel grid.
   assert.equal(JSON.stringify(Object.fromEntries(fineExports.FINE_FONTS.map(f => { const l = fineExports.fineLayout(f); return [f, [l.cell, l.line, l.columns, l.rows]]; }))),
-    JSON.stringify({ pixel: [6, 12, 93, 22], mono: [6, 14, 93, 18], departure: [7, 14, 80, 18], monogram: [6, 12, 93, 22], pixeloid: [6, 11, 93, 24] }));
+    JSON.stringify({ pixel: [6, 12, 93, 22], terminus: [6, 12, 93, 22], monogram: [6, 12, 93, 22], fixed: [6, 13, 93, 20], cozette: [6, 13, 93, 20],
+      gohu: [6, 11, 93, 24], pixeloid: [6, 11, 93, 24], scientifica: [5, 11, 112, 24], departure: [7, 14, 80, 18], mono: [6, 14, 93, 18] }));
+  // Next and previous step through all ten fonts and remember the last one used.
+  await h.menu(1103);
+  assert.deepEqual(saved.slice(-2), [['reader-text', 'terminus'], ['reader-font', 'terminus']]);
+  assert.equal(h.pages.at(-1).menuObject.menuItems[1].itemName, 'Using: Terminus 6x12');
+  await h.menu(1104);
+  assert.deepEqual(saved.at(-1), ['reader-font', 'pixel']);
   // 50 lines at 22 rows: three pages, opening on the newest. The tiles sent are
   // exactly the rendered screen with the status row drawn in.
   const sent = () => h.images.filter(i => /^fine-/.test(i.containerName));
   const expected = (from, pageNo) => fineExports.renderFineScreen(Array.from({ length: Math.min(22, 50 - from) }, (_, i) => `Line ${from + i}`).join(nl),
     'pixel', { left: '/Status unknown', right: `[Tap&Hold for Input] Pg${pageNo}/3` });
-  assert.equal(sent().length, 4);
-  assert.equal(JSON.stringify(sent().map(i => i.imageData)), JSON.stringify(expected(44, 3)));
+  // A rebuild re-sends all four tiles; the latest four are the Spleen page.
+  assert.equal(JSON.stringify(sent().slice(-4).map(i => i.containerName)), JSON.stringify(['fine-0', 'fine-1', 'fine-2', 'fine-3']));
+  assert.equal(JSON.stringify(sent().slice(-4).map(i => i.imageData)), JSON.stringify(expected(44, 3)));
   // A page turn re-sends only tiles that changed and keeps native text untouched.
   const before = sent().length;
   await h.scroll('up'); await h.flush();

@@ -25,7 +25,7 @@ import { statusRight } from './footer-hint';
 import { formatReset, RESET_MODES, resetModeLabel, type ResetMode } from './usage-reset';
 import { orcaAgents, workspaceSections, toggleWorkspace, workspaceSummary, type PickerRow } from './filters';
 import { createPhone } from './phone';
-import { FINE_FONTS, FINE_TILES, FINE_TEXT_WIDTH, SCANNER_WIDTH, fineLayout, fineMeasure, fineCells, renderFineScreen, renderTestPattern, type FineFont, type FineStatus } from './fine-text';
+import { FINE_FONTS, FINE_TILES, fineLabel, FINE_TEXT_WIDTH, SCANNER_WIDTH, fineLayout, fineMeasure, fineCells, renderFineScreen, renderTestPattern, type FineFont, type FineStatus } from './fine-text';
 import { agentLabel, sessionRow, sessionListTitle, sessionHeading, MENU_LEFT, MENU_RIGHT, MENU_CURSOR, sessionAgentLabel, menuNativeText, menuCursorText, nativeRight, glassWidth, compactSessionTitle, type SessionColumns } from './session-list';
 
 // 画面 576x288。上に見出し(テキスト)、下に本文(リスト or テキスト)の2段構成で統一する。
@@ -83,6 +83,8 @@ let viewProvider = 'all';
 // Reader text: the firmware's native font, or small text drawn as image tiles.
 type ReaderText = 'native' | FineFont;
 let readerText: ReaderText = 'native';
+// The small font the menu offers when native text is on (last one used).
+let smallFont: FineFont = 'pixel';
 let usageResetMode: ResetMode = 'computer';
 let viewWorkspaces: Set<string> | null = null;
 // Hermes is not part of Orca: it has its own workspace selection and page.
@@ -467,12 +469,21 @@ function requestFineStatus(s: TextScreen) {
 
 // Reader long-press menu: switch between native text and the two small fonts.
 // The glasses OS adds its own Display off / Brightness / Close entries.
+// Ten small fonts exceed the glasses' ten-entry menu, so the menu switches
+// between native and small text and steps through fonts; every entry names the
+// font and its native cell ('Small: Cozette 6x13').
 function readerMenu() {
-  const option = (id: number, mode: ReaderText, label: string) => ({ id, label: `${label}${readerText === mode ? ' (on)' : ''}`, run: () => setReaderText(mode) });
-  return [option(1101, 'native', 'Text: native'), option(1102, 'pixel', 'Text: Spleen 6x12'),
-    option(1104, 'mono', 'Text: JetBrains Mono'), option(1106, 'departure', 'Text: Departure Mono'),
-    option(1107, 'monogram', 'Text: Monogram'), option(1108, 'pixeloid', 'Text: Pixeloid Mono'),
-    ...(readerText === 'native' ? [] : [{ id: 1105, label: 'Display test pattern', run: () => showTestPattern() }])];
+  const on = (yes: boolean) => yes ? ' (on)' : '';
+  const font = readerText === 'native' ? smallFont : readerText;
+  const at = FINE_FONTS.indexOf(font), n = FINE_FONTS.length;
+  const next = FINE_FONTS[(at + 1) % n], previous = FINE_FONTS[(at + n - 1) % n];
+  return [
+    { id: 1101, label: `Text: native${on(readerText === 'native')}`, run: () => setReaderText('native') },
+    { id: 1102, label: `${readerText === 'native' ? 'Small' : 'Using'}: ${fineLabel(font)}`, run: () => setReaderText(font) },
+    { id: 1103, label: `Next: ${fineLabel(next)}`, run: () => setReaderText(next) },
+    { id: 1104, label: `Prev: ${fineLabel(previous)}`, run: () => setReaderText(previous) },
+    ...(readerText === 'native' ? [] : [{ id: 1105, label: 'Display test pattern', run: () => showTestPattern() }]),
+  ];
 }
 
 // Paint the 1:1 display test into the tiles; the next swipe restores the page.
@@ -489,6 +500,7 @@ function showTestPattern() {
 async function setReaderText(mode: ReaderText) {
   await bridge.setLocalStorage('reader-text', mode);
   readerText = mode;
+  if (mode !== 'native') { smallFont = mode; await bridge.setLocalStorage('reader-font', mode); }
   const s = current;
   if (s?.kind !== 'text' || !s.reader || s.voice) return;
   const pages = readerLayout(s);
@@ -1317,6 +1329,8 @@ async function main() {
   viewProvider = (await bridge.getLocalStorage('view-provider')) || 'all';
   const savedText = await bridge.getLocalStorage('reader-text');
   if (FINE_FONTS.includes(savedText as FineFont)) readerText = savedText as FineFont;
+  const savedFont = await bridge.getLocalStorage('reader-font');
+  smallFont = FINE_FONTS.includes(savedFont as FineFont) ? savedFont as FineFont : readerText === 'native' ? 'pixel' : readerText;
   const resetMode = await bridge.getLocalStorage('usage-reset-mode');
   if (RESET_MODES.includes(resetMode as ResetMode)) usageResetMode = resetMode as ResetMode;
   for (const [key, set] of [['view-workspaces', (v: Set<string>) => { viewWorkspaces = v; }], ['view-hermes-workspaces', (v: Set<string>) => { viewHermesWorkspaces = v; }]] as const) {

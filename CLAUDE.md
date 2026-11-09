@@ -50,6 +50,12 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-09 user asks to test uneven brightness and add five more mono pixel fonts with
+sizes in the menu. Built (unreleased): Cozette, Terminus, GohuFont, scientifica, Misc
+Fixed from official sources via a generic BDF reader (old tables byte-identical); menu
+becomes native / Small|Using / Next / Prev / test pattern with WxH (labels fit ~210px);
+test pattern gets 100/50/25% solid patches. 137 tests. Terminus RFN flagged.
+
 2026-11-09 user: 'upload beta'. Beta1.0.40 uploaded/promoted, CLI verified beta channel
 88,334 bytes. 137 tests pass; prototype dist restored. App-only, no bridge restart. G2
 checks pending: five fonts, 1px lines, 2/3px checkers, scanner, page-turn time.

@@ -505,3 +505,20 @@ no anti-aliasing. Each font uses its own native cell, never a scaled size.
   pace image sends at 100 ms each (SDK 0.0.14+), so a full four-tile page cannot
   appear at once. Blotches at every checker size with uniform gratings point to
   display/optics brightness non-uniformity rather than resampling (unconfirmed).
+- Fonts added 2026-11-09 (user asked for five more mono pixel fonts; picked by Claude),
+  all BDF bitmap fonts read at their native cell, limited to Latin, punctuation,
+  arrows, maths, box drawing, shapes, dingbats and Braille:
+  Cozette 1.30.0 6x13 (MIT, github.com/slavfox/Cozette), Terminus 4.49.1 6x12 (OFL,
+  SourceForge terminus-font; Reserved Font Name "Terminus Font" -- review before a
+  public release, like Pixeloid), GohuFont 2.1 6x11 (WTFPL, github.com/hchargois/
+  gohufont), scientifica 2.3 5x11 (OFL, github.com/nerdypepper/scientifica; 112
+  columns), X11 misc-fixed 6x13 (public domain, gitlab.freedesktop.org xorg misc-misc).
+  Ten fonts in all: Spleen 6x12, Terminus 6x12, Monogram 6x12 (93x22), Misc Fixed
+  6x13, Cozette 6x13 (93x20), GohuFont 6x11, Pixeloid 6x11 (93x24), Scientifica 5x11
+  (112x24), Departure 7x14 (80x18), JetBrains 6x14 (93x18).
+- Reader menu (ten fonts exceed the ten-entry menu): Text: native / Small or Using:
+  <font WxH> / Next: <font WxH> / Prev: <font WxH> / Display test pattern. The glasses
+  truncate labels beyond about 210px, so short names; a test checks every label.
+  'reader-font' keeps the last small font used.
+- Test pattern adds solid patches at 100%, 50% and 25% to separate panel/waveguide
+  brightness non-uniformity (blotches in a solid fill) from resampling.

@@ -35,7 +35,17 @@ export default defineConfig({
           + '\n\nmonogram (glyph table from the author\'s bitmap source), MIT License:\n\n'
           + readFileSync(new URL('./src/fonts/MONOGRAM-LICENSE.txt', import.meta.url), 'utf8')
           + '\n\nPixeloid Mono (glyph table converted from the font; Reserved Font Name "Pixeloid"), SIL Open Font License 1.1:\n\n'
-          + readFileSync(new URL('./src/fonts/PIXELOID-OFL.txt', import.meta.url), 'utf8'),
+          + readFileSync(new URL('./src/fonts/PIXELOID-OFL.txt', import.meta.url), 'utf8')
+          + '\n\nCozette 1.30.0 (glyph table), MIT License:\n\n'
+          + readFileSync(new URL('./src/fonts/COZETTE-LICENSE.txt', import.meta.url), 'utf8')
+          + '\n\nTerminus Font 4.49.1 (glyph table; Reserved Font Name "Terminus Font"), SIL Open Font License 1.1:\n\n'
+          + readFileSync(new URL('./src/fonts/TERMINUS-OFL.txt', import.meta.url), 'utf8')
+          + '\n\nGohuFont 2.1 (glyph table), WTFPL:\n\n'
+          + readFileSync(new URL('./src/fonts/GOHUFONT-LICENSE.txt', import.meta.url), 'utf8')
+          + '\n\nscientifica 2.3 (glyph table), SIL Open Font License 1.1:\n\n'
+          + readFileSync(new URL('./src/fonts/SCIENTIFICA-OFL.txt', import.meta.url), 'utf8')
+          + '\n\nX11 misc-fixed 6x13 (glyph table):\n\n'
+          + readFileSync(new URL('./src/fonts/MISC-FIXED-COPYING.txt', import.meta.url), 'utf8'),
       });
     },
   }],
