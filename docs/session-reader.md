@@ -522,3 +522,32 @@ no anti-aliasing. Each font uses its own native cell, never a scaled size.
   'reader-font' keeps the last small font used.
 - Test pattern adds solid patches at 100%, 50% and 25% to separate panel/waveguide
   brightness non-uniformity (blotches in a solid fill) from resampling.
+- G2 1.0.41 (user 2026-11-09): solid patches also blotchy, so the blotches are panel or
+  waveguide brightness non-uniformity, not resampling. New fonts work well.
+- Small-text modes pad Markdown tables (alignMarkdownTables in app/src/fine-text.ts)
+  so columns line up in monospace; the rule row's colons set alignment.
+
+## Other agent CLIs (2026-11-09)
+
+User request: conversation text for Cursor, OpenCode, OpenCode 2, Pi, OpenClaude and
+the Hermes Agent CLI (Cursor showed 'Conversation-only text is unavailable').
+- Cursor agent CLI: Orca records the chat ID (providerSession.id, no path). Reader
+  bridge/conversation.mjs readCursorStore: ~/.cursor/chats/<32 hex>/<id>/store.db,
+  exactly one match, meta (hex JSON) agentId must equal the ID; the root blob's
+  protobuf field 1 lists message blob IDs in order; user <user_query> text and
+  assistant text parts shown; reasoning, tools, system and injected context hidden.
+  Model from meta.lastUsedModel. Screen fallback cursorConversation (reply text at
+  two-space indent; tools, diffs, header and footer dropped; the screen does not
+  mark user messages). Live read-only check: 4 user + 7 assistant messages in order.
+- OpenCode 2 (opencode and opencode2 commands are @opencode/cli 2.0.27): Orca records
+  the session ID (ses_...). Reader: ~/.local/share/opencode/opencode.db,
+  session_v2 row must exist, session_message rows in seq order; user text and
+  assistant text parts; reasoning/tool/compaction/idle/system hidden. Live read-only
+  check of the recorded session: 4 user + 21 assistant messages. No screen parser yet
+  (no live pane to inspect).
+- OpenClaude (Claude Code fork): Claude screen parser and Claude transcript reader
+  under ~/.openclaude/projects. Not yet seen live in Orca: agent identity and pane
+  record shape unverified.
+- Pi: not on PATH and no sessions under ~/.pi; not implemented.
+- Hermes Agent CLI panes: Orca Glass lists Hermes through the gateway (Hermes rows),
+  never the terminal pane; what fails for the user is not yet known.

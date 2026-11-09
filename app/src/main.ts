@@ -25,7 +25,7 @@ import { statusRight } from './footer-hint';
 import { formatReset, RESET_MODES, resetModeLabel, type ResetMode } from './usage-reset';
 import { orcaAgents, workspaceSections, toggleWorkspace, workspaceSummary, type PickerRow } from './filters';
 import { createPhone } from './phone';
-import { FINE_FONTS, FINE_TILES, fineLabel, FINE_TEXT_WIDTH, SCANNER_WIDTH, fineLayout, fineMeasure, fineCells, renderFineScreen, renderTestPattern, type FineFont, type FineStatus } from './fine-text';
+import { FINE_FONTS, FINE_TILES, fineLabel, alignMarkdownTables, FINE_TEXT_WIDTH, SCANNER_WIDTH, fineLayout, fineMeasure, fineCells, renderFineScreen, renderTestPattern, type FineFont, type FineStatus } from './fine-text';
 import { agentLabel, sessionRow, sessionListTitle, sessionHeading, MENU_LEFT, MENU_RIGHT, MENU_CURSOR, sessionAgentLabel, menuNativeText, menuCursorText, nativeRight, glassWidth, compactSessionTitle, type SessionColumns } from './session-list';
 
 // 画面 576x288。上に見出し(テキスト)、下に本文(リスト or テキスト)の2段構成で統一する。
@@ -131,14 +131,16 @@ function readerLayout(s: TextScreen) {
       // Monospace small text: wrap by cells; images have no native byte limit.
       const measure = fineMeasure(s.fine);
       const width = FINE_TEXT_WIDTH, rows = fineLayout(s.fine).rows;
-      const start = latestResponseStart(s.text);
-      const whole = readerPages(s.text, measure, width, rows, Infinity);
+      // Monospace: Markdown tables are padded so their columns line up.
+      const text = alignMarkdownTables(s.text);
+      const start = latestResponseStart(text);
+      const whole = readerPages(text, measure, width, rows, Infinity);
       const chars = (text: string) => text.replaceAll('\n', '').length;
       if (start < 0) { s.pages = whole; s.responsePage = undefined; }
-      else if (chars(s.text.slice(0, start)) >= chars(whole.slice(0, -1).join(''))) { s.pages = whole; s.responsePage = whole.length - 1; }
+      else if (chars(text.slice(0, start)) >= chars(whole.slice(0, -1).join(''))) { s.pages = whole; s.responsePage = whole.length - 1; }
       else {
-        const before = start > 0 ? readerPages(s.text.slice(0, start - 1), measure, width, rows, Infinity) : [];
-        s.pages = [...before, ...readerPages(s.text.slice(start), measure, width, rows, Infinity)];
+        const before = start > 0 ? readerPages(text.slice(0, start - 1), measure, width, rows, Infinity) : [];
+        s.pages = [...before, ...readerPages(text.slice(start), measure, width, rows, Infinity)];
         s.responsePage = before.length;
       }
       s.pageText = s.text;
@@ -736,7 +738,7 @@ function thread(t: Thread, note = '') {
     const title = () => `${t.title}${note ? `  ${note}` : ''}`;
     const snapshot = await api.thread(t.handle);
     const saved = await api.history(t.handle).catch(() => null);
-    const useSaved = ['codex-transcript', 'claude-transcript', 'hermes-transcript'].includes(saved?.source || '');
+    const useSaved = ['codex-transcript', 'claude-transcript', 'cursor-transcript', 'opencode-transcript', 'hermes-transcript'].includes(saved?.source || '');
     const conversationText = useSaved ? saved!.text : snapshot.text;
     const state = await api.activity(t.handle).catch(e => {
       diag(`Activity request failed: ${(e as Error).message}`);
@@ -804,7 +806,7 @@ function startReaderUpdates(screen: Screen | null): (() => Promise<void>) | unde
     }
     if (screen.reading) { reading = false; return; }
     let r = await (screen.savedHistory ? api.history(t.handle) : Promise.resolve(snapshot)).catch(() => null);
-    if (screen.savedHistory && (!r || !('source' in r) || !['codex-transcript', 'claude-transcript', 'hermes-transcript'].includes(r.source || ''))) {
+    if (screen.savedHistory && (!r || !('source' in r) || !['codex-transcript', 'claude-transcript', 'cursor-transcript', 'opencode-transcript', 'hermes-transcript'].includes(r.source || ''))) {
       r = snapshot;
       // Stay on live output after losing the verified saved-history association.
       if (r && current === screen) screen.savedHistory = false;
@@ -839,7 +841,7 @@ function history(t: Thread) {
   return guard(t.title, async () => {
     const r = await api.history(t.handle);
     if (current !== previous) return;
-    await show({ kind: 'text', title: ['codex-transcript', 'claude-transcript', 'hermes-transcript'].includes(r.source || '') ? 'Conversation history' : 'Terminal buffer only',
+    await show({ kind: 'text', title: ['codex-transcript', 'claude-transcript', 'cursor-transcript', 'opencode-transcript', 'hermes-transcript'].includes(r.source || '') ? 'Conversation history' : 'Terminal buffer only',
       text: r.text || r.reason || 'No older terminal output is retained.', tail: true, reader: t,
       onBack: () => thread(t),
       onHold: () => { void record(t, true); } });

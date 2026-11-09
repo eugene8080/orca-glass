@@ -50,6 +50,13 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-09 user: tables should line up (app pads Markdown tables in small modes),
+solid test patches blotchy too (panel/waveguide, recorded), Cursor showed 'conversation-
+only text unavailable'; make it work for Cursor, OpenCode, OpenCode 2, Pi, OpenClaude,
+Hermes CLI. Built (unreleased): Cursor store + screen readers, OpenCode 2 reader,
+OpenClaude via Claude paths; Pi not installed, Hermes CLI symptom unknown. 143 tests;
+live read-only checks for Cursor and OpenCode 2. Needs bridge restart + beta 1.0.42.
+
 2026-11-09 user: 'upload beta'. Beta1.0.41 uploaded/promoted, CLI verified beta channel
 126,496 bytes. 137 tests pass; prototype dist restored. App-only. G2 pending: solid
 patches (brightness), new fonts. Global rule added: chat tables as padded monospace.

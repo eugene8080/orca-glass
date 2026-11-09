@@ -26,6 +26,9 @@ export function terminalModel(lines) {
   for (const line of (lines || []).slice(-8).reverse()) {
     const match = /^\s*(gpt-[\w.-]+)\s+(minimal|low|medium|high|xhigh)\s+·\s/i.exec(line);
     if (match) return modelLabel(match[1].toLowerCase(), match[2].toLowerCase());
+    // Cursor's agent CLI: 'Composer 2.5 Fast · 33.6% · 1 file edited'.
+    const cursor = /^\s*([A-Z][\w.+-]*(?: [\w.+-]+){0,3}) · \d+(?:\.\d+)?%(?: ·|\s*$)/.exec(line);
+    if (cursor && cursor[1].length <= 24) return cursor[1];
   }
   return '';
 }
@@ -58,7 +61,37 @@ export function stripTerminalChrome(lines) {
   return lines;
 }
 
+// Cursor's agent CLI indents replies by two spaces and everything else (tool
+// summaries, command output, diffs) by four, under a two-space '$ command' or a
+// four-space 'Read/Grepped/Edited ...' header. A four-space line continues a reply
+// only directly after reply text (wrapped bullets). Footer: '→ Add a follow-up',
+// the model/context line and the working directory. The screen does not mark the
+// user's own messages, so every kept line is shown as the agent's.
+const CURSOR_TOOL = /^(?:Read|Reading|Grepped|Grepping|Glob|Globbed|Listed|Searched|Edited|Editing|Wrote|Created|Deleted|Ran|Running|Fetched|Explored|Thought|Thinking|Updated|…|▎)/u;
+export function cursorConversation(lines) {
+  let end = lines.length;
+  const follow = lines.findLastIndex(line => /^\s*→\s/.test(line));
+  if (follow >= 0 && follow >= lines.length - 6) end = follow;
+  const kept = [];
+  let mode = 'none'; // 'reply' while reply text continues, 'tool' inside a tool block
+  for (const raw of lines.slice(0, end)) {
+    const indent = raw.length - raw.trimStart().length;
+    const line = raw.trim();
+    if (!line) { mode = mode === 'tool' ? 'tool' : 'none'; continue; }
+    if (indent <= 3) {
+      if (line.startsWith('$ ') || /^(?:Cursor Agent\b|v\d{4}\.|Tip:)/.test(line)) { mode = 'tool'; continue; }
+      kept.push(line);
+      mode = 'reply';
+    } else if (mode === 'reply' && !CURSOR_TOOL.test(line)) {
+      kept[kept.length - 1] += ' ' + line; // a wrapped reply line or bullet
+    } else mode = 'tool';
+  }
+  return kept.length ? formatMessages([{ role: 'assistant', text: kept.join('\n') }]) : '';
+}
+
 export function terminalConversation(lines, provider) {
+  if (provider === 'cursor') return cursorConversation(lines);
+  if (provider === 'openclaude') provider = 'claude'; // Claude Code fork, same screen
   const messages = [];
   let current = null;
   const user = provider === 'claude' ? '❯' : '›';

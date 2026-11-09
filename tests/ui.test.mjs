@@ -1402,3 +1402,16 @@ test('tile modes sweep a scanner light where native text shows the Braille spinn
   const a = frame(0), b = frame(1);
   assert.equal(JSON.stringify([0, 1, 2, 3].map(i => JSON.stringify(a[i]) === JSON.stringify(b[i]))), JSON.stringify([true, true, false, true]));
 });
+
+test('small-text modes pad Markdown tables so columns line up in monospace', () => {
+  const nl = String.fromCharCode(10);
+  const input = ['> Here:', '  | Mode | Cols | Chars/page |', '  |:--|--:|:-:|', '  | native | ~55 | ~500 |', '  | pixel | 93 | ~1860 |', '  Done.'].join(nl);
+  assert.equal(fineExports.alignMarkdownTables(input), ['> Here:',
+    '  | Mode   | Cols | Chars/page |',
+    '  | ------ | ---- | ---------- |',
+    '  | native |  ~55 |    ~500    |',
+    '  | pixel  |   93 |   ~1860    |',
+    '  Done.'].join(nl));
+  // Pipe text without a rule row is not a table and stays as written.
+  assert.equal(fineExports.alignMarkdownTables('> a | b |' + nl + '  | x |'), '> a | b |' + nl + '  | x |');
+});

@@ -241,3 +241,42 @@ export function renderTestPattern(font: FineFont): number[][] {
   label('Swipe to return to the chat.', 8, SCREEN.height - 6 - line);
   return s.tiles();
 }
+
+// Markdown tables in replies are padded so their columns line up in the
+// monospace small-text fonts (native text is proportional and cannot align).
+// A table is a run of '| ... |' rows whose second row is the '|---|:--:|' rule;
+// that rule's colons set each column's alignment. Role prefixes ('> ', '/ ',
+// two-space continuation) are kept. Anything else passes through unchanged.
+export function alignMarkdownTables(text: string): string {
+  const lines = text.split('\n');
+  const prefix = (line: string) => /^(?:[/>] | {2})/.exec(line)?.[0] ?? '';
+  const body = (line: string) => line.slice(prefix(line).length).trim();
+  const isRow = (line: string) => /^\|.*\|$/.test(body(line));
+  const out: string[] = [];
+  for (let i = 0; i < lines.length;) {
+    if (!isRow(lines[i])) { out.push(lines[i++]); continue; }
+    let j = i;
+    while (j < lines.length && isRow(lines[j])) j++;
+    const block = lines.slice(i, j);
+    const cells = block.map(line => body(line).slice(1, -1).split('|').map(cell => cell.trim()));
+    if (block.length < 2 || !cells[1].every(cell => /^:?-+:?$/.test(cell))) { out.push(...block); i = j; continue; }
+    const count = Math.max(...cells.map(row => row.length));
+    const align = Array.from({ length: count }, (_, c) => {
+      const rule = cells[1][c] ?? '';
+      return rule.endsWith(':') ? (rule.startsWith(':') ? 'center' : 'right') : 'left';
+    });
+    const widths = Array.from({ length: count }, (_, c) =>
+      Math.max(3, ...cells.filter((_, r) => r !== 1).map(row => fineCells(row[c] ?? ''))));
+    const pad = (cell: string, width: number, how: string) => {
+      const gap = width - fineCells(cell);
+      return how === 'right' ? ' '.repeat(gap) + cell : how === 'center'
+        ? ' '.repeat(gap >> 1) + cell + ' '.repeat(gap - (gap >> 1)) : cell + ' '.repeat(gap);
+    };
+    block.forEach((line, r) => {
+      const row = r === 1 ? widths.map(w => '-'.repeat(w)) : widths.map((w, c) => pad(cells[r][c] ?? '', w, align[c]));
+      out.push(`${prefix(line)}| ${row.join(' | ')} |`);
+    });
+    i = j;
+  }
+  return out.join('\n');
+}

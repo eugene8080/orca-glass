@@ -1,7 +1,7 @@
 // Read-only adapter for Orca's recorded pane -> provider transcript association.
 // Never infer identity from a working directory or choose the newest transcript.
 import { DatabaseSync } from 'node:sqlite';
-import { open, realpath, stat } from 'node:fs/promises';
+import { open, readdir, realpath, stat } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { basename, join, relative, resolve } from 'node:path';
 import { formatMessages, modelLabel } from './reader-text.mjs';
@@ -12,12 +12,14 @@ const profile = process.env.ORCA_GLASS_PROFILE_DIR || join(orcaHome, 'profiles',
 const cache = new Map();
 const reads = new Map();
 const MAX_TEXT = 1_000_000;
+// OpenClaude is a Claude Code fork: same transcript format, its own storage folder.
+const CLAUDE_LIKE = new Set(['claude', 'openclaude']);
 const normalize = value => String(value || '').replace(/^\\\\\?\\/, '').replaceAll('\\', '/').replace(/\/$/, '').toLowerCase();
 
 export function transcriptBinding(session, terminal) {
   const key = `${terminal.tabId}:${terminal.leafId}`;
   const record = session.sleepingAgentSessionsByPaneKey?.[key];
-  if (!['codex', 'claude'].includes(terminal.agentIdentity) || !terminal.connected || terminal.orphaned ||
+  if (!['codex', 'claude', 'openclaude'].includes(terminal.agentIdentity) || !terminal.connected || terminal.orphaned ||
       (terminal.executionHostId && terminal.executionHostId !== 'local') ||
       session.terminalPtyIncarnationsByPaneKey?.[key] !== terminal.incarnationId ||
       record?.agent !== terminal.agentIdentity || record.origin !== 'live' || record.worktreeId !== terminal.worktreeId ||
@@ -25,6 +27,122 @@ export function transcriptBinding(session, terminal) {
   const provider = record.providerSession;
   if (!/^[a-f0-9-]{36}$/i.test(provider?.id || '') || !provider.transcriptPath) return null;
   return { id: provider.id, path: provider.transcriptPath, cwd: provider.cwd, provider: terminal.agentIdentity };
+}
+
+// Cursor's agent CLI: Orca records only the chat ID for the pane (no path or
+// cwd). The same exact pane/incarnation/live-record checks apply; the chat is
+// then the one store whose own metadata names that ID.
+const ID_ONLY = { cursor: /^[a-f0-9-]{36}$/i, opencode: /^ses_[A-Za-z0-9]{20,40}$/, opencode2: /^ses_[A-Za-z0-9]{20,40}$/ };
+export function cursorBinding(session, terminal) {
+  const key = `${terminal.tabId}:${terminal.leafId}`;
+  const record = session.sleepingAgentSessionsByPaneKey?.[key];
+  const shape = ID_ONLY[terminal.agentIdentity];
+  if (!shape || !terminal.connected || terminal.orphaned ||
+      (terminal.executionHostId && terminal.executionHostId !== 'local') ||
+      session.terminalPtyIncarnationsByPaneKey?.[key] !== terminal.incarnationId ||
+      record?.agent !== terminal.agentIdentity || record.origin !== 'live' || record.worktreeId !== terminal.worktreeId ||
+      record.paneKey !== key || !shape.test(record.providerSession?.id || '')) return null;
+  return { id: record.providerSession.id, provider: terminal.agentIdentity === 'cursor' ? 'cursor' : 'opencode' };
+}
+
+// OpenCode 2 (opencode / opencode2 commands): one SQLite database. A session's
+// conversation is session_message rows in seq order: user { text }, assistant
+// { content: [{ type: 'text' | 'reasoning' | ..., text }], model: { id } }.
+// Shown: user text and assistant text parts; reasoning, tools, compaction
+// summaries, idle and system rows are excluded.
+export function opencodeMessages(rows) {
+  const messages = [];
+  let model;
+  for (const row of rows) {
+    let data;
+    try { data = JSON.parse(row.data); } catch { continue; }
+    if (row.type === 'user' && typeof data?.text === 'string' && data.text.trim()) messages.push({ role: 'user', text: data.text.trim() });
+    else if (row.type === 'assistant') {
+      if (typeof data?.model?.id === 'string') model = data.model.id;
+      const text = (Array.isArray(data?.content) ? data.content : []).filter(part => part?.type === 'text' && typeof part.text === 'string')
+        .map(part => part.text).join('\n').trim();
+      if (text) messages.push({ role: 'assistant', text });
+    }
+  }
+  return { messages, model };
+}
+
+async function readOpencodeStore(binding) {
+  const file = join(process.env.XDG_DATA_HOME || join(homedir(), '.local', 'share'), 'opencode', 'opencode.db');
+  if (!await stat(file).then(s => s.isFile(), () => false)) return null;
+  const db = new DatabaseSync(file, { readOnly: true });
+  try {
+    if (!db.prepare('SELECT 1 FROM session_v2 WHERE id = ?').get(binding.id)) return null; // unknown or older-format session: use the screen
+    const { messages, model } = opencodeMessages(db.prepare('SELECT type, data FROM session_message WHERE session_id = ? ORDER BY seq').all(binding.id));
+    let kept = messages, size = 0;
+    for (let i = messages.length - 1; i >= 0; i--) { size += messages[i].text.length; if (size > MAX_TEXT) { kept = messages.slice(i + 1); break; } }
+    return { text: formatMessages(kept), model: model ? modelLabel(model) || undefined : undefined, source: 'opencode-transcript', limited: kept.length !== messages.length, messageCount: kept.length };
+  } finally { db.close(); }
+}
+
+// Cursor's store.db: a meta row (hex JSON: agentId, latestRootBlobId,
+// lastUsedModel, ...) and content-addressed blobs. The root blob is protobuf;
+// its repeated field 1 lists the conversation's message blob IDs in order, and
+// each message blob is JSON { role, content }. Shown: the user's own query (the
+// <user_query> part; context Cursor injects has none) and the assistant's text
+// parts. Reasoning, tool calls, tool results and system text are excluded.
+function rootMessageIds(root) {
+  const ids = [];
+  let at = 0;
+  const varint = () => { let value = 0, shift = 0, byte; do { byte = root[at++]; value += (byte & 0x7f) * 2 ** shift; shift += 7; } while (byte & 0x80 && at < root.length); return value; };
+  while (at < root.length) {
+    const tag = varint(), field = Math.floor(tag / 8), wire = tag & 7;
+    if (wire === 2) {
+      const length = varint();
+      if (field === 1 && length === 32) ids.push(root.subarray(at, at + 32).toString('hex'));
+      at += length;
+    } else if (wire === 0) varint();
+    else if (wire === 1) at += 8;
+    else if (wire === 5) at += 4;
+    else break; // unknown wire type: stop rather than misread
+  }
+  return ids;
+}
+
+export function cursorMessages(meta, blob) {
+  const messages = [];
+  for (const id of rootMessageIds(blob(meta.latestRootBlobId) || Buffer.alloc(0))) {
+    let record;
+    try { record = JSON.parse(blob(id)?.toString('utf8') || ''); } catch { continue; } // binary blobs are not messages
+    if (record?.role === 'user') {
+      // Content is a string or a list of { type: 'text', text } parts.
+      const content = typeof record.content === 'string' ? record.content : Array.isArray(record.content)
+        ? record.content.filter(part => part?.type === 'text' && typeof part.text === 'string').map(part => part.text).join('\n') : '';
+      const query = /<user_query>([\s\S]*?)<\/user_query>/.exec(content)?.[1]?.trim();
+      if (query) messages.push({ role: 'user', text: query });
+    } else if (record?.role === 'assistant' && Array.isArray(record.content)) {
+      const text = record.content.filter(part => part?.type === 'text' && typeof part.text === 'string').map(part => part.text).join('\n').trim();
+      if (text) messages.push({ role: 'assistant', text });
+    }
+  }
+  return messages;
+}
+
+async function readCursorStore(binding) {
+  const chats = join(homedir(), '.cursor', 'chats');
+  const matches = [];
+  for (const dir of await readdir(chats).catch(() => [])) {
+    if (!/^[a-f0-9]{32}$/i.test(dir)) continue;
+    const file = join(chats, dir, binding.id, 'store.db');
+    if (await stat(file).then(s => s.isFile(), () => false)) matches.push(file);
+  }
+  if (matches.length !== 1) return null; // missing or ambiguous: fall back to the screen
+  const db = new DatabaseSync(matches[0], { readOnly: true });
+  try {
+    const meta = JSON.parse(Buffer.from(db.prepare('SELECT value FROM meta WHERE key = ?').get('0')?.value || '', 'hex').toString('utf8'));
+    if (meta.agentId !== binding.id) throw new Error('Cursor chat identity does not match the selected terminal');
+    const query = db.prepare('SELECT data FROM blobs WHERE id = ?');
+    const messages = cursorMessages(meta, id => { const row = query.get(id); return row ? Buffer.from(row.data) : null; });
+    let kept = messages, size = 0;
+    for (let i = messages.length - 1; i >= 0; i--) { size += messages[i].text.length; if (size > MAX_TEXT) { kept = messages.slice(i + 1); break; } }
+    const model = typeof meta.lastUsedModel === 'string' ? modelLabel(meta.lastUsedModel) || undefined : undefined;
+    return { text: formatMessages(kept), model, source: 'cursor-transcript', limited: kept.length !== messages.length, messageCount: kept.length };
+  } finally { db.close(); }
 }
 
 export function visibleMessage(record) {
@@ -88,7 +206,7 @@ async function parseTranscript(file, binding) {
       if (!line.trim()) continue;
       let record;
       try { record = JSON.parse(line); } catch { continue; }
-      if (binding.provider === 'claude' && ['user', 'assistant'].includes(record.type) && !record.isSidechain) {
+      if (CLAUDE_LIKE.has(binding.provider) && ['user', 'assistant'].includes(record.type) && !record.isSidechain) {
         // Claude records the current shell directory per message; cd during a
         // session must not invalidate its original workspace association.
         if (record.sessionId !== binding.id) throw new Error('Transcript identity does not match the selected terminal');
@@ -96,9 +214,9 @@ async function parseTranscript(file, binding) {
       } else if (record.type === 'session_meta') state.meta = record.payload;
       // The latest model wins: Claude stamps each assistant message; Codex records
       // model and reasoning effort per turn. Synthetic/unknown names are skipped.
-      if (binding.provider === 'claude' && record.type === 'assistant' && !record.isSidechain) state.model = modelLabel(record.message?.model) || state.model;
+      if (CLAUDE_LIKE.has(binding.provider) && record.type === 'assistant' && !record.isSidechain) state.model = modelLabel(record.message?.model) || state.model;
       else if (record.type === 'turn_context') state.model = modelLabel(record.payload?.model, record.payload?.effort) || state.model;
-      const message = binding.provider === 'claude' ? visibleClaudeMessage(record) : visibleMessage(record);
+      const message = CLAUDE_LIKE.has(binding.provider) ? visibleClaudeMessage(record) : visibleMessage(record);
       if (!message || (message.id && state.ids.has(message.id))) continue;
       if (message.id) state.ids.add(message.id);
       state.messages.push(message);
@@ -114,7 +232,7 @@ async function parseTranscript(file, binding) {
   state.mtime = info.mtimeMs;
   if ((state.meta?.id || state.meta?.session_id) !== binding.id || normalize(state.meta?.cwd) !== normalize(binding.cwd)) throw new Error('Transcript identity does not match the selected terminal');
   return { text: formatMessages(state.messages), model: state.model || undefined,
-    source: binding.provider === 'claude' ? 'claude-transcript' : 'codex-transcript', limited: state.limited, messageCount: state.messages.length };
+    source: CLAUDE_LIKE.has(binding.provider) ? 'claude-transcript' : 'codex-transcript', limited: state.limited, messageCount: state.messages.length };
 }
 
 export async function readConversation(terminal) {
@@ -122,11 +240,16 @@ export async function readConversation(terminal) {
   let binding;
   try {
     const row = db.prepare("SELECT payload FROM profile_state_documents WHERE domain = 'workspaceSession'").get();
-    binding = row && transcriptBinding(JSON.parse(row.payload), terminal);
+    const session = row && JSON.parse(row.payload);
+    binding = session && (ID_ONLY[terminal.agentIdentity] ? cursorBinding(session, terminal) : transcriptBinding(session, terminal));
   } finally { db.close(); }
   if (!binding) return null;
+  if (binding.provider === 'cursor') return readCursorStore(binding);
+  if (binding.provider === 'opencode') return readOpencodeStore(binding);
   const file = await realpath(binding.path);
-  const roots = binding.provider === 'claude' ? [join(homedir(), '.claude', 'projects')] : [join(homedir(), '.codex'), join(orcaHome, 'codex-runtime-home')];
+  const roots = binding.provider === 'claude' ? [join(homedir(), '.claude', 'projects')]
+    : binding.provider === 'openclaude' ? [join(homedir(), '.openclaude', 'projects')]
+    : [join(homedir(), '.codex'), join(orcaHome, 'codex-runtime-home')];
   const allowed = await Promise.all(roots.map(async root => {
     const actual = await realpath(root).catch(() => null);
     if (!actual) return false;

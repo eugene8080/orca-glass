@@ -180,7 +180,7 @@ export async function readThread(handle) {
     !bottom.slice(-4).some(l => /^\s*(?:PS\s+.+>|[A-Za-z]:\\[^>]*>)/.test(l));
   // The selected ❯ 1. row is a menu cursor, not a new user message. Deliver
   // the prompt structurally and retain saved/previous chat in the reader.
-  return { text: menu ? '' : answer || (['codex', 'claude'].includes(agent) ? '' : '> Conversation-only text is unavailable for this terminal format.'), menu, progress: menu ? '' : progressSummary(lines, agent), inputReady, model: terminalModel(lines) || undefined };
+  return { text: menu ? '' : answer || (['codex', 'claude', 'cursor', 'openclaude'].includes(agent) ? '' : '> Conversation-only text is unavailable for this terminal format.'), menu, progress: menu ? '' : progressSummary(lines, agent), inputReady, model: terminalModel(lines) || undefined };
 }
 
 export async function readHistory(handle) {
@@ -200,7 +200,7 @@ export async function readHistory(handle) {
   if (fallback.incarnationId !== live.incarnationId) throw new Error('Terminal changed while loading history');
   const { terminal } = await orca(['terminal', 'read', '--terminal', handle, '--limit', '1000']);
   // This is bounded Orca scrollback, not an invented or inferred conversation.
-  return { text: terminalConversation(terminal.tail || [], fallback.agentIdentity) || (['codex', 'claude'].includes(fallback.agentIdentity) ? '' : '> Conversation-only text is unavailable for this terminal format.'), limited: true, source: 'terminal-buffer', reason };
+  return { text: terminalConversation(terminal.tail || [], fallback.agentIdentity) || (['codex', 'claude', 'cursor', 'openclaude'].includes(fallback.agentIdentity) ? '' : '> Conversation-only text is unavailable for this terminal format.'), limited: true, source: 'terminal-buffer', reason };
 }
 
 export async function requireLiveTerminal(handle) {
