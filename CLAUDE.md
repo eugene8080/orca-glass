@@ -50,6 +50,10 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-09 user asks model first in the status row so it stops shifting as working words
+rotate. Native and small: 'Opus5.5 /Waiting', 'Opus5.5 [spinner] Thinking...'; native spinner
+image x = 16 + model width (model change rebuilds the page). 136 tests; simulator verified.
+
 2026-11-09 user: add Spleen 8x16, JetBrains Mono looked anti-aliased on G2, check panel
 resolution, draw the whole screen in the tiles, name fonts plainly. Done (unreleased):
 full-screen tiles incl. status row (Braille spinner 1/s, minute timer), all fonts from

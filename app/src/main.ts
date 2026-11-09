@@ -197,10 +197,14 @@ function screenTitle(s: Screen) { return s.kind === 'text' && s.reader ? ' ' : s
 
 // Left part of the status row: '/Waiting Opus5.5'. A working label starts with
 // its spinner glyph, drawn as a separate 20px image, so four spaces replace it.
+// The model comes first so it never moves while the working words rotate:
+// 'Opus5.5 /Waiting', 'Opus5.5 [spinner] Thinking...'. The Braille spinner is a
+// 20px image placed after the model name, so four spaces stand in for it.
 function statusLeft(label: string, model?: string) {
-  const line = model ? `${label} ${model}` : label;
-  return label[0] !== '/' && label.length > 2 ? '    ' + line.slice(2) : line;
+  const prefix = model ? `${model} ` : '';
+  return label[0] !== '/' && label.length > 2 ? `${prefix}    ${label.slice(2)}` : prefix + label;
 }
+const statusIconX = (model?: string) => VOICE.xPosition + (model ? glassWidth(`${model} `) : 0);
 
 // Right part: '[Tap&hold] Pg77/78', right-aligned in its own layer on the same
 // row. Reserve the widest left text this state can show (working words rotate)
@@ -276,7 +280,7 @@ function writePanel(label: string, active: () => boolean = () => true) {
     } catch (e) {
       // A missing image renderer must not prevent the status text.
       diag((e as Error).message);
-      visible = owner.model ? `${label} ${owner.model}` : label;
+      visible = owner.model ? `${owner.model} ${label}` : label;
     }
     if (!active()) return false;
     return bridge.textContainerUpgrade(new TextContainerUpgrade({ containerID: VOICE.containerID, containerName: VOICE.containerName, content: visible || ' ', textColor: 4 }));
@@ -355,7 +359,7 @@ async function show(s: Screen, reloadText = false) {
               new TextContainerProperty({ ...FRAME, content: ' ', textColor: 4, borderWidth: 2, borderColor: 15, borderRadius: 0, isEventCapture: 0, zOrderIndex: 0 }),
               new TextContainerProperty({ ...DIVIDER, content: ' ', textColor: 4, borderWidth: 2, borderColor: 15, isEventCapture: 0, zOrderIndex: 3 }),
             ] : [])],
-          ...(s.reader ? { imageObject: [new ImageContainerProperty({ ...STATUS_ICON, zOrderIndex: 4 })] } : {}),
+          ...(s.reader ? { imageObject: [new ImageContainerProperty({ ...STATUS_ICON, xPosition: statusIconX(s.model), zOrderIndex: 4 })] } : {}),
         };
   if (fine) page = { containerTotalNum: 5, ...menu,
     textObject: [new TextContainerProperty({ ...FINE_CAPTURE, content: ' ', isEventCapture: 1, paddingLength: 0, zOrderIndex: 0 })],
@@ -431,7 +435,7 @@ async function paintFine(s: TextScreen, content: string, page: number, pattern =
 // changes (and is re-sent) at most once a minute while idle text stays put.
 function fineStatus(s: TextScreen, page: number) {
   const label = s.fineLabel ?? s.activityLabel ?? readerStatus('unknown');
-  const left = s.model ? `${label} ${s.model}` : label;
+  const left = s.model ? `${s.model} ${label}` : label;
   const pages = readerLayout(s).length;
   const where = s.refreshing ? 'Refreshing…' : `Pg${page + 1}/${pages}`;
   const minutes = s.activityState === 'working' && s.reportedSeconds != null ? `${Math.floor(s.reportedSeconds / 60)}m` : '';
@@ -793,8 +797,10 @@ function startReaderUpdates(screen: Screen | null): (() => Promise<void>) | unde
       const model = ('model' in r ? r.model : undefined) || snapshot?.model;
       if (model && model !== screen.model) {
         screen.model = model;
-        await writePanel(screen.activityLabel || readerStatus('unknown'), () => current === screen).catch(e => diag((e as Error).message));
-        await inputHint().catch(e => diag((e as Error).message));
+        // Native: the spinner image sits after the model name, and an image cannot
+        // move without a rebuild. Small text redraws its status row.
+        if (!screen.fine) { reading = false; await show(screen).catch(e => diag((e as Error).message)); return; }
+        requestFineStatus(screen);
       }
       const text = readerContent(screen.conversationText || '', screen.choiceMenu, snapshot?.progress, t.agent === 'claude' && screen.activityState === 'working');
       if (text.trim() && text !== screen.text) {

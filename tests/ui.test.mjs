@@ -1173,20 +1173,24 @@ test('status row shows the model and shrinks the hint to fit one row', async () 
   h.api.activity = async () => ({ state: 'waiting' });
   await h.pick(2);
   const page = h.pages.at(-1);
-  assert.equal(page.textObject.find(c => c.containerName === 'voice').content, '/Waiting Opus5.5');
+  assert.equal(page.textObject.find(c => c.containerName === 'voice').content, 'Opus5.5 /Waiting');
+  // The spinner image sits right after the model name.
+  assert.equal(page.imageObject[0].xPosition, 16 + listExports.glassWidth('Opus5.5 '));
   assert.equal(page.textObject.find(c => c.containerName === 'hint').content.trim(), '[Tap&Hold for Input] Pg1/1');
-  // A model switch updates the status row in place.
+  // A model switch rebuilds the page so the spinner image moves with the name.
   h.api.history = async () => ({ text: '/ question\n> answer', source: 'claude-transcript', model: 'Sonnet5.5' });
   await [...h.timers.values()][0]();
-  assert.equal(h.upgrades.findLast(u => u.containerName === 'voice').content, '/Waiting Sonnet5.5');
+  assert.equal(h.pages.at(-1).textObject.find(c => c.containerName === 'voice').content, 'Sonnet5.5 /Waiting');
+  assert.equal(h.pages.at(-1).imageObject[0].xPosition, 16 + listExports.glassWidth('Sonnet5.5 '));
   // The widest working state cannot fit the full hint next to a long model.
   const w = t => textExports.glassTextWidth(t, () => 12);
   h.api.history = async () => ({ text: '/ question\n> answer', source: 'codex-transcript', model: 'GPT-6-Astra med' });
   h.api.activity = async () => ({ state: 'working', elapsedSeconds: 812 });
   await [...h.timers.values()][0]();
-  const right = statusHint(h);
+  // The model change rebuilt the page; its hint is the current one.
+  const right = h.pages.at(-1).textObject.find(c => c.containerName === 'hint').content.trim();
   assert.match(right, /^13m32s (?:\[T&H\] )?Pg1\/1$/);
-  const left = Math.max(...statusExports.WORKING_LABELS.map(word => w(`    ${word}... GPT-6-Astra med`)));
+  const left = Math.max(...statusExports.WORKING_LABELS.map(word => w(`GPT-6-Astra med     ${word}...`)));
   assert.ok(left + 10 + w(right) <= 538, `${left} + ${w(right)}`);
 });
 
@@ -1198,7 +1202,7 @@ test('four-digit page counters shrink the hint instead of wrapping the status ro
   const right = h.pages.at(-1).textObject.find(c => c.containerName === 'hint').content.trim();
   assert.match(right, /^13m32s (?:\[T&H\] )?Pg\d{4}\/\d{4}$/);
   const w = t => textExports.glassTextWidth(t, () => 12);
-  const left = Math.max(...statusExports.WORKING_LABELS.map(word => w(`    ${word}... GPT-6-Astra med`)));
+  const left = Math.max(...statusExports.WORKING_LABELS.map(word => w(`GPT-6-Astra med     ${word}...`)));
   assert.ok(left + 10 + w(right) <= 538 && w(right) <= 274, `${left} + ${w(right)}`);
 });
 

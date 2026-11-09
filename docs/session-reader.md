@@ -478,3 +478,6 @@ no anti-aliasing. Each font uses its own native cell, never a scaled size.
   https://vrarwiki.com/wiki/Even_Realities_G2, everything-evenhub issue 48.
 - Simulator 2026-11-09: all three fonts, diagrams, test pattern and Braille spinner
   frames verified. G2 legibility, scaling and page-turn time unmeasured.
+- Status row order (2026-11-09): model first, then status, so the model never moves
+  while the working words rotate. Native: the spinner image sits after the model
+  name (x = 16 + its measured width); a model change rebuilds the page.
