@@ -50,6 +50,12 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-09 user: add Spleen 8x16, JetBrains Mono looked anti-aliased on G2, check panel
+resolution, draw the whole screen in the tiles, name fonts plainly. Done (unreleased):
+full-screen tiles incl. status row (Braille spinner 1/s, minute timer), all fonts from
+bitmap tables (JBM via FreeType mono 6x14), Display test pattern. Panel 640x350 vs
+canvas 576x288 per published sources; 1:1 vs scaled unknown. 136 tests; simulator verified.
+
 2026-11-09 user: 'upload beta'. Beta1.0.38 (small-text reader) uploaded/promoted, CLI
 verified beta channel 94,654 bytes. 136 tests pass; prototype dist restored. App-only,
 no bridge restart. G2 legibility (6x12) and page-turn time pending.

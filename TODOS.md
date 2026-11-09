@@ -9,6 +9,9 @@ Completed/superseded release notes: [history](docs/todo-history.md).
 ## Open work
 
 - [ ] **Small text in the reader (pixel / mono image tiles) -- G2 check pending:**
+  2026-11-09 revision (unreleased): whole screen incl. status row as four 288x144 tiles;
+  Spleen 6x12 / 8x16 / JetBrains Mono (FreeType mono bitmap) menu names; display test
+  pattern for the 640x350-panel vs 576x288-canvas question. 136 tests; simulator verified.
   2026-11-09 user approved; beta1.0.38 uploaded/promoted (94,654 bytes; fonts add ~40KB).
   user 2026-11-09 asked for more text per page at about half size, switchable from the
   long-press menu, JetBrains Mono plus a monospace pixel font, status row smaller only

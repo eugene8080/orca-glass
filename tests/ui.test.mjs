@@ -13,6 +13,10 @@ vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../app/src/footer-hi
 const usageResetExports = {};
 vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../app/src/usage-reset.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, { exports: usageResetExports });
 
+const glyphExports = {};
+vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../app/src/fonts/glyphs.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, { exports: glyphExports });
+const fineExports = {};
+vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../app/src/fine-text.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, { exports: fineExports, require: () => glyphExports, Uint8ClampedArray });
 const filterExports = {};
 vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../app/src/filters.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, { exports: filterExports });
 
@@ -66,16 +70,7 @@ async function harness(count = 2, voice = false, mode = 'tap', savedView = '', s
     './usage-reset': usageResetExports,
     './session-list': listExports,
     './filters': filterExports,
-    // Small-text rendering needs a browser canvas; the glasses tests check the
-    // controller with a stand-in that encodes each page's first row as tile data.
-    './fine-text': {
-      FINE_TILES: [0, 1, 2, 3].map(i => ({ xPosition: 8 + (i % 2) * 280, yPosition: 4 + Math.floor(i / 2) * 122, width: 280, height: 122 })),
-      FINE_AREA: { x: 8, y: 4, width: 560, height: 244 },
-      FINE_METRICS: { pixel: { advance: 6, line: 12, rows: 20, px: 12 }, mono: { advance: 6, line: 13, rows: 18, px: 10 } },
-      fineMeasure: () => text => [...text].length * 6,
-      loadFineFont: async () => true,
-      renderFinePage: text => [0, 1, 2, 3].map(i => i === 0 ? [...text.split(String.fromCharCode(10))[0]].map(c => c.codePointAt(0)) : [i]),
-    },
+    './fine-text': fineExports,
     // The phone page is DOM-only and checked in a browser preview; the glasses tests see a no-op.
     './phone': { createPhone: deps => { phoneDeps = deps; return { connection: c => phoneCalls.push(['connection', c.state]), load() {}, render: () => phoneCalls.push(['render']) }; } },
   };
@@ -799,7 +794,7 @@ test('contextual actions refresh roster, open workspace picker and display usage
   await h.back(); await h.pick(2);
   // The reader's own menu only switches text size; session-list actions do nothing there.
   assert.equal(JSON.stringify(h.pages.at(-1).menuObject.menuItems.map(i => [i.itemID, i.itemName])),
-    JSON.stringify([[1101, 'Text: native (on)'], [1102, 'Text: small pixel'], [1103, 'Text: small mono']]));
+    JSON.stringify([[1101, 'Text: native (on)'], [1102, 'Text: Spleen 6x12'], [1103, 'Text: Spleen 8x16'], [1104, 'Text: JetBrains Mono']]));
   const pages = h.pages.length;
   await h.menu(1002);
   assert.equal(h.pages.length, pages);
@@ -1329,40 +1324,52 @@ test('phone filters and glasses share one saved selection and redraw each other'
   assert.equal(phone.filters().provider, 'all');
 });
 
-test('reader menu switches to small text drawn as four image tiles and back', async () => {
+test('small text draws the whole screen, status row included, as four tiles and switches back', async () => {
   const h = await harness();
-  const output = Array.from({ length: 50 }, (_, i) => `Line ${i}`).join(String.fromCharCode(10));
+  const nl = String.fromCharCode(10);
+  const output = Array.from({ length: 50 }, (_, i) => `Line ${i}`).join(nl);
   h.api.thread = async () => ({ text: output });
   const saved = [];
   h.bridge.setLocalStorage = async (key, value) => { saved.push([key, value]); };
   await h.pick(2);
-  const pageHint = () => h.pages.at(-1).textObject.find(c => c.containerName === 'hint').content.trim();
-  assert.match(pageHint(), /Pg6\/6$/);
-  // Switch to the small pixel font: one rebuild with four image tiles, no status icon.
+  // Spleen 6x12: one blank full-screen swipe target plus four 288x144 tiles.
   await h.menu(1102);
   const page = h.pages.at(-1);
   assert.deepEqual(saved.at(-1), ['reader-text', 'pixel']);
-  assert.equal(page.containerTotalNum, 10);
+  assert.equal(page.containerTotalNum, 5);
+  assert.equal(JSON.stringify(page.textObject.map(t => [t.containerID, t.width, t.height, t.isEventCapture, t.content])), JSON.stringify([[1, 576, 288, 1, ' ']]));
   assert.equal(JSON.stringify(page.imageObject.map(i => [i.containerID, i.xPosition, i.yPosition, i.width, i.height])),
-    JSON.stringify([[7, 8, 4, 280, 122], [8, 288, 4, 280, 122], [9, 8, 126, 280, 122], [10, 288, 126, 280, 122]]));
-  assert.equal(page.textObject[1].content, ' ');
-  assert.match(page.menuObject.menuItems[1].itemName, /small pixel \(on\)/);
-  // Twenty rows per page: 50 lines fit on three pages and it stays on the newest.
-  assert.match(pageHint(), /Pg3\/3$/);
-  const tiles = h.images.filter(i => /^fine-/.test(i.containerName));
-  assert.equal(tiles.length, 4);
-  assert.equal(String.fromCodePoint(...tiles[0].imageData), 'Line 40');
-  // A page turn re-sends only tiles that changed (the stand-in changes tile 1 only).
-  await h.scroll('up');
-  await h.flush();
-  const turned = h.images.filter(i => /^fine-/.test(i.containerName)).slice(4);
-  assert.equal(JSON.stringify(turned.map(i => i.containerName)), JSON.stringify(['fine-0']));
-  assert.equal(String.fromCodePoint(...turned[0].imageData), 'Line 20');
-  assert.match(statusHint(h), /Pg2\/3$/);
-  assert.ok(!h.upgrades.some(u => u.containerName === 'body' && u.content !== ' '));
-  // Back to native text on the page that holds the same first line.
+    JSON.stringify([[2, 0, 0, 288, 144], [3, 288, 0, 288, 144], [4, 0, 144, 288, 144], [5, 288, 144, 288, 144]]));
+  assert.equal(JSON.stringify(page.menuObject.menuItems.map(i => i.itemName)),
+    JSON.stringify(['Text: native', 'Text: Spleen 6x12 (on)', 'Text: Spleen 8x16', 'Text: JetBrains Mono', 'Display test pattern']));
+  const layout = fineExports.fineLayout('pixel');
+  assert.deepEqual([layout.columns, layout.rows], [93, 21]);
+  // 50 lines at 21 rows: three pages, opening on the newest. The tiles sent are
+  // exactly the rendered screen with the status row drawn in.
+  const sent = () => h.images.filter(i => /^fine-/.test(i.containerName));
+  const expected = (from, pageNo) => fineExports.renderFineScreen(Array.from({ length: Math.min(21, 50 - from) }, (_, i) => `Line ${from + i}`).join(nl),
+    'pixel', { left: '/Status unknown', right: `[Tap&Hold for Input] Pg${pageNo}/3` });
+  assert.equal(sent().length, 4);
+  assert.equal(JSON.stringify(sent().map(i => i.imageData)), JSON.stringify(expected(42, 3)));
+  // A page turn re-sends only tiles that changed and keeps native text untouched.
+  const before = sent().length;
+  await h.scroll('up'); await h.flush();
+  const turned = sent().slice(before);
+  const want = expected(21, 2);
+  assert.ok(turned.length >= 1 && turned.length <= 4);
+  for (const tile of turned) assert.equal(JSON.stringify(tile.imageData), JSON.stringify(want[Number(tile.containerName.slice(5))]));
+  assert.ok(!h.upgrades.some(u => ['body', 'voice', 'hint'].includes(u.containerName)));
+  // The display test replaces the tiles; the next swipe restores the page.
+  await h.menu(1105); await h.flush();
+  assert.equal(JSON.stringify(sent().slice(-4).map(i => i.imageData)), JSON.stringify(fineExports.renderTestPattern('pixel')));
+  await h.scroll('down'); await h.flush();
+  const restored = new Map(sent().slice(-4).map(i => [i.containerName, i.imageData]));
+  for (const [name, data] of restored) assert.equal(JSON.stringify(data), JSON.stringify(want[Number(name.slice(5))]));
+  // Spleen 8x16 and back to native text on the page holding the same first line.
+  await h.menu(1103);
+  assert.deepEqual(saved.at(-1), ['reader-text', 'pixel16']);
+  assert.deepEqual([fineExports.fineLayout('pixel16').columns, fineExports.fineLayout('pixel16').rows], [70, 16]);
   await h.menu(1101);
   assert.deepEqual(saved.at(-1), ['reader-text', 'native']);
   assert.equal(h.pages.at(-1).containerTotalNum, 7);
-  assert.match(h.pages.at(-1).textObject[1].content, /^Line 18/);
 });

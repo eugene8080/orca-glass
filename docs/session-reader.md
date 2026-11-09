@@ -446,27 +446,35 @@ supersedes the earlier rule that voice must never rebuild the chat; the user cho
 full-screen review explicitly. The voice-border images are gone, so the reader page
 has seven containers (IDs 1..7, layers 0..6) and the voice page four.
 
-## Small text (2026-11-09)
+## Small text (2026-11-09, revised)
 
-The Even SDK has no font or size control for native text, so small text is drawn on
-the phone and sent as four greyscale image tiles (the SDK maximum: four images, each
-at most 288x144). The tiles are a 2x2 grid of 280x122 over the chat area x8..568,
-y4..248; the body text container stays underneath, blank, as the swipe target.
-The long-press menu on the reader switches `Text: native` / `Text: small pixel` /
-`Text: small mono`, saved as `reader-text`; switching keeps the first character of
-the current page on screen. Code: app/src/fine-text.ts.
+The Even SDK has no font or size control for native text. In small-text mode the
+whole screen (2px frame, chat, divider, status row) is drawn on the phone and sent
+as four 288x144 greyscale image tiles, together exactly the 576x288 canvas (SDK
+maximum: four images). One blank full-screen text container (ID 1) underneath
+receives swipes; tiles are IDs 2..5. Only tiles whose pixels changed are re-sent.
+The long-press menu on the reader: `Text: native`, `Text: Spleen 6x12`,
+`Text: Spleen 8x16`, `Text: JetBrains Mono` (saved as `reader-text`) and, in a small
+mode, `Display test pattern`. Code: app/src/fine-text.ts.
 
-- pixel: Spleen 6x12 (monospace bitmap, BSD-2-Clause) drawn pixel-exact from a glyph
-  table at its native size, 93 x 20 per page. Spleen also has 8x16 (70 x 15) if
-  6x12 is too small on the G2; use whole bitmap sizes, never scaled.
-- mono: JetBrains Mono at 10px (OFL-1.1, Latin subset) on its own grid: 0.6em
-  advance and 1.32em line give an exact 6x13 cell, 93 x 18, cut to on/off pixels at
-  half coverage. (11px gave a 6.6px cell: uneven spacing, dotted box lines.) The display shows even its dimmest grey at about 38% (simulator
-  alpha 96), so anti-aliasing read as bold smudges.
-- Only tiles whose pixels changed are re-sent on a page turn or live update.
-- The status row stays native text (one fixed size). Its Braille spinner is a fifth
-  image, which a small-text page cannot hold, so it turns as a native `| / - \`.
-- Fonts are built by scripts/build-fine-fonts.py; FONT-LICENSES.txt ships in the app.
-- Simulator 2026-11-09: native 12 pages vs pixel 4 / mono 5 for the same chat; four
-  tiles in 34 ms (no Bluetooth). ASCII diagrams align in both; box-drawing lines are
-  continuous in both after the 10px change. G2 legibility and page-turn time unmeasured.
+Every font is a fixed cell of whole pixels copied from a glyph table
+(app/src/fonts/glyphs.ts, built by scripts/build-fine-fonts.py): no canvas text,
+no anti-aliasing. Each font uses its own native cell, never a scaled size.
+- Spleen 6x12 (bitmap, BSD-2-Clause): 93 columns x 21 rows. Has Braille.
+- Spleen 8x16 (bitmap): 70 x 16. Wraps diagrams wider than 70 columns.
+- JetBrains Mono 10px (OFL-1.1), rasterised once by FreeType in monochrome (hinted)
+  mode; its metrics give a 6x14 cell (advance 6, ascent 11, descent 3): 93 x 18.
+  A 6px cell is too small for a vector font: letters such as A and m are crude.
+  (1.0.38 drew it with canvas text, which the user saw as anti-aliased on the G2.)
+- Missing glyphs: Braille as 2x4 dots; others via the WebView monospace font,
+  thresholded to on/off.
+- Status row in the same font. The spinner steps once a second in small mode (each
+  frame re-sends the bottom-left tile); the timer shows whole minutes.
+- Display resolution: Even's specs list the panel as 640x350; developer docs give
+  apps 576x288 (4-bit) and a full-screen image refresh of about 800 ms. Nothing
+  published says whether the canvas is shown 1:1 or scaled. The test pattern
+  (1px gratings at 2/3/4px periods, checkerboard) shows uneven or soft lines on the
+  G2 if it is scaled. Sources: https://hub.evenrealities.com/docs/build/display,
+  https://vrarwiki.com/wiki/Even_Realities_G2, everything-evenhub issue 48.
+- Simulator 2026-11-09: all three fonts, diagrams, test pattern and Braille spinner
+  frames verified. G2 legibility, scaling and page-turn time unmeasured.
