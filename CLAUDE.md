@@ -50,6 +50,10 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-09 user: 'Upload Beta.' Beta1.0.39 uploaded/promoted, CLI verified beta channel
+75,794 bytes. 136 tests pass; prototype dist restored. App-only, no bridge restart. G2
+checks pending: test pattern (1:1 vs scaled), three fonts, page-turn time.
+
 2026-11-09 user asks model first in the status row so it stops shifting as working words
 rotate. Native and small: 'Opus5.5 /Waiting', 'Opus5.5 [spinner] Thinking...'; native spinner
 image x = 16 + model width (model change rebuilds the page). 136 tests; simulator verified.

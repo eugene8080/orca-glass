@@ -1,7 +1,7 @@
 # Orca Glass TODOs
 Updated: 2026-11-05
 
-Current beta: **1.0.38** (small-text reader). Public: **1.0.36**.
+Current beta: **1.0.39** (small-text reader, whole screen in tiles). Public: **1.0.36**.
 Workspace-filter preview approved, released and retired with merged worktree cleanup.
 Future visual changes require preview approval before beta upload.
 Completed/superseded release notes: [history](docs/todo-history.md).
@@ -9,7 +9,7 @@ Completed/superseded release notes: [history](docs/todo-history.md).
 ## Open work
 
 - [ ] **Small text in the reader (pixel / mono image tiles) -- G2 check pending:**
-  2026-11-09 revision (unreleased): whole screen incl. status row as four 288x144 tiles;
+  2026-11-09 beta1.0.39 uploaded/promoted (75,794 bytes). Revision: whole screen incl. status row as four 288x144 tiles;
   Spleen 6x12 / 8x16 / JetBrains Mono (FreeType mono bitmap) menu names; display test
   pattern for the 640x350-panel vs 576x288-canvas question. 136 tests; simulator verified.
   2026-11-09 user approved; beta1.0.38 uploaded/promoted (94,654 bytes; fonts add ~40KB).
