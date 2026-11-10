@@ -4,14 +4,17 @@ import { fileURLToPath } from 'node:url';
 
 const [name, ...actions] = process.argv.slice(2);
 const allowed = new Set(['up', 'down', 'click', 'double_click', 'long_press', 'long_press_release', 'context_menu']);
-if (!name || !/^[a-z0-9-]+$/.test(name) || actions.some(action => !allowed.has(action))) {
-  throw new Error('Usage: node scripts/store-capture.mjs <lowercase-name> [documented simulator actions...]');
+if (!name || !/^[a-z0-9-]+$/.test(name) || actions.some(action => !allowed.has(action) && !/^menu:\d+$/.test(action))) {
+  throw new Error('Usage: node scripts/store-capture.mjs <lowercase-name> [actions: up|down|click|...|menu:<itemID>]');
 }
-const base = 'http://127.0.0.1:9899';
+const base = `http://127.0.0.1:${process.env.ORCA_GLASS_SIMULATOR_PORT || '9899'}`;
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 for (const action of actions) {
+  const body = action.startsWith('menu:')
+    ? { action: 'menu', itemID: Number(action.slice(5)) }
+    : { action };
   const response = await fetch(`${base}/api/input`, {
-    method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action }),
+    method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body),
   });
   if (!response.ok) throw new Error(`Simulator input failed: ${response.status} ${await response.text()}`);
   await delay(action === 'long_press' ? 600 : 350);

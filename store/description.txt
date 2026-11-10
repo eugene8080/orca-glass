@@ -1,17 +1,16 @@
-Read your Orca + Hermes sessions. Speak your next step.
+Read your Orca and Hermes sessions. Speak your next step.
 
-Orca Glass connects G2 glasses to agents running in Orca on your Windows PC, and to Hermes Agent. Read conversations, see working/waiting status and the model, and review spoken replies before sending.
+Orca Glass connects Even Realities G2 glasses to agents running in Orca on your Windows or macOS PC, and to Hermes Agent. Read conversations, see working or waiting status with the model name, filter by agent and workspace, and review spoken replies before sending.
 
-Version 1.0.36:
-- Filter by agent: Hermes Agent, or All Orca Sessions / Claude / Codex / other Orca agents. Hermes and Orca sessions stay separate.
-- Filter by workspace: Orca shows recent workspaces first, then the rest; Hermes shows Bots, Sessions and Scheduled jobs.
-- Conversations open at the start of the latest reply. Nine rows per page; swipe for pages, swipe down on the last page to refresh. One status row shows state, model and page, e.g. /Waiting Opus5.5 Pg7/8.
-- Hold to open a full-screen voice page that is already listening; release to review, click to send, double-click to cancel. Whisper runs locally on your PC and ignores silence.
-- For numbered prompts, click for choices or speak an option number, then confirm.
-- View Codex, Claude and Cursor usage; toggle resets between computer time, phone time and time remaining.
-- Start Codex in an existing Orca workspace.
+Since public 1.0.36 (beta 1.0.49):
+- Agents: Claude, Codex, Cursor, OpenCode, Pi, OpenClaude and Hermes Agent (bots, sessions and scheduled jobs). Answer single-select Hermes clarify questions from the glasses when the gateway still shows that prompt.
+- Reader: book-style pages open at the start of the latest reply. Swipe for pages; swipe down on the last page to refresh. Hanging indents on wrapped lines. Markdown tables line up in small-text mode. Pixel fonts: Scientifica, GohuFont, Terminus, Shinonome, Misc Fixed, Departure 7x11 and 7x14, plus Native text and a Compare fonts screen. Scanner-sweep thinking indicator in tile mode (native keeps Braille).
+- Filter by Agent and Filter by Workspace on the glasses and the phone companion. Usage for Codex, Claude and Cursor; reset times in Computer, Phone or Absolute mode.
+- Voice: hold to open a full-screen voice page; local Whisper on your PC with silence detection. Release to review, click to send, double-click to cancel.
+- English and Japanese (switch in the phone app). Shinonome supports Japanese in small-text mode.
+- macOS bridge setup and automated smoke tests are new; pairing on a real Mac is not yet verified.
 
-Requires G2, the Even Realities Android app, Orca and the companion Windows bridge. The packaged connection targets a configured private PC over Tailscale; arbitrary-PC setup is not yet self-service. Agents run on your PC, not the glasses. English only. Try the demo without a PC.
+Requires G2, the Even Realities Android app, Orca and the companion bridge. The packaged connection targets a configured private PC over Tailscale; arbitrary-PC self-service setup is not offered yet. Agents run on your PC, not the glasses. Try the demo without a PC.
 
 Source/setup: https://github.com/eugene8080/orca-glass/tree/windows-android-codex
 Independent Windows/Android fork of 2ero20ne's Orca Glass under MIT.

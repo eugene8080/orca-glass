@@ -1,0 +1,17 @@
+Orca のセッションと Hermes を G2 で読む。次の指示は声で送る。
+
+Orca Glass は Even Realities G2 を、Windows または macOS 上の Orca で動くエージェントおよび Hermes Agent に接続します。会話を読み、モデル名付きの待機／作業状態を確認し、エージェントや作業場所で絞り込み、送信前に音声入力を確認できます。
+
+公開 1.0.36 以降のベータ（1.0.49）:
+- エージェント: Claude、Codex、Cursor、OpenCode、Pi、OpenClaude、Hermes Agent（ボット・セッション・スケジュールジョブ）。ゲートウェイに単一選択の確認質問があるとき、メガネから答えられます。
+- リーダー: 最新の返信の先頭から開くページ送り。最終ページで下スワイプ更新。折り返し行のぶら下がりインデント。小さいピクセルフォントでは Markdown 表を揃えて表示。フォント: Scientifica、GohuFont、Terminus、Shinonome、Misc Fixed、Departure 7x11／7x14、標準フォント、フォント比較画面。タイル表示の思考インジケータ（標準は点字スピナー）。
+- エージェント／作業場所フィルター（メガネとスマホ）。Codex・Claude・Cursor の使用量とリセット表示（コンピューター／スマホ／残り時間）。
+- 音声: 長押しで全画面の音声ページ。PC 上のローカル Whisper と無音検出。離して確認、クリックで送信、ダブルクリックで取消。
+- 英語と日本語（スマホアプリで切替）。小さい文字の日本語に Shinonome。
+- macOS 向けブリッジと CI スモークテストは新規。実機 Mac での検証は未了。
+
+G2、Even アプリ、Orca、コンパニオンブリッジが必要です。配布ビルドは Tailscale 経由の設定済み PC を指します。任意の PC への自己セットアップはまだありません。エージェントはメガネではなく PC で動きます。PC なしのストアデモを試せます。
+
+Source/setup: https://github.com/eugene8080/orca-glass/tree/windows-android-codex
+2ero20ne の Orca Glass を MIT でフォークした独立版です。
+Original: https://github.com/2ero20ne/orca-glass

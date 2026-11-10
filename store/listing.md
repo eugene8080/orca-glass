@@ -135,7 +135,53 @@ Name, tagline and description saved through the authenticated Even Hub CLI on 20
 
 The description and README credit the original author and link the upstream project. Root `LICENSE` retains `Copyright (c) 2026 2ero20ne` and the full MIT text. `app/vite.config.ts` now emits `LICENSE.txt` and `ATTRIBUTION.txt` in production builds; the built license was checked byte-for-byte against the original. This packaging change is not yet in beta1.0.21; include it in the next release candidate.
 
-## Screenshots — 1.0.36
+## Listing refresh, 2026-11-10 (beta 1.0.49)
+
+Agent: Claude Sonnet 5.5, continuing a stopped Cursor agent's uncommitted work (brief:
+`docs/store-listing-task.md`). Eugene pastes the description and uploads the images in the
+portal himself; no agent opened the portal or a browser.
+
+- Description: `store/description.txt`, 1,975 characters (portal limit 2,000, see above).
+  Covers agents with models, reader, small pixel fonts, filters, usage, voice, English and
+  Japanese, Windows and macOS (macOS stated as not yet verified on a real Mac). The
+  Cursor draft was kept after a fact check against the code and `CLAUDE.md`.
+- Japanese: `store/description.ja.txt`, 1,095 characters. **Not reviewed by a native
+  speaker.** Machine-written from the English text; have a Japanese reader check it.
+- Upload PNGs (576x288, opaque, in `store/screenshots/`; transparent originals in `native/`):
+
+| File | Shows |
+| --- | --- |
+| `1-threads.png` | Session list: Cursor, Pi, Claude, Codex, OpenCode, OpenClaude, workspace/agent labels |
+| `2-answer.png` | Reader, native text, model and status row (OpenClaude, GPT-5.6 Sol high) |
+| `10-small-text.png` | Reader in Terminus 6x12: aligned Markdown table, hanging indents |
+| `11-compare-fonts.png` | Compare fonts: all six pixel fonts, Departure at both sizes |
+| `3-reply.png` | Voice review (fictional transcript, tap to send) |
+| `12-choices.png` | Numbered choices with question (Claude, Opus 5.5) |
+| `7-agent-filter.png` | Filter by Agent, with Hermes Agent |
+| `5-workspaces.png` | Filter by Workspace, Recent and Other workspaces |
+| `4-usage.png` | Usage, Computer-time reset mode |
+| `8-hermes-workspaces.png` | Hermes Bots / Sessions / Scheduled jobs |
+| `9-hermes-sessions.png` | Hermes session list |
+| `13-japanese.png` | Session list with the interface language set to Japanese |
+| `phone-companion.png` | Phone companion page (420x900, headless localhost capture of the phone preview with its own demo data; not a glasses capture) |
+
+- Removed: `6-actions.png` (the simulator omits the G2 system entries, so it was never accurate).
+  The README table and `store/gallery.html` now list this set.
+- Not produced: a real-device photo; a Japanese reader screen in Shinonome (the fixture
+  conversations are English only); Thinking indicator and the Departure-only shots.
+- Not verified: how the portal accepts 12 images (earlier sets used 8); the Japanese text
+  reading; the phone page on a real phone; macOS on a real Mac.
+- Capture recipe: start `node scripts/store-preview.mjs` (8792) and the simulator on
+  `http://127.0.0.1:8792/?code=demo&lang=en` with `--automation-port 9899` in named Orca
+  tabs, run `node scripts/store-capture-all.mjs`, then `python scripts/store-previews.py`.
+  For `13-japanese` restart the simulator with `&lang=ja` and run
+  `node scripts/store-capture.mjs 13-japanese`, then restart it with `&lang=en`.
+  The fixture seeds the stored language from `?lang=`.
+- Pitfall: the simulator capture holds solid green in RGB; the text is in alpha. A fully
+  transparent capture means the app exited (two double-clicks from the session list), not
+  that the capture tool is broken. Restart the simulator.
+
+## Screenshots — 1.0.36 (superseded by the refresh above)
 
 Eight current upload files, using the real native app renderer and fictional data.
 No real chats, account usage, credentials or microphone audio. Not G2 photographs.

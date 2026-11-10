@@ -36,13 +36,15 @@ still need verification. See [implementation](docs/hermes-bridge.md).
 
 ## Screenshots
 
-Historical native 576 × 288 simulator captures of 1.0.21 with fictional sample data. Current beta menus and usage controls include the later changes described above.
+Native 576 × 288 simulator captures of beta 1.0.49 with fictional sample data (see the [gallery](store/gallery.html)).
 
-| Sessions | Conversation | Voice review |
+| Sessions | Conversation | Small pixel font |
 | --- | --- | --- |
-| ![Sessions](store/screenshots/1-threads.png) | ![Conversation](store/screenshots/2-answer.png) | ![Voice review](store/screenshots/3-reply.png) |
-| **Usage** | **Workspace picker** | **App actions** |
-| ![Usage](store/screenshots/4-usage.png) | ![Workspace picker](store/screenshots/5-new-session.png) | ![App actions](store/screenshots/6-actions.png) |
+| ![Sessions](store/screenshots/1-threads.png) | ![Conversation](store/screenshots/2-answer.png) | ![Small text](store/screenshots/10-small-text.png) |
+| **Compare fonts** | **Voice review** | **Choices** |
+| ![Compare fonts](store/screenshots/11-compare-fonts.png) | ![Voice review](store/screenshots/3-reply.png) | ![Choices](store/screenshots/12-choices.png) |
+| **Usage** | **Workspace filter** | **Japanese** |
+| ![Usage](store/screenshots/4-usage.png) | ![Workspace filter](store/screenshots/5-workspaces.png) | ![Japanese](store/screenshots/13-japanese.png) |
 
 The simulator omits OS contextual entries. See [store profile/capture instructions](store/listing.md) for raw exports, the local gallery and remaining public-release preparation.
 
