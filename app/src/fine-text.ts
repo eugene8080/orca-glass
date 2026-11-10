@@ -13,18 +13,19 @@
 // Missing characters: box drawing as geometric lines and Braille as dots, both
 // fitted to the cell; anything else via the WebView monospace font, thresholded
 // to on/off pixels. East Asian wide characters take two cells.
-import { SPLEEN_6X12, JETBRAINS_MONO_10, DEPARTURE_MONO, MONOGRAM, PIXELOID_MONO, COZETTE, TERMINUS, GOHU, SCIENTIFICA, FIXED } from './fonts/glyphs';
+import { DEPARTURE_MONO, DEPARTURE_MONO_11, TERMINUS, GOHU, SCIENTIFICA, FIXED } from './fonts/glyphs';
 
-// Menu order: the 6px-wide fonts by height, then the narrower and wider ones.
+// Menu order: narrowest cell first, then by height. (2026-11-10: Spleen, Monogram,
+// Cozette, Pixeloid Mono and JetBrains Mono removed at the user's request.)
 const TABLES = {
-  pixel: SPLEEN_6X12, terminus: TERMINUS, monogram: MONOGRAM, fixed: FIXED, cozette: COZETTE,
-  gohu: GOHU, pixeloid: PIXELOID_MONO, scientifica: SCIENTIFICA, departure: DEPARTURE_MONO, mono: JETBRAINS_MONO_10,
+  scientifica: SCIENTIFICA, gohu: GOHU, terminus: TERMINUS, fixed: FIXED,
+  departure11: DEPARTURE_MONO_11, departure: DEPARTURE_MONO,
 };
 export type FineFont = keyof typeof TABLES;
 export const FINE_FONTS = Object.keys(TABLES) as FineFont[];
 const NAMES: Record<FineFont, string> = {
-  pixel: 'Spleen', terminus: 'Terminus', monogram: 'Monogram', fixed: 'Misc Fixed', cozette: 'Cozette',
-  gohu: 'GohuFont', pixeloid: 'Pixeloid', scientifica: 'Scientifica', departure: 'Departure', mono: 'JetBrains',
+  scientifica: 'Scientifica', gohu: 'GohuFont', terminus: 'Terminus', fixed: 'Misc Fixed',
+  departure11: 'Departure', departure: 'Departure',
 };
 // 'Cozette 6x13': short name and native cell. The glasses menu truncates labels
 // beyond about 210px, so names are short (Pixeloid Mono -> Pixeloid).
@@ -205,6 +206,7 @@ export function renderFineScreen(text: string, font: FineFont, status: FineStatu
 // that font: its name and cell, a sample sentence, look-alike characters,
 // brackets and operators, box drawing and a Braille spinner frame.
 export const FONT_SAMPLE = 'Quick brown fox 0O1lI| {}[] -> != ─┼─ ⠋';
+export const FONT_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz 0123456789';
 export function renderFontComparison(): number[][] {
   const s = new Surface(FINE_FONTS[0]);
   s.rect(0, 0, SCREEN.width, FRAME); s.rect(0, SCREEN.height - FRAME, SCREEN.width, FRAME);
@@ -215,7 +217,9 @@ export function renderFontComparison(): number[][] {
     s.font = font;
     const columns = Math.floor(TEXT_WIDTH / TABLES[font].width);
     s.text(`${fineLabel(font).padEnd(nameCells)}${FONT_SAMPLE}`, TEXT_X, y, columns);
-    y += TABLES[font].height + 3;
+    y += TABLES[font].height;
+    s.text(`${''.padEnd(nameCells)}${FONT_ALPHABET}`, TEXT_X, y, columns);
+    y += TABLES[font].height + 4;
   }
   s.font = FINE_FONTS[0];
   s.rect(TEXT_X + 8, y + 2, TEXT_WIDTH - 16, 1);

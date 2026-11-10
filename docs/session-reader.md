@@ -586,3 +586,13 @@ the Hermes Agent CLI (Cursor showed 'Conversation-only text is unavailable').
 - The reader menu's 'Display test pattern' is replaced by 'Compare fonts': every small
   font on one screen in its own font (name, cell, sample with look-alikes, brackets,
   operators, box drawing, Braille). The 1:1 question was settled on the G2.
+- 2026-11-10 user: models now show on the G2. Fonts trimmed to Scientifica 5x11, GohuFont
+  6x11, Terminus 6x12, Misc Fixed 6x13, Departure 7x11 and Departure 7x14 (Spleen,
+  Monogram, Cozette, Pixeloid, JetBrains removed with their tables and licences). Departure's
+  README asks for 'increments of 11px'; 7x14 is that 11px size with its full line. The
+  new 7x11 keeps the 11 rows (2..12) its ASCII glyphs use: 80 x 24 per page, lines touch,
+  tall accented capitals (e.g. Á) lose their top two rows. Default small font: Terminus.
+- Filter by Agent: no title, no divider, no '<-' row (double-click returns); ten rows. A
+  longer list ends its page with a non-selectable 'v more below' row and later pages
+  start with '^ more above'; swiping onto a cue turns the page.
+- Compare fonts shows each font on two lines: sample + full alphabet and digits.

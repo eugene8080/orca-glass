@@ -22,22 +22,12 @@ export default defineConfig({
           + 'Copyright (c) 2026 2ero20ne\n'
           + 'Used under the MIT License; see LICENSE.txt.\n',
       });
-      // Small-text reader fonts ship with their licences (OFL-1.1 and BSD-2-Clause
-      // both require the notice to travel with the font).
+      // Small-text reader fonts ship with their licences (OFL-1.1 requires the
+      // notice to travel with the font; the others are kept for attribution).
       this.emitFile({
         type: 'asset', fileName: 'FONT-LICENSES.txt',
-        source: 'JetBrains Mono 2.304 (subset), SIL Open Font License 1.1:\n\n'
-          + readFileSync(new URL('./src/fonts/JETBRAINS-MONO-OFL.txt', import.meta.url), 'utf8')
-          + '\n\nSpleen 6x12 2.2.0 (glyph table), BSD 2-Clause License:\n\n'
-          + readFileSync(new URL('./src/fonts/SPLEEN-LICENSE.txt', import.meta.url), 'utf8')
-          + '\n\nDeparture Mono 1.500 (glyph table), SIL Open Font License 1.1:\n\n'
+        source: 'Departure Mono 1.500 (glyph tables), SIL Open Font License 1.1:\n\n'
           + readFileSync(new URL('./src/fonts/DEPARTURE-MONO-OFL.txt', import.meta.url), 'utf8')
-          + '\n\nmonogram (glyph table from the author\'s bitmap source), MIT License:\n\n'
-          + readFileSync(new URL('./src/fonts/MONOGRAM-LICENSE.txt', import.meta.url), 'utf8')
-          + '\n\nPixeloid Mono (glyph table converted from the font; Reserved Font Name "Pixeloid"), SIL Open Font License 1.1:\n\n'
-          + readFileSync(new URL('./src/fonts/PIXELOID-OFL.txt', import.meta.url), 'utf8')
-          + '\n\nCozette 1.30.0 (glyph table), MIT License:\n\n'
-          + readFileSync(new URL('./src/fonts/COZETTE-LICENSE.txt', import.meta.url), 'utf8')
           + '\n\nTerminus Font 4.49.1 (glyph table; Reserved Font Name "Terminus Font"), SIL Open Font License 1.1:\n\n'
           + readFileSync(new URL('./src/fonts/TERMINUS-OFL.txt', import.meta.url), 'utf8')
           + '\n\nGohuFont 2.1 (glyph table), WTFPL:\n\n'

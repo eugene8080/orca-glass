@@ -121,10 +121,12 @@ test('Filter by Agent stays in the list and contextual menu gets the three moved
   assert.equal(h.pages.length, count);
   assert.match(menuItems(h)[0], /Filter by Agent/);
   await h.pick(0);
-  assert.equal(h.pages.at(-1).textObject[0].content, 'Filter by Agent');
+  // No title row: the first row is Hermes Agent.
+  assert.equal(h.pages.at(-1).textObject[0].content, ' ');
+  assert.equal(menuItems(h)[0], 'Hermes Agent');
 });
 
-test('Filter by Agent lists Hermes, a divider, then All Orca sessions and each Orca agent', async () => {
+test('Filter by Agent lists Hermes Agent, then All Orca sessions and each Orca agent', async () => {
   const h = await harness();
   h.api.threads = async () => [
     { handle: 'codex', title: 'Codex conversation', agent: 'codex' },
@@ -134,23 +136,22 @@ test('Filter by Agent lists Hermes, a divider, then All Orca sessions and each O
   const saved = [];
   h.bridge.setLocalStorage = async (key, value) => { saved.push([key, value]); };
   await h.pick(0);
+  // No title, divider or back row; double-click returns.
   assert.equal(JSON.stringify([...menuItems(h)]),
-    JSON.stringify(['<-', 'Hermes Agent', '-------------------------', 'All Orca Sessions ✓', 'Claude', 'Codex', 'OpenCode', 'Gemini']));
-  // The cursor opens on the ticked row; the divider is skipped in both directions.
+    JSON.stringify(['Hermes Agent', 'All Orca Sessions ✓', 'Claude', 'Codex', 'OpenCode', 'Gemini']));
+  // The cursor opens on the ticked row.
   await h.scroll('up');
-  assert.match(h.upgrades.at(-1).content.split('\n')[1], /^> Hermes Agent/);
+  assert.match(h.upgrades.at(-1).content.split('\n')[0], /^> Hermes Agent/);
   await h.scroll('down');
-  assert.match(h.upgrades.at(-1).content.split('\n')[3], /^> All Orca Sessions/);
-  await h.pick(2);
-  assert.equal(saved.length, 0);
-  await h.pick(6);
+  assert.match(h.upgrades.at(-1).content.split('\n')[1], /^> All Orca Sessions/);
+  await h.pick(4);
   assert.deepEqual(saved, [['view-provider', 'opencode']]);
   let items = menuItems(h);
   assert.equal(items.length, 3);
   assert.match(items[2], /OpenCode worker/);
   await h.pick(0);
-  assert.match(menuItems(h)[6], /OpenCode ✓/);
-  await h.pick(3);
+  assert.match(menuItems(h)[4], /OpenCode ✓/);
+  await h.pick(1);
   items = menuItems(h);
   assert.equal(items.length, 5);
   assert.equal(h.sends.length, 0);
@@ -160,7 +161,7 @@ test('saved provider filter restores even with no matching live sessions', async
   const h = await harness(2, false, 'tap', 'claude');
   assert.equal(menuItems(h).length, 2);
   await h.pick(0);
-  assert.equal(menuItems(h)[4], 'Claude ✓');
+  assert.equal(menuItems(h)[2], 'Claude ✓');
   assert.equal(h.sends.length, 0);
 });
 
@@ -174,10 +175,10 @@ test('Hermes mixed models share one filter and saved reader uses confirmed voice
     { handle: 'claude', title: 'Claude regression', agent: 'claude' },
   ];
   await h.pick(0);
-  assert.equal(JSON.stringify([...menuItems(h)]), JSON.stringify(['<-', 'Hermes Agent', '-------------------------', 'All Orca Sessions ✓', 'Claude', 'Codex']));
+  assert.equal(JSON.stringify([...menuItems(h)]), JSON.stringify(['Hermes Agent', 'All Orca Sessions ✓', 'Claude', 'Codex']));
   // All Orca Sessions never includes Hermes.
   assert.ok(!menuItems(h).some(s => /^Hermes (?!Agent)/.test(s)));
-  await h.pick(1);
+  await h.pick(0);
   assert.equal(menuItems(h).length, 9);
   assert.ok(menuItems(h).slice(2).every(t => t.startsWith('Hermes ')));
   h.api.history = async () => ({ source: 'hermes-transcript', text: '> Exact Hermes saved answer' });
@@ -795,7 +796,7 @@ test('contextual actions refresh roster, open workspace picker and display usage
   await h.back(); await h.pick(2);
   // The reader's own menu only switches text size; session-list actions do nothing there.
   assert.equal(JSON.stringify(h.pages.at(-1).menuObject.menuItems.map(i => [i.itemID, i.itemName])),
-    JSON.stringify([[1101, 'Text: native (on)'], [1102, 'Small: Spleen 6x12'], [1103, 'Next: Terminus 6x12'], [1104, 'Prev: JetBrains 6x14']]));
+    JSON.stringify([[1101, 'Text: native (on)'], [1102, 'Small: Terminus 6x12'], [1103, 'Next: Misc Fixed 6x13'], [1104, 'Prev: GohuFont 6x11']]));
   const pages = h.pages.length;
   await h.menu(1002);
   assert.equal(h.pages.length, pages);
@@ -937,7 +938,7 @@ test('workspace multi-select stays open, persists, combines with agent filter an
   assert.equal(menuItems(h).length, 4);
   assert.ok(menuItems(h).some(s => s.includes('Archive session')));
   assert.ok(!menuItems(h).some(s => s.includes('Settings session')));
-  await h.pick(0); await h.pick(5);
+  await h.pick(0); await h.pick(3);
   assert.equal(menuItems(h).length, 3);
   assert.ok(menuItems(h)[2].includes('Glasses session'));
   await h.pick(1); await h.pick(2); await h.pick(0);
@@ -1257,7 +1258,7 @@ test('Hermes and Orca keep separate workspace pages, selections and session list
   assert.equal(saved.at(-1)[0], 'view-hermes-workspaces');
   await h.pick(0);
   // Switch to All Orca Sessions: Orca workspace page with its own saved selection.
-  await h.pick(0); await h.pick(3);
+  await h.pick(0); await h.pick(1);
   list = [...menuItems(h)];
   assert.ok(list.some(s => s.includes('Claude port')) && !list.some(s => /Hermes chat|Codex work/.test(s)), list.join(' | '));
   await h.pick(1);
@@ -1324,7 +1325,7 @@ test('phone filters and glasses share one saved selection and redraw each other'
   // A glasses change redraws the phone page.
   const renders = h.phoneCalls.filter(c => c[0] === 'render').length;
   await h.pick(0);
-  await h.pick(3); // All Orca Sessions
+  await h.pick(1); // All Orca Sessions
   assert.ok(h.phoneCalls.filter(c => c[0] === 'render').length > renders);
   assert.equal(phone.filters().provider, 'all');
 });
@@ -1337,36 +1338,36 @@ test('small text draws the whole screen, status row included, as four tiles and 
   const saved = [];
   h.bridge.setLocalStorage = async (key, value) => { saved.push([key, value]); };
   await h.pick(2);
-  // Spleen 6x12: one blank full-screen swipe target plus four 288x144 tiles.
+  // Terminus 6x12: one blank full-screen swipe target plus four 288x144 tiles.
   await h.menu(1102);
   const page = h.pages.at(-1);
-  assert.deepEqual(saved.slice(-2), [['reader-text', 'pixel'], ['reader-font', 'pixel']]);
+  assert.deepEqual(saved.slice(-2), [['reader-text', 'terminus'], ['reader-font', 'terminus']]);
   assert.equal(page.containerTotalNum, 5);
   assert.equal(JSON.stringify(page.textObject.map(t => [t.containerID, t.width, t.height, t.isEventCapture, t.content])), JSON.stringify([[1, 576, 288, 1, ' ']]));
   assert.equal(JSON.stringify(page.imageObject.map(i => [i.containerID, i.xPosition, i.yPosition, i.width, i.height])),
     JSON.stringify([[2, 0, 0, 288, 144], [3, 288, 0, 288, 144], [4, 0, 144, 288, 144], [5, 288, 144, 288, 144]]));
   assert.equal(JSON.stringify(page.menuObject.menuItems.map(i => i.itemName)),
-    JSON.stringify(['Text: native', 'Using: Spleen 6x12', 'Next: Terminus 6x12', 'Prev: JetBrains 6x14', 'Compare fonts']));
+    JSON.stringify(['Text: native', 'Using: Terminus 6x12', 'Next: Misc Fixed 6x13', 'Prev: GohuFont 6x11', 'Compare fonts']));
   // Every possible label fits the menu without truncation (about 210px in the firmware font).
   for (const f of fineExports.FINE_FONTS) for (const prefix of ['Small', 'Using', 'Next', 'Prev'])
     assert.ok(listExports.glassWidth(`${prefix}: ${fineExports.fineLabel(f)}`) <= 210, `${prefix}: ${fineExports.fineLabel(f)}`);
-  const layout = fineExports.fineLayout('pixel');
+  const layout = fineExports.fineLayout('terminus');
   assert.deepEqual([layout.columns, layout.rows], [93, 22]);
   // Every font on its own whole-pixel grid.
   assert.equal(JSON.stringify(Object.fromEntries(fineExports.FINE_FONTS.map(f => { const l = fineExports.fineLayout(f); return [f, [l.cell, l.line, l.columns, l.rows]]; }))),
-    JSON.stringify({ pixel: [6, 12, 93, 22], terminus: [6, 12, 93, 22], monogram: [6, 12, 93, 22], fixed: [6, 13, 93, 20], cozette: [6, 13, 93, 20],
-      gohu: [6, 11, 93, 24], pixeloid: [6, 11, 93, 24], scientifica: [5, 11, 112, 24], departure: [7, 14, 80, 18], mono: [6, 14, 93, 18] }));
+    JSON.stringify({ scientifica: [5, 11, 112, 24], gohu: [6, 11, 93, 24], terminus: [6, 12, 93, 22], fixed: [6, 13, 93, 20],
+      departure11: [7, 11, 80, 24], departure: [7, 14, 80, 18] }));
   // Next and previous step through all ten fonts and remember the last one used.
   await h.menu(1103);
-  assert.deepEqual(saved.slice(-2), [['reader-text', 'terminus'], ['reader-font', 'terminus']]);
-  assert.equal(h.pages.at(-1).menuObject.menuItems[1].itemName, 'Using: Terminus 6x12');
+  assert.deepEqual(saved.slice(-2), [['reader-text', 'fixed'], ['reader-font', 'fixed']]);
+  assert.equal(h.pages.at(-1).menuObject.menuItems[1].itemName, 'Using: Misc Fixed 6x13');
   await h.menu(1104);
-  assert.deepEqual(saved.at(-1), ['reader-font', 'pixel']);
+  assert.deepEqual(saved.at(-1), ['reader-font', 'terminus']);
   // 50 lines at 22 rows: three pages, opening on the newest. The tiles sent are
   // exactly the rendered screen with the status row drawn in.
   const sent = () => h.images.filter(i => /^fine-/.test(i.containerName));
   const expected = (from, pageNo) => fineExports.renderFineScreen(Array.from({ length: Math.min(22, 50 - from) }, (_, i) => `Line ${from + i}`).join(nl),
-    'pixel', { left: '/Status unknown', right: `[Tap&Hold for Input] Pg${pageNo}/3` });
+    'terminus', { left: '/Status unknown', right: `[Tap&Hold for Input] Pg${pageNo}/3` });
   // A rebuild re-sends all four tiles; the latest four are the Spleen page.
   assert.equal(JSON.stringify(sent().slice(-4).map(i => i.containerName)), JSON.stringify(['fine-0', 'fine-1', 'fine-2', 'fine-3']));
   assert.equal(JSON.stringify(sent().slice(-4).map(i => i.imageData)), JSON.stringify(expected(44, 3)));
@@ -1398,7 +1399,7 @@ test('tile modes sweep a scanner light where native text shows the Braille spinn
   assert.equal(JSON.stringify(fineExports.scannerLevels(3)), JSON.stringify([64, 112, 176, 255, 0, 0, 0, 0]));
   assert.equal(JSON.stringify(fineExports.scannerLevels(10)), JSON.stringify([0, 0, 0, 0, 255, 176, 112, 64]));
   // Two frames differ only in the bottom-left tile, where the status row starts.
-  const frame = n => fineExports.renderFineScreen('Line', 'pixel', { model: 'Opus5.5', scanner: n, left: 'Thinking...', right: 'Pg1/1' });
+  const frame = n => fineExports.renderFineScreen('Line', 'terminus', { model: 'Opus5.5', scanner: n, left: 'Thinking...', right: 'Pg1/1' });
   const a = frame(0), b = frame(1);
   assert.equal(JSON.stringify([0, 1, 2, 3].map(i => JSON.stringify(a[i]) === JSON.stringify(b[i]))), JSON.stringify([true, true, false, true]));
 });
@@ -1416,16 +1417,21 @@ test('small-text modes pad Markdown tables so columns line up in monospace', () 
   assert.equal(fineExports.alignMarkdownTables('> a | b |' + nl + '  | x |'), '> a | b |' + nl + '  | x |');
 });
 
-test('Filter by Agent pages when the agent list is longer than nine rows', async () => {
+test('Filter by Agent pages past ten rows with visible more-below and more-above cues', async () => {
   const h = await harness();
-  h.api.threads = async () => ['codex', 'claude', 'cursor', 'opencode2', 'pi', 'openclaude', 'gemini'].map((agent, i) => ({ handle: `t${i}`, title: agent, agent }));
+  const agents = ['codex', 'claude', 'cursor', 'opencode2', 'pi', 'openclaude', 'gemini', 'aider', 'goose', 'amp'];
+  h.api.threads = async () => agents.map((agent, i) => ({ handle: `t${i}`, title: agent, agent }));
   await h.pick(0);
   const rows = () => h.pages.at(-1).textObject.find(c => c.containerName === 'body').content.split(String.fromCharCode(10)).map(r => r.replace(/^[> ] /, '').trim());
-  assert.equal(rows().length, 9);
-  assert.deepEqual(rows().slice(0, 4), ['<-', 'Hermes Agent', '-------------------------', 'All Orca Sessions ✓']);
-  // Swipe past the last row: page two starts with '<-' and holds the rest.
-  for (let i = 0; i < 6; i++) await h.scroll('down');
-  assert.equal(rows()[0], '<-');
-  assert.ok(rows().some(r => /Gemini/.test(r)));
-  assert.ok(rows().length >= 2 && rows().length <= 9);
+  // Hermes + All + ten agents = twelve rows: nine on page one, then the cue.
+  assert.equal(rows().length, 10);
+  assert.deepEqual(rows().slice(0, 2), ['Hermes Agent', 'All Orca Sessions ✓']);
+  assert.equal(rows().at(-1), 'v more below');
+  // Swipe down past the last agent (the cue row is skipped): page two.
+  for (let i = 0; i < 8; i++) await h.scroll('down');
+  assert.equal(rows()[0], '^ more above');
+  assert.ok(rows().some(r => /amp/i.test(r)));
+  // Swipe up past the first agent: back to page one.
+  await h.scroll('up'); await h.scroll('up'); await h.scroll('up');
+  assert.equal(rows()[0], 'Hermes Agent');
 });

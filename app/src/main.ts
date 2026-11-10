@@ -84,7 +84,7 @@ let viewProvider = 'all';
 type ReaderText = 'native' | FineFont;
 let readerText: ReaderText = 'native';
 // The small font the menu offers when native text is on (last one used).
-let smallFont: FineFont = 'pixel';
+let smallFont: FineFont = 'terminus';
 let usageResetMode: ResetMode = 'computer';
 let viewWorkspaces: Set<string> | null = null;
 // Hermes is not part of Orca: it has its own workspace selection and page.
@@ -555,7 +555,7 @@ async function guard(title: string, f: () => Promise<void>, back: () => void) {
 type SessionMenuScreen = Extract<Screen, { kind: 'list' }>;
 function compatibilityMenu(screen: SessionMenuScreen, menu: object) {
   // The workspace picker has no title row: its ten 27px rows start at the top.
-  const picker = !!screen.workspacePicker;
+  const picker = !!screen.workspacePicker || !!screen.agentPicker; // no title row: ten rows
   return { containerTotalNum: 3, ...menu, textObject: [
     new TextContainerProperty({ ...HEAD, height: 28, content: picker ? ' ' : screen.title, isEventCapture: 0 }),
     new TextContainerProperty({ ...BODY, yPosition: picker ? 4 : 28, height: picker ? 280 : 260, content: compatibilityText(screen), isEventCapture: 0 }),
@@ -658,9 +658,13 @@ function home(page = 0, selected = 0) {
 // Filter by Agent: Hermes Agent first, a divider, then All Orca sessions and each
 // Orca agent harness (Claude, Codex, then any others seen). Rendered as native
 // text so the divider is not selectable.
-// Nine rows fit under the title, so long agent lists page like the workspace
-// picker: swipe past the last row for the next page; later pages start with '<-'.
-const AGENT_ROWS = 9;
+// Filter by Agent: Hermes Agent, All Orca Sessions, then each Orca agent. No
+// title, divider or back row (double-click returns, 2026-11-10): ten rows. A list
+// longer than one page ends with a non-selectable 'v more below' row, and later
+// pages start with '^ more above'; swiping onto either turns the page.
+const AGENT_ROWS = 10;
+export const MORE_BELOW = 'v more below';
+export const MORE_ABOVE = '^ more above';
 function viewOptions(page?: number, selected?: number) {
   return guard('Filter by Agent', async () => {
     const threads = await api.threads();
@@ -673,21 +677,26 @@ function viewOptions(page?: number, selected?: number) {
     };
     const label = (id: string, name: string) => `${name}${viewProvider === id ? ' ✓' : ''}`;
     const actions: { label: string; run: () => unknown }[] = [
-      { label: '<-', run: () => home() },
       { label: label('hermes', 'Hermes Agent'), run: choose('hermes') },
-      { label: '-------------------------', run: () => {} },
       ...orca.map(id => ({ label: label(id, id === 'all' ? 'All Orca Sessions' : providerName(id)), run: choose(id) })),
     ];
-    const back = actions[0];
-    const pages: (typeof actions)[] = [actions.slice(0, AGENT_ROWS)];
-    for (let i = AGENT_ROWS; i < actions.length; i += AGENT_ROWS - 1) pages.push([back, ...actions.slice(i, i + AGENT_ROWS - 1)]);
+    // Fill pages, keeping a row for each cue the page needs.
+    const pages: (typeof actions)[] = [];
+    for (let i = 0; i < actions.length;) {
+      let room = AGENT_ROWS - (pages.length ? 1 : 0);
+      if (actions.length - i > room) room--;
+      pages.push(actions.slice(i, i + room));
+      i += room;
+    }
     // Open on the page that holds the current choice.
     const ticked = (rows: typeof actions) => rows.findIndex(a => a.label.endsWith(' ✓'));
     const at = Math.max(0, Math.min(page ?? Math.max(0, pages.findIndex(rows => ticked(rows) >= 0)), pages.length - 1));
-    const rows = pages[at];
-    const headings = rows.map((row, i) => row.label.startsWith('---') ? i : -1).filter(i => i >= 0);
+    const cue = { run: () => {} };
+    const rows = [...(at > 0 ? [{ ...cue, label: MORE_ABOVE }] : []), ...pages[at],
+      ...(at + 1 < pages.length ? [{ ...cue, label: MORE_BELOW }] : [])];
+    const headings = rows.map((row, i) => row.label === MORE_ABOVE || row.label === MORE_BELOW ? i : -1).filter(i => i >= 0);
     let selection = selected === undefined ? Math.max(0, ticked(rows)) : selected < 0 ? rows.length - 1 : Math.min(selected, rows.length - 1);
-    while (headings.includes(selection)) selection--;
+    while (headings.includes(selection)) selection += selection === 0 ? 1 : -1;
     await show({ kind: 'list', agentPicker: true, title: 'Filter by Agent', items: rows.map(a => a.label), headings, selected: selection,
       onPreviousPage: at > 0 ? () => viewOptions(at - 1, -1) : undefined,
       onNextPage: at + 1 < pages.length ? () => viewOptions(at + 1, 1) : undefined,
@@ -1345,7 +1354,7 @@ async function main() {
   const savedText = await bridge.getLocalStorage('reader-text');
   if (FINE_FONTS.includes(savedText as FineFont)) readerText = savedText as FineFont;
   const savedFont = await bridge.getLocalStorage('reader-font');
-  smallFont = FINE_FONTS.includes(savedFont as FineFont) ? savedFont as FineFont : readerText === 'native' ? 'pixel' : readerText;
+  smallFont = FINE_FONTS.includes(savedFont as FineFont) ? savedFont as FineFont : readerText === 'native' ? 'terminus' : readerText;
   const resetMode = await bridge.getLocalStorage('usage-reset-mode');
   if (RESET_MODES.includes(resetMode as ResetMode)) usageResetMode = resetMode as ResetMode;
   for (const [key, set] of [['view-workspaces', (v: Set<string>) => { viewWorkspaces = v; }], ['view-hermes-workspaces', (v: Set<string>) => { viewHermesWorkspaces = v; }]] as const) {

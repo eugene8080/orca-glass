@@ -50,6 +50,12 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-10 user: remove Spleen/Monogram/Cozette/Pixeloid/JetBrains; add Departure 11px; agent
+picker needs a visible next-page cue, no title/divider/back row. Built (unreleased): five
+fonts + Departure 7x11 (ASCII rows 2..12, 80x24); default Terminus; agent picker ten rows
+with 'v more below'/'^ more above' cues; Compare fonts two lines per font. 146 tests.
+App-only: needs beta 1.0.45 (no bridge change).
+
 2026-11-10 user: restart bridge and upload beta. Bridge restarted after ownership check
 (old 54676/57080/70704; new supervisor76360, server33636, whisper11296 --vad); local and
 stable HTTPS healthz ok. Live HTTP check: Cursor Composer-2.5, OpenCode2 Qwopus3.8-27B-

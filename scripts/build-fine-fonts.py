@@ -1,12 +1,7 @@
 """Build the small-text reader glyph tables from upstream releases (run by hand).
 
 Inputs (downloaded release archives, unpacked):
-  --spleen-dir  spleen-2.2.0/            (BSD-2-Clause, Frederic Cambus): spleen-6x12.bdf
-  --mono        JetBrainsMono-2.304 fonts/ttf/JetBrainsMono-Regular.ttf   (OFL-1.1, JetBrains)
   --departure   DepartureMono-1.500/DepartureMono-Regular.otf   (OFL-1.1, Helena Zhang)
-  --monogram    gitlab.com/datagoblin/monogram source/bitmap/monogram-bitmap.json   (MIT, Vinicius Menezio)
-  --pixeloid    PixeloidMono.ttf from the author's DaFont release   (OFL-1.1, GGBotNet)
-  --cozette     cozette.bdf, github.com/slavfox/Cozette v.1.30.0   (MIT, Slavfox)
   --terminus    ter-u12n.bdf from terminus-font-4.49.1 (SourceForge)   (OFL-1.1, Dimitar Zhekov)
   --gohu        gohufont-uni-11.bdf, github.com/hchargois/gohufont   (WTFPL, Hugo Chargois)
   --scientifica scientifica-11.bdf, github.com/nerdypepper/scientifica v2.3   (OFL-1.1, Akshay Oppiliappan)
@@ -14,14 +9,12 @@ Inputs (downloaded release archives, unpacked):
 Output: app/src/fonts/glyphs.ts with one table per font.
 
 Monospace only: every font must have one advance width for all of its glyphs.
-Pixel outline fonts are rasterised at their native size, where one design pixel
-is one screen pixel; the size is derived from the outline grid and checked.
-
-Every font is a fixed cell of whole pixels, drawn pixel-exact on the phone: no
-canvas text, no anti-aliasing. Spleen is a bitmap font, read from its BDF at its
-native sizes. JetBrains Mono is rasterised once here by FreeType in monochrome
-mode (hinted, 1 bit per pixel) at 10px, whose own metrics give a 6x14 cell
-(advance 6, ascent 11, descent 3).
+Bitmap (BDF) fonts are read at their native cell. Departure Mono is an outline
+pixel font rasterised at its own grid (11px, per its README "increments of 11px")
+by FreeType in monochrome mode; its line is 14 rows with ascent/descent, and a
+second 7x11 table keeps only the 11 rows its ASCII glyphs actually use.
+(2026-11-10: Spleen, Monogram, Cozette, Pixeloid Mono and JetBrains Mono removed
+at the user's request.)
 """
 from __future__ import annotations
 
@@ -169,60 +162,42 @@ def outline(ttf: Path, size: int, ranges=MONO_RANGES) -> tuple[int, int, list[st
     return advance, cell_h, out
 
 
-def monogram(json_path: Path) -> tuple[int, int, list[str]]:
-    """The author's own bitmap table: 12 rows per glyph, bit 0 = leftmost pixel.
-    Monogram's advance is 6px; five accented glyphs one pixel wider are clipped."""
-    import json
-    data = json.loads(json_path.read_text(encoding="utf-8"))
-    out = []
-    for ch, rows in sorted(data.items(), key=lambda kv: ord(kv[0])):
-        if len(ch) != 1 or len(rows) != 12:
-            continue
-        out.append(encode(ord(ch), [sum(0x80 >> x for x in range(6) if r & (1 << x)) for r in rows]))
-    return 6, 12, out
+def crop_rows(glyphs: list[str], height: int, keep: int) -> tuple[int, list[str]]:
+    """Keep the `keep` rows that ASCII glyphs use (first row = their topmost ink)."""
+    rows_of = lambda entry: [int(entry.split(":")[1][k * 2:k * 2 + 2], 16) for k in range(height)]
+    ascii_rows = [y for e in glyphs if 0x20 < int(e.split(":")[0], 16) < 0x7F
+                  for y, v in enumerate(rows_of(e)) if v]
+    top = min(ascii_rows)
+    if max(ascii_rows) - top + 1 > keep:
+        raise SystemExit(f"ASCII glyphs span {max(ascii_rows) - top + 1} rows, more than {keep}")
+    return top, [e.split(":")[0] + ":" + "".join(f"{v:02x}" for v in rows_of(e)[top:top + keep]) for e in glyphs]
 
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--spleen-dir", type=Path, required=True)
-    ap.add_argument("--mono", type=Path, required=True)
-    ap.add_argument("--departure", type=Path, required=True)
-    ap.add_argument("--monogram", type=Path, required=True)
-    ap.add_argument("--pixeloid", type=Path, required=True)
-    for name in ("cozette", "terminus", "gohu", "scientifica", "fixed"):
+    for name in ("departure", "terminus", "gohu", "scientifica", "fixed"):
         ap.add_argument(f"--{name}", type=Path, required=True)
     args = ap.parse_args()
-    _, _, s12 = bdf(args.spleen_dir / "spleen-6x12.bdf")
-    bitmaps = {name: bdf(getattr(args, name), TEXT_RANGES) for name in ("cozette", "terminus", "gohu", "scientifica", "fixed")}
-    mw, mh, mono = outline(args.mono, 10)
-    dsize, psize = pixel_grid_size(args.departure), pixel_grid_size(args.pixeloid)
+    bitmaps = {name: bdf(getattr(args, name), TEXT_RANGES) for name in ("terminus", "gohu", "scientifica", "fixed")}
+    dsize = pixel_grid_size(args.departure)
     dw, dh, departure = outline(args.departure, dsize, all_codes(args.departure))
-    pw, ph, pixeloid = outline(args.pixeloid, psize, all_codes(args.pixeloid))
-    gw, gh, mgram = monogram(args.monogram)
+    top, departure11 = crop_rows(departure, dh, dsize)
     target = REPO / "app" / "src" / "fonts" / "glyphs.ts"
+    table = lambda name, w, h, g: f"export const {name} = {{ width: {w}, height: {h}, glyphs: '{';'.join(g)}' }};\n"
     target.write_text(
         "// Generated by scripts/build-fine-fonts.py. Do not edit by hand.\n"
-        "// Spleen 2.2.0 (c) 2018-2026 Frederic Cambus, BSD-2-Clause: fonts/SPLEEN-LICENSE.txt.\n"
-        "// JetBrains Mono 2.304 (c) The JetBrains Mono Project Authors, OFL-1.1: fonts/JETBRAINS-MONO-OFL.txt.\n"
         "// Departure Mono 1.500 (c) 2022-2024 Helena Zhang, OFL-1.1: fonts/DEPARTURE-MONO-OFL.txt.\n"
-        "// monogram (c) Vinicius Menezio (datagoblin), MIT: fonts/MONOGRAM-LICENSE.txt.\n"
-        "// Pixeloid Mono (c) GGBotNet, OFL-1.1: fonts/PIXELOID-OFL.txt.\n"
-        "// Cozette (c) Slavfox, MIT: fonts/COZETTE-LICENSE.txt.\n"
         "// Terminus Font 4.49.1 (c) Dimitar Toshkov Zhekov, OFL-1.1: fonts/TERMINUS-OFL.txt.\n"
         "// GohuFont (c) Hugo Chargois, WTFPL: fonts/GOHUFONT-LICENSE.txt.\n"
         "// scientifica 2.3 (c) Akshay Oppiliappan, OFL-1.1: fonts/SCIENTIFICA-OFL.txt.\n"
         "// X11 misc-fixed 6x13: public domain, fonts/MISC-FIXED-COPYING.txt.\n"
         "// Entry: hex code point ':' then one byte per row (bit 7 = leftmost pixel).\n"
-        f"export const SPLEEN_6X12 = {{ width: 6, height: 12, glyphs: '{';'.join(s12)}' }};\n"
-        f"export const JETBRAINS_MONO_10 = {{ width: {mw}, height: {mh}, glyphs: '{';'.join(mono)}' }};\n"
-        f"export const DEPARTURE_MONO = {{ width: {dw}, height: {dh}, glyphs: '{';'.join(departure)}' }};\n"
-        f"export const MONOGRAM = {{ width: {gw}, height: {gh}, glyphs: '{';'.join(mgram)}' }};\n"
-        f"export const PIXELOID_MONO = {{ width: {pw}, height: {ph}, glyphs: '{';'.join(pixeloid)}' }};\n"
-        + "".join(f"export const {name.upper()} = {{{{ width: {w}, height: {h}, glyphs: '{';'.join(g)}' }}}};\n".replace("{{", "{").replace("}}", "}")
-                  for name, (w, h, g) in bitmaps.items()),
+        + table("DEPARTURE_MONO", dw, dh, departure)
+        + f"// Departure Mono rows {top}..{top + dsize - 1} of the {dh}-row line: the 11 its ASCII glyphs use.\n"
+        + table("DEPARTURE_MONO_11", dw, dsize, departure11)
+        + "".join(table(name.upper(), w, h, g) for name, (w, h, g) in bitmaps.items()),
         encoding="utf-8")
-    print("ok", f"jetbrains {mw}x{mh}/{len(mono)}", f"departure {dsize}px {dw}x{dh}/{len(departure)}",
-          f"monogram {gw}x{gh}/{len(mgram)}", f"pixeloid {psize}px {pw}x{ph}/{len(pixeloid)}",
+    print("ok", f"departure {dsize}px {dw}x{dh}/{len(departure)} and {dw}x{dsize} from row {top}",
           *[f"{n} {w}x{h}/{len(g)}" for n, (w, h, g) in bitmaps.items()], target.stat().st_size, "bytes")
 
 
