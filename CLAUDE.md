@@ -50,6 +50,13 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-10 user: restart bridge and upload beta. Bridge restarted after ownership check
+(old 54676/57080/70704; new supervisor76360, server33636, whisper11296 --vad); local and
+stable HTTPS healthz ok. Live HTTP check: Cursor Composer-2.5, OpenCode2 Qwopus3.8-27B-
+Coder-Flash, OpenClaude GPT-5.6 Sol high, Pi Qwopus-Pi-128k, Hermes Auto. Beta1.0.44
+uploaded/promoted, CLI verified 126,838 bytes. 146 tests; prototype dist restored. G2
+check pending: models, Filter by Agent paging, Compare fonts.
+
 2026-11-10 user: models missing for all but Pi; Filter by Agent cut off; replace test
 pattern with a font comparison. Built (unreleased): modelName()/footer models for Cursor,
 OpenCode, OpenClaude, Hermes model from gateway (live check: every agent shows a model);
