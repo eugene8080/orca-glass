@@ -1,14 +1,18 @@
+import { t } from './i18n';
 export const SPINNER = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
 export const WORKING_LABELS = ['Processing', 'Thinking', 'Pondering', 'Cooking', 'Computing', 'Inferring', 'Burning Tokens'];
+// The rotating words in the current language (WORKING_LABELS is the English set).
+export const workingLabels = (): string[] => t('workingWords').split('|');
 
 export function readerStatus(state: string, frame = 0, elapsedMs = frame * 200): string {
   if (state === 'working') {
-    const phase = Math.floor(elapsedMs / 5000) % WORKING_LABELS.length;
+    const labels = workingLabels();
+    const phase = Math.floor(elapsedMs / 5000) % labels.length;
     const dots = '.'.repeat(Math.floor((elapsedMs % 5000) / 500) % 3 + 1);
-    return `${SPINNER[frame % SPINNER.length]} ${WORKING_LABELS[phase]}${dots}`;
+    return `${SPINNER[frame % SPINNER.length]} ${labels[phase]}${dots}`;
   }
   // Compact words for the one-row status: '/Waiting Opus5.5 [Tap&hold] Pg7/8'.
-  return state === 'waiting' ? '/Waiting' : state === 'attention' ? '/Needs attention' : '/Status unknown';
+  return t(state === 'waiting' ? 'statusWaiting' : state === 'attention' ? 'statusAttention' : 'statusUnknown');
 }
 
 // Native/simulator fonts can omit Braille. Rasterize the exact Unicode pattern

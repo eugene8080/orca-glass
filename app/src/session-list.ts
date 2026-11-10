@@ -1,7 +1,8 @@
 import { clipBytes, glassTextWidth } from './text';
+import { t } from './i18n';
 declare const __APP_VERSION__: string;
 export const agentLabel = (id: string) => ({ hermes: 'Hermes', codex: 'Codex', claude: 'Claude', pi: 'Pi', cursor: 'Cursor', opencode: 'OpenCode', gemini: 'Gemini' }[id] || id);
-export const sessionListTitle = (count: number) => `Orca-glass ${__APP_VERSION__} · ${count} sessions`;
+export const sessionListTitle = (count: number) => `Orca-glass ${__APP_VERSION__} · ${t('sessionCount', count)}`;
 
 // Preserve the handle/provider suffix inside the native 48-byte compact text-row budget.
 export function sessionRow(title: string, handle: string, agent: string, state: string, workspace = ''): string {

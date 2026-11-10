@@ -4,10 +4,14 @@ import vm from 'node:vm';
 import { readFileSync } from 'node:fs';
 import ts from '../app/node_modules/typescript/lib/typescript.js';
 
+const i18n = {};
+vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../app/src/i18n.ts', import.meta.url), 'utf8'), {
+  compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+}).outputText, { exports: i18n });
 const reset = {};
 vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../app/src/usage-reset.ts', import.meta.url), 'utf8'), {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
-}).outputText, { exports: reset });
+}).outputText, { exports: reset, require: () => i18n });
 
 test('one reset instant displays different computer and phone calendar days', () => {
   const limit = { usedPercent: 42, resetDescription: 'old', resetsAt: Date.UTC(2026, 10, 4, 17, 12),

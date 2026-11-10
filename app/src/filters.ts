@@ -1,6 +1,7 @@
 // Shared by the glasses pickers and the phone page, so both always list the same
 // agents and workspaces in the same order. Pure: no bridge, storage or DOM access.
 import type { Thread, Workspace } from './api';
+import { t as tr } from './i18n';
 
 // Filter by Agent: Orca agent ids after Hermes Agent and the divider. All Orca
 // sessions, Claude and Codex always; then any other agent seen in the session
@@ -27,7 +28,7 @@ export function workspaceSections(threads: Thread[], catalog: Workspace[], herme
   const names = new Map<string, string>(entries.map(w => [w.id, w.name]));
   const kinds = new Map<string, string>(entries.filter(w => w.hermes).map(w => [w.id, w.hermes!]));
   for (const t of sessions) if (t.workspaceId) {
-    names.set(t.workspaceId, t.workspaceLabel || t.workspaceName || 'Workspace');
+    names.set(t.workspaceId, t.workspaceLabel || t.workspaceName || tr('workspaceFallback'));
     if (t.hermesGroup) kinds.set(t.workspaceId, t.hermesGroup);
   }
   // Recency: Orca's activity time, a job's last run, or a newer session output.
@@ -38,19 +39,19 @@ export function workspaceSections(threads: Thread[], catalog: Workspace[], herme
   const rows = [...names] as PickerRow[];
   let sections: PickerSection[];
   if (hermesOnly) {
-    sections = [['Bots', 'bot'], ['Sessions', 'session'], ['Scheduled jobs', 'job']]
+    sections = [[tr('hermesBots'), 'bot'], [tr('hermesSessions'), 'session'], [tr('hermesJobs'), 'job']]
       .map(([title, kind]) => ({ title, rows: rows.filter(([id]) => (kinds.get(id) || 'session') === kind).sort(byRecency) }));
   } else {
     const recent = rows.filter(([id]) => activity.has(id)).sort(byRecency).slice(0, RECENT_WORKSPACES);
     const recentIds = new Set(recent.map(([id]) => id));
     const others = rows.filter(([id]) => !recentIds.has(id)).sort((a, b) => a[1].localeCompare(b[1]));
-    sections = recent.length ? [{ title: 'Recent workspaces', rows: recent }, { title: 'Other workspaces', rows: others }] : [{ rows: others }];
+    sections = recent.length ? [{ title: tr('recentWorkspaces'), rows: recent }, { title: tr('otherWorkspaces'), rows: others }] : [{ rows: others }];
   }
   const listed = new Set(rows.map(([id]) => id));
   const known = new Map(catalog.map(w => [w.id, w.name]));
   const elsewhere = [...chosen || []].filter(id => !listed.has(id)).map((id): PickerRow => [id,
-    known.get(id) || knownNames.get(id) || `${id.replaceAll('\\', '/').split('/').pop() || 'Workspace'} (unavailable)`]);
-  if (elsewhere.length) sections.push({ title: 'Unavailable', rows: elsewhere });
+    known.get(id) || knownNames.get(id) || tr('unavailableSuffix', id.replaceAll('\\', '/').split('/').pop() || tr('workspaceFallback'))]);
+  if (elsewhere.length) sections.push({ title: tr('unavailableSection'), rows: elsewhere });
   return sections.filter(x => x.rows.length);
 }
 
@@ -63,5 +64,5 @@ export function toggleWorkspace(chosen: Set<string> | null, id: string): Set<str
 }
 
 export function workspaceSummary(chosen: Set<string> | null, names: Map<string, string>): string {
-  return chosen === null ? 'All workspaces' : chosen.size === 0 ? 'None' : chosen.size === 1 ? names.get([...chosen][0]) || '1 selected' : `${chosen.size} selected`;
+  return chosen === null ? tr('allWorkspaces') : chosen.size === 0 ? tr('noneSelected') : chosen.size === 1 ? names.get([...chosen][0]) || tr('countSelected', 1) : tr('countSelected', chosen.size);
 }

@@ -1,16 +1,17 @@
 import type { UsageLimit } from './api';
+import { getLang, t } from './i18n';
 
 export const RESET_MODES = ['computer', 'phone', 'absolute'] as const;
 export type ResetMode = typeof RESET_MODES[number];
-export const resetModeLabel = (mode: ResetMode) => ({ computer: 'Computer time', phone: 'Phone time', absolute: 'Absolute time' }[mode]);
+export const resetModeLabel = (mode: ResetMode) => t(({ computer: 'resetComputer', phone: 'resetPhone', absolute: 'resetAbsolute' } as const)[mode]);
 
 export function formatReset(limit: UsageLimit, mode: ResetMode, now = Date.now(), phoneTimeZone?: string): string {
-  if (mode === 'computer') return limit.computerResetDescription || limit.resetDescription || 'Reset time unavailable';
+  if (mode === 'computer') return limit.computerResetDescription || limit.resetDescription || t('resetUnavailable');
   const resetsAt = limit.resetsAt;
   // A label such as "Thursday" contains no reliable date/zone. Never guess an
   // instant from it when talking to an older bridge or incomplete provider data.
-  if (typeof resetsAt !== 'number' || !Number.isFinite(resetsAt) || resetsAt < 0 || resetsAt > 8.64e15) return 'Reset time unavailable';
-  if (mode === 'phone') return new Intl.DateTimeFormat('en-US', {
+  if (typeof resetsAt !== 'number' || !Number.isFinite(resetsAt) || resetsAt < 0 || resetsAt > 8.64e15) return t('resetUnavailable');
+  if (mode === 'phone') return new Intl.DateTimeFormat(getLang() === 'ja' ? 'ja-JP' : 'en-US', {
     weekday: 'short', hour: 'numeric', minute: '2-digit', hour12: true,
     ...(phoneTimeZone ? { timeZone: phoneTimeZone } : {}),
   }).format(resetsAt).replace(',', '');

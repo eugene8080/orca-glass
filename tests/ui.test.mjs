@@ -4,24 +4,27 @@ import vm from 'node:vm';
 import { readFileSync } from 'node:fs';
 import ts from '../app/node_modules/typescript/lib/typescript.js';
 
+// The real dictionary, shared by every module below (one language state).
+const i18nExports = {};
+vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../app/src/i18n.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, { exports: i18nExports });
 const textExports = {};
 vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../app/src/text.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, { exports: textExports, TextEncoder });
 const statusExports = {};
-vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../app/src/reader-status.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, { exports: statusExports });
+vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../app/src/reader-status.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, { exports: statusExports, require: () => i18nExports });
 const hintExports = {};
-vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../app/src/footer-hint.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, { exports: hintExports, document: { createElement: () => ({ getContext: () => ({ fillRect() {}, fillText() {}, getImageData: () => ({ data: new Uint8ClampedArray(280 * 28 * 4) }) }) }) } });
+vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../app/src/footer-hint.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, { exports: hintExports, require: () => i18nExports, document: { createElement: () => ({ getContext: () => ({ fillRect() {}, fillText() {}, getImageData: () => ({ data: new Uint8ClampedArray(280 * 28 * 4) }) }) }) } });
 const usageResetExports = {};
-vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../app/src/usage-reset.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, { exports: usageResetExports });
+vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../app/src/usage-reset.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, { exports: usageResetExports, require: () => i18nExports });
 
 const glyphExports = {};
 vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../app/src/fonts/glyphs.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, { exports: glyphExports });
 const fineExports = {};
 vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../app/src/fine-text.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, { exports: fineExports, require: () => glyphExports, Uint8ClampedArray });
 const filterExports = {};
-vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../app/src/filters.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, { exports: filterExports });
+vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../app/src/filters.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, { exports: filterExports, require: () => i18nExports });
 
 const listExports = {};
-vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../app/src/session-list.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, { exports: listExports, __APP_VERSION__: '1.0.12', require: () => textExports, TextEncoder, document: { createElement: () => ({ getContext: () => ({ font: '', measureText: t => ({ width: t.length * 10 }) }) }) } });
+vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../app/src/session-list.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, { exports: listExports, __APP_VERSION__: '1.0.12', require: name => name === './i18n' ? i18nExports : textExports, TextEncoder, document: { createElement: () => ({ getContext: () => ({ font: '', measureText: t => ({ width: t.length * 10 }) }) }) } });
 
 // Exercise the real controller with a simulated Even bridge: no agent input,
 // microphone access, network, or hardware claims.
@@ -63,7 +66,8 @@ async function harness(count = 2, voice = false, mode = 'tap', savedView = '', s
     '@evenrealities/even_hub_sdk': sdk,
     './api': { api, setDemo() {}, setApiLang() {}, currentBase: () => '' },
     './pairing': { parseCode: () => null },
-    './i18n': { applyPage() {}, detectLang: () => 'en', setLang() {}, t: key => key },
+    // Real dictionary; the page-filling DOM step is a no-op without a document.
+    './i18n': { ...i18nExports, applyPage() {} },
     './text': textExports,
     './reader-status': statusExports,
     './footer-hint': hintExports,
@@ -72,7 +76,7 @@ async function harness(count = 2, voice = false, mode = 'tap', savedView = '', s
     './filters': filterExports,
     './fine-text': fineExports,
     // The phone page is DOM-only and checked in a browser preview; the glasses tests see a no-op.
-    './phone': { createPhone: deps => { phoneDeps = deps; return { connection: c => phoneCalls.push(['connection', c.state]), load() {}, render: () => phoneCalls.push(['render']) }; } },
+    './phone': { createPhone: deps => { phoneDeps = deps; return { connection: c => phoneCalls.push(['connection', c.state]), load() {}, render: () => phoneCalls.push(['render']), retranslate: () => phoneCalls.push(['retranslate']) }; } },
   };
   const source = ts.transpileModule(readFileSync(new URL('../app/src/main.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
   vm.runInNewContext(source, {
@@ -786,13 +790,13 @@ test('contextual actions refresh roster, open workspace picker and display usage
   assert.match(menuItems(h)[2], /Renamed session/);
   h.api.workspaces = async () => [{ id: 'fixture', name: 'Fixture workspace' }];
   await h.menu(1002);
-  assert.equal(h.pages.at(-1).textObject[0].content, 'step1');
+  assert.equal(h.pages.at(-1).textObject[0].content, 'New 1/4 Workspace');
   assert.equal(menuItems(h)[0], 'Fixture workspace');
   assert.equal(h.pages.at(-1).menuObject, undefined);
   await h.back();
   h.api.usage = async () => ({ codex: { provider: 'codex', status: 'ok', weekly: { usedPercent: 25, resetDescription: 'tomorrow' } } });
   await h.menu(1003);
-  assert.equal(h.pages.at(-1).textObject[0].content, 'usageTitle');
+  assert.equal(h.pages.at(-1).textObject[0].content, 'Usage');
   assert.match(h.pages.at(-1).textObject[1].content, /25%/);
   await h.back(); await h.pick(2);
   // The reader's own menu only switches text size; session-list actions do nothing there.
@@ -1462,4 +1466,34 @@ test('wrapped list items hang under the item text', () => {
   const mono = t => [...t].length * 6;
   const rows = textExports.readerPages(['  - blah blah blah blah blah', '> 12. blah blah blah blah blah'].join(nl), mono, 6 * 18, 20)[0].split(nl);
   assert.deepEqual([...rows], ['  - blah blah blah', '    blah blah', '> 12. blah blah', '      blah blah', '      blah']);
+});
+
+test('switching the phone language to Japanese redraws glasses labels and keeps the status row fitting', async () => {
+  const h = await harness();
+  const select = h.elements.get('lang');
+  select.value = 'ja';
+  await select.listeners.change();
+  await h.flush();
+  try {
+    // Session list: contextual menu and filter rows are redrawn in Japanese.
+    assert.deepEqual([...h.pages.at(-1).menuObject.menuItems].map(i => i.itemName), ['セッションを更新', '新規セッション', '使用量']);
+    assert.match(menuItems(h)[0], /^エージェントで絞り込み/);
+    // Reader: Japanese status word, hint and page counter share the one status row.
+    await h.pick(2);
+    const page = h.pages.at(-1);
+    assert.equal(page.textObject.find(c => c.containerName === 'voice').content, '/状態不明');
+    const hint = page.textObject.find(c => c.containerName === 'hint').content.trim();
+    assert.match(hint, /^\[長押しで入力\] P1\/1$/);
+    assert.ok(listExports.glassWidth(hint) <= 280 - 6);
+    assert.equal(JSON.stringify(page.menuObject.menuItems.slice(0, 2).map(i => i.itemName)), JSON.stringify(['現在: 標準フォント', '標準フォント']));
+    assert.equal(statusExports.readerStatus('waiting'), '/入力待ち');
+    assert.match(statusExports.readerStatus('working', 0, 5000), /思考中\.$/);
+    // The hint still shrinks step by step when the row is crowded.
+    assert.equal(hintExports.statusRight(null, false, 'P7/8', t => new TextEncoder().encode(t).length <= 10), '[T&H] P7/8');
+    assert.equal(hintExports.statusRight(null, true, 'P1/2'), '[クリックで選択] P1/2');
+    assert.equal(usageResetExports.resetModeLabel('absolute'), '残り時間');
+    for (const f of fineExports.FINE_FONTS) assert.ok(listExports.glassWidth(`現在: ${fineExports.fineLabel(f)}`) <= 210, fineExports.fineLabel(f));
+    for (const item of page.menuObject.menuItems) assert.ok(new TextEncoder().encode(item.itemName).length <= 32, item.itemName);
+  } finally { select.value = 'en'; await select.listeners.change(); await h.flush(); }
+  assert.equal(statusExports.readerStatus('waiting'), '/Waiting');
 });

@@ -18,9 +18,9 @@ import {
 } from '@evenrealities/even_hub_sdk';
 import { api, currentBase, setApiLang, setConnection, setDemo, type ChoiceMenu, type Provider, type Thread, type Usage, type Workspace } from './api';
 import { parseCode, resolveBase } from './pairing';
-import { applyPage, detectLang, setLang, t as tr } from './i18n';
+import { applyPage, detectLang, getLang, setLang, t as tr } from './i18n';
 import { clipBytes, tailBytes, textSections, readerPages, latestResponseStart, choiceNumber, readerContent, glassTextWidth } from './text';
-import { readerStatus, statusPixels, SPINNER, WORKING_LABELS } from './reader-status';
+import { readerStatus, statusPixels, SPINNER, workingLabels } from './reader-status';
 import { statusRight } from './footer-hint';
 import { formatReset, RESET_MODES, resetModeLabel, type ResetMode } from './usage-reset';
 import { orcaAgents, workspaceSections, toggleWorkspace, workspaceSummary, type PickerRow } from './filters';
@@ -105,7 +105,7 @@ function refreshGlasses() {
   else if (s?.kind === 'list' && s.workspacePicker) void workspaceOptions();
   else if (s?.kind === 'list' && s.agentPicker) void viewOptions();
 }
-const providerFilterLabel = () => viewProvider === 'all' ? 'All Orca sessions' : agentLabel(viewProvider);
+const providerFilterLabel = () => viewProvider === 'all' ? tr('allOrcaSessions') : agentLabel(viewProvider);
 let workspaceNames = new Map<string, string>();
 const providerName = agentLabel;
 
@@ -117,7 +117,7 @@ function selectThread(t: Thread | null) {
   }
   selectedThread = t;
   document.getElementById('composer')!.hidden = !t;
-  document.getElementById('reply-target')!.textContent = t ? `Reply to: ${t.title} (${t.handle.slice(-8)})` : '';
+  document.getElementById('reply-target')!.textContent = t ? tr('replyTo', t.title, t.handle.slice(-8)) : '';
 }
 
 // Reader body is 560px wide with no padding. 560px rows fit in the simulator; keep
@@ -217,10 +217,10 @@ const statusIconX = (model?: string) => VOICE.xPosition + (model ? glassWidth(`$
 function readerHint(s: TextScreen, seconds: number | null | undefined) {
   bodyText(s);
   const left = s.activityState === 'working'
-    ? Math.max(...WORKING_LABELS.map(word => glassWidth(statusLeft(`. ${word}...`, s.model))))
+    ? Math.max(...workingLabels().map(word => glassWidth(statusLeft(`. ${word}...`, s.model))))
     : glassWidth(statusLeft(s.activityLabel || readerStatus('unknown'), s.model));
   const room = Math.min(VOICE.width - 6 - left - 10, HINT.width - 6);
-  const page = s.refreshing ? 'Refreshing…' : `Pg${s.offset! + 1}/${s.pages!.length}`;
+  const page = s.refreshing ? tr('refreshing') : tr('pageCounter', s.offset! + 1, s.pages!.length);
   return nativeRight(statusRight(seconds, !!s.choiceMenu, page, text => glassWidth(text) <= room), HINT.width);
 }
 
@@ -239,7 +239,7 @@ function flipReader(s: TextScreen, delta: number) {
       const next = { ...s, offset: target };
       const content = bodyText(next);
       if (s.fine) { if (!await paintFine(s, content, target)) return; }
-      else if (!await bridge.textContainerUpgrade(new TextContainerUpgrade({ containerID: BODY.containerID, containerName: BODY.containerName, content }))) throw new Error('Glasses rejected the page. Swipe to retry.');
+      else if (!await bridge.textContainerUpgrade(new TextContainerUpgrade({ containerID: BODY.containerID, containerName: BODY.containerName, content }))) throw new Error(tr('pageRejected'));
       if (current !== s) return;
       s.offset = target;
       await inputHint();
@@ -336,7 +336,7 @@ async function show(s: Screen, reloadText = false) {
           ...menu,
           textObject: s.sessionList ? [
             new TextContainerProperty({ ...HEAD, width: 300, height: 28, content: sessionHeading(), isEventCapture: 0, paddingLength: 0, zOrderIndex: 1 }),
-            new TextContainerProperty({ containerID: 3, containerName: 'menu-count', xPosition: 300, yPosition: 0, width: 276, height: 28, content: nativeRight(`${s.connectedCount} sessions`, 276), isEventCapture: 0, paddingLength: 0, zOrderIndex: 2 }),
+            new TextContainerProperty({ containerID: 3, containerName: 'menu-count', xPosition: 300, yPosition: 0, width: 276, height: 28, content: nativeRight(tr('sessionCount', s.connectedCount ?? 0), 276), isEventCapture: 0, paddingLength: 0, zOrderIndex: 2 }),
             new TextContainerProperty({ containerID: 5, containerName: 'menu-input', xPosition: 0, yPosition: 0, width: 576, height: 288, content: ' ', isEventCapture: 1, paddingLength: 0, zOrderIndex: 0 }),
             new TextContainerProperty({ ...MENU_CURSOR, content: menuCursorText(s.columns!, s.selected || 0), isEventCapture: 0, paddingLength: 0, zOrderIndex: 3 }),
             new TextContainerProperty({ ...MENU_LEFT, content: menuNativeText(s.columns!), isEventCapture: 0, paddingLength: 0, zOrderIndex: 4 }),
@@ -357,7 +357,7 @@ async function show(s: Screen, reloadText = false) {
           containerTotalNum: s.reader ? 7 : s.usageMode ? 3 : 2,
           ...menu,
           textObject: [head, new TextContainerProperty({ ...BODY, ...(s.usageMode ? { yPosition: 64, height: 224 } : {}), ...(s.reader ? { xPosition: 8, yPosition: READER_TOP, width: 560, paddingLength: 0, zOrderIndex: 2, height: READER_HEIGHT } : {}), content: uploadText ? '' : content, isEventCapture: 1 }),
-            ...(s.usageMode ? [new TextContainerProperty({ ...USAGE_RESET, content: `Reset: ${resetModeLabel(s.usageMode)}  (Click to change)`, isEventCapture: 0 })] : []),
+            ...(s.usageMode ? [new TextContainerProperty({ ...USAGE_RESET, content: tr('resetLine', resetModeLabel(s.usageMode)), isEventCapture: 0 })] : []),
             ...(s.reader ? [
               new TextContainerProperty({ ...HINT, content: readerHint(s, s.reportedSeconds), textColor: 4, isEventCapture: 0, paddingLength: 0, zOrderIndex: 6 }),
               new TextContainerProperty({ ...VOICE, content: statusLeft(s.activityLabel!, s.model), textColor: 4, isEventCapture: 0, paddingLength: 0, zOrderIndex: 5 }),
@@ -378,7 +378,7 @@ async function show(s: Screen, reloadText = false) {
       started = true;
       const bootstrap = { containerTotalNum: 2, textObject: [
         new TextContainerProperty({ ...HEAD, content: sessionHeading(), isEventCapture: 0 }),
-        new TextContainerProperty({ ...BODY, content: 'Connecting to Orca…', isEventCapture: 1 }),
+        new TextContainerProperty({ ...BODY, content: tr('connectingOrca'), isEventCapture: 1 }),
       ] };
       const result = await bridge.createStartUpPageContainer(new CreateStartUpPageContainer(bootstrap));
       if (result !== 0 && !await bridge.rebuildPageContainer(new RebuildPageContainer(bootstrap))) {
@@ -395,12 +395,12 @@ async function show(s: Screen, reloadText = false) {
       accepted = await bridge.rebuildPageContainer(new RebuildPageContainer(compatibilityMenu(s, menu)));
       if (accepted) { compactMenuOnly = true; diag(`${sessionHeading()}: aligned layout rejected; compact compatibility menu active.`); }
     }
-    if (!accepted) throw new Error(`${sessionHeading()}: ${s.kind === 'list' && s.sessionList ? 'both aligned and compact menus rejected' : 'glasses rejected the screen update'}.`);
+    if (!accepted) throw new Error(`${sessionHeading()}: ${s.kind === 'list' && s.sessionList ? 'both aligned and compact menus rejected' : tr('screenRejected')}.`);
     if (s.kind === 'list' && s.sessionList) document.getElementById('menu-layout')!.textContent = s.compat
-      ? 'Menu layout: Compact compatibility' : 'Menu layout: Aligned native text (animated dots)';
+      ? tr('menuLayoutCompact') : tr('menuLayoutAligned');
     if (uploadText && s.kind === 'text') {
       const accepted = await bridge.textContainerUpgrade(new TextContainerUpgrade({ containerID: BODY.containerID, containerName: BODY.containerName, content }));
-      if (!accepted) throw new Error('Glasses could not load the selected text. Click to retry.');
+      if (!accepted) throw new Error(tr('textLoadFailed'));
     }
     if (s.kind === 'list' && s.sessionList && !s.compat) startMenuSpinner(s);
     if (s.kind === 'text' && s.reader) {
@@ -447,7 +447,7 @@ function fineStatus(s: TextScreen, page: number): FineStatus {
   const scannerCells = working ? Math.ceil(SCANNER_WIDTH / fineLayout(s.fine!).cell) + 1 : 0;
   const leftCells = (s.model ? fineCells(s.model) + 1 : 0) + scannerCells + fineCells(words);
   const pages = readerLayout(s).length;
-  const where = s.refreshing ? 'Refreshing…' : `Pg${page + 1}/${pages}`;
+  const where = s.refreshing ? tr('refreshing') : tr('pageCounter', page + 1, pages);
   const minutes = s.activityState === 'working' && s.reportedSeconds != null ? `${Math.floor(s.reportedSeconds / 60)}m` : '';
   const room = fineLayout(s.fine!).columns - leftCells - 1;
   const right = [minutes, statusRight(null, !!s.choiceMenu, where, text => fineCells([minutes, text].filter(Boolean).join(' ')) <= room)].filter(Boolean).join(' ');
@@ -476,13 +476,13 @@ function requestFineStatus(s: TextScreen) {
 // mode, Compare fonts. Selecting the 'Using:' line changes nothing. Six fonts keep
 // the menu within the glasses' ten entries; labels stay under the ~210px width.
 function readerMenu() {
-  const current = readerText === 'native' ? 'Native text' : fineLabel(readerText);
+  const current = readerText === 'native' ? tr('nativeText') : fineLabel(readerText);
   const largestFirst = [...FINE_FONTS].reverse();
   return [
-    { id: 1101, label: `Using: ${current}`, run: () => {} },
-    { id: 1102, label: 'Native text', run: () => setReaderText('native') },
+    { id: 1101, label: tr('usingFont', current), run: () => {} },
+    { id: 1102, label: tr('nativeText'), run: () => setReaderText('native') },
     ...largestFirst.map((font, i) => ({ id: 1110 + i, label: fineLabel(font), run: () => setReaderText(font) })),
-    ...(readerText === 'native' ? [] : [{ id: 1105, label: 'Compare fonts', run: () => showFontComparison() }]),
+    ...(readerText === 'native' ? [] : [{ id: 1105, label: tr('compareFonts'), run: () => showFontComparison() }]),
   ];
 }
 
@@ -621,7 +621,7 @@ function home(page = 0, selected = 0) {
     const selection = activeWorkspaces();
     const threads = allThreads.filter(t => (hermesView() ? t.agent === 'hermes' : t.agent !== 'hermes' && (viewProvider === 'all' || t.agent === viewProvider))
       && (selection === null || !!t.workspaceId && selection.has(t.workspaceId)));
-    for (const t of allThreads) if (t.workspaceId) workspaceNames.set(t.workspaceId, (t.agent === 'hermes' ? t.workspaceLabel : t.workspaceName) || t.workspaceLabel || t.workspaceName || 'Workspace');
+    for (const t of allThreads) if (t.workspaceId) workspaceNames.set(t.workspaceId, (t.agent === 'hermes' ? t.workspaceLabel : t.workspaceName) || t.workspaceLabel || t.workspaceName || tr('workspaceFallback'));
     const workspaceFilter = workspaceSummary(selection, workspaceNames);
     const pageSize = 7; // Nine native rows: two filters plus seven sessions.
     const pageCount = Math.max(1, Math.ceil(threads.length / pageSize));
@@ -629,24 +629,24 @@ function home(page = 0, selected = 0) {
     const start = page * pageSize;
     const visible = threads.slice(start, start + pageSize);
     const actions: { label: string; run: () => unknown }[] = [
-      { label: `* Filter by Agent [${providerFilterLabel()}]`, run: () => viewOptions() },
-      { label: `* Filter by Workspace [${workspaceFilter}]`, run: () => workspaceOptions() },
+      { label: `* ${tr('filterAgent')} [${providerFilterLabel()}]`, run: () => viewOptions() },
+      { label: `* ${tr('filterWorkspace')} [${workspaceFilter}]`, run: () => workspaceOptions() },
       ...visible.map(t => ({ label: sessionRow(t.title, t.handle, t.agent, t.state, t.workspaceName), run: () => thread(t) })),
     ];
     const columns = actions.map((a, i): SessionColumns => {
       const t = i >= 2 ? visible[i - 2] : undefined;
       if (t) return { marker: t.state === 'idle' ? '/' : t.state === 'busy' ? '' : '?', title: compactSessionTitle(t.title, t.handle), right: sessionAgentLabel(t.workspaceName || '', t.agent), busy: t.state === 'busy', handle: t.handle };
-      return i === 0 ? { marker: '*', title: 'Filter by Agent', right: `[${providerFilterLabel()}]` }
-        : i === 1 ? { marker: '*', title: 'Filter by Workspace', right: `[${workspaceFilter}]` } : { marker: '', title: a.label, right: '' };
+      return i === 0 ? { marker: '*', title: tr('filterAgent'), right: `[${providerFilterLabel()}]` }
+        : i === 1 ? { marker: '*', title: tr('filterWorkspace'), right: `[${workspaceFilter}]` } : { marker: '', title: a.label, right: '' };
     });
     const cursor = selected < 0 ? actions.length - 1 : Math.min(selected, actions.length - 1);
     await show({ kind: 'list', title: sessionListTitle(allThreads.length), sessionList: true, columns, connectedCount: allThreads.length, selected: cursor, paintedSelection: cursor,
       onPreviousPage: page > 0 ? () => home(page - 1, -1) : undefined,
       onNextPage: page + 1 < pageCount ? () => home(page + 1) : undefined,
       menuActions: [
-        { id: 1001, label: 'Refresh sessions', run: () => home(page) },
-        { id: 1002, label: 'New Session', run: newSession },
-        { id: 1003, label: 'Usage', run: usage },
+        { id: 1001, label: tr('refreshSessions'), run: () => home(page) },
+        { id: 1002, label: tr('menuNewSession'), run: newSession },
+        { id: 1003, label: tr('menuUsage'), run: usage },
       ],
       items: actions.map(a => a.label),
       onPick: i => { actions[i]?.run(); } });
@@ -663,8 +663,10 @@ function home(page = 0, selected = 0) {
 const AGENT_ROWS = 10;
 export const MORE_BELOW = 'v more below';
 export const MORE_ABOVE = '^ more above';
+const moreBelow = () => tr('moreBelow');
+const moreAbove = () => tr('moreAbove');
 function viewOptions(page?: number, selected?: number) {
-  return guard('Filter by Agent', async () => {
+  return guard(tr('filterAgent'), async () => {
     const threads = await api.threads();
     const orca = orcaAgents(threads, viewProvider);
     const choose = (id: string) => async () => {
@@ -676,7 +678,7 @@ function viewOptions(page?: number, selected?: number) {
     const label = (id: string, name: string) => `${name}${viewProvider === id ? ' ✓' : ''}`;
     const actions: { label: string; run: () => unknown }[] = [
       { label: label('hermes', 'Hermes Agent'), run: choose('hermes') },
-      ...orca.map(id => ({ label: label(id, id === 'all' ? 'All Orca Sessions' : providerName(id)), run: choose(id) })),
+      ...orca.map(id => ({ label: label(id, id === 'all' ? tr('allOrcaSessionsRow') : providerName(id)), run: choose(id) })),
     ];
     // Fill pages, keeping a row for each cue the page needs.
     const pages: (typeof actions)[] = [];
@@ -690,12 +692,12 @@ function viewOptions(page?: number, selected?: number) {
     const ticked = (rows: typeof actions) => rows.findIndex(a => a.label.endsWith(' ✓'));
     const at = Math.max(0, Math.min(page ?? Math.max(0, pages.findIndex(rows => ticked(rows) >= 0)), pages.length - 1));
     const cue = { run: () => {} };
-    const rows = [...(at > 0 ? [{ ...cue, label: MORE_ABOVE }] : []), ...pages[at],
-      ...(at + 1 < pages.length ? [{ ...cue, label: MORE_BELOW }] : [])];
-    const headings = rows.map((row, i) => row.label === MORE_ABOVE || row.label === MORE_BELOW ? i : -1).filter(i => i >= 0);
+    const rows = [...(at > 0 ? [{ ...cue, label: moreAbove(), cue: true }] : []), ...pages[at],
+      ...(at + 1 < pages.length ? [{ ...cue, label: moreBelow(), cue: true }] : [])];
+    const headings = rows.map((row, i) => 'cue' in row ? i : -1).filter(i => i >= 0);
     let selection = selected === undefined ? Math.max(0, ticked(rows)) : selected < 0 ? rows.length - 1 : Math.min(selected, rows.length - 1);
     while (headings.includes(selection)) selection += selection === 0 ? 1 : -1;
-    await show({ kind: 'list', agentPicker: true, title: 'Filter by Agent', items: rows.map(a => a.label), headings, selected: selection,
+    await show({ kind: 'list', agentPicker: true, title: tr('filterAgent'), items: rows.map(a => a.label), headings, selected: selection,
       onPreviousPage: at > 0 ? () => viewOptions(at - 1, -1) : undefined,
       onNextPage: at + 1 < pages.length ? () => viewOptions(at + 1, 1) : undefined,
       onPick: i => { if (!headings.includes(i)) void rows[i]?.run(); }, onBack: home });
@@ -710,7 +712,7 @@ function viewOptions(page?: number, selected?: number) {
 // in Hermes Desktop. Headings are not selectable and never end a page.
 const PICKER_ROWS = 10;
 function workspaceOptions(page = 0, selected = 0) {
-  return guard('Filter by Workspace', async () => {
+  return guard(tr('filterWorkspace'), async () => {
     const owner = current;
     const [threads, catalog] = await Promise.all([api.threads(), api.workspaces().catch(() => [])]);
     if (current !== owner) return;
@@ -730,8 +732,8 @@ function workspaceOptions(page = 0, selected = 0) {
     page = Math.max(0, Math.min(page, pages.length - 1));
     const save = saveActiveWorkspaces;
     const actions: { label: string; run: () => unknown }[] = [
-      { label: 'Done', run: () => home() },
-      { label: `[${chosen === null ? 'x' : ' '}] All workspaces`, run: async () => { const owner = current; setActiveWorkspaces(null); await save(); if (current === owner) await workspaceOptions(page, 1); } },
+      { label: tr('done'), run: () => home() },
+      { label: `[${chosen === null ? 'x' : ' '}] ${tr('allWorkspaces')}`, run: async () => { const owner = current; setActiveWorkspaces(null); await save(); if (current === owner) await workspaceOptions(page, 1); } },
     ];
     const headings: number[] = [];
     for (const entry of pages[page]) {
@@ -745,7 +747,7 @@ function workspaceOptions(page = 0, selected = 0) {
     }
     let selection = selected < 0 ? actions.length - 1 : Math.min(selected, actions.length - 1);
     while (headings.includes(selection)) selection--;
-    await show({ kind: 'list', workspacePicker: true, title: 'Filter by Workspace', items: actions.map(a => a.label), headings, selected: selection,
+    await show({ kind: 'list', workspacePicker: true, title: tr('filterWorkspace'), items: actions.map(a => a.label), headings, selected: selection,
       onPreviousPage: page > 0 ? () => workspaceOptions(page - 1, -1) : undefined,
       onNextPage: page + 1 < pages.length ? () => workspaceOptions(page + 1) : undefined,
       onPick: i => { if (!headings.includes(i)) void actions[i]?.run(); }, onBack: () => home() });
@@ -861,8 +863,8 @@ function history(t: Thread) {
   return guard(t.title, async () => {
     const r = await api.history(t.handle);
     if (current !== previous) return;
-    await show({ kind: 'text', title: ['codex-transcript', 'claude-transcript', 'cursor-transcript', 'opencode-transcript', 'pi-transcript', 'hermes-transcript'].includes(r.source || '') ? 'Conversation history' : 'Terminal buffer only',
-      text: r.text || r.reason || 'No older terminal output is retained.', tail: true, reader: t,
+    await show({ kind: 'text', title: ['codex-transcript', 'claude-transcript', 'cursor-transcript', 'opencode-transcript', 'pi-transcript', 'hermes-transcript'].includes(r.source || '') ? tr('conversationHistory') : tr('terminalOnly'),
+      text: r.text || r.reason || tr('noOlderOutput'), tail: true, reader: t,
       onBack: () => thread(t),
       onHold: () => { void record(t, true); } });
   }, () => thread(t));
@@ -878,16 +880,16 @@ function replies(t: Thread) {
         onPick: (i) => {
           const option = menu.options[i];
           if (!option) return;
-          show({ kind: 'text', title: 'Click to choose / Double-click to cancel',
+          show({ kind: 'text', title: tr('chooseHint'),
             text: `${menu.question}\n\n${option.value}. ${option.label}${option.description ? '\n' + option.description : ''}`,
             onBack: () => replies(t),
             onClick: () => guard(t.title, async () => {
               if (sending) return;
               sending = true;
               try {
-                await show({ kind: 'text', title: t.title, text: 'Sending…' });
+                await show({ kind: 'text', title: t.title, text: tr('sending') });
                 const result = await api.choice(t.handle, menu.id, option.value);
-                await thread(t, `Input sent: ${result.sent}`);
+                await thread(t, tr('inputSent', result.sent));
               } finally { sending = false; }
             }, () => thread(t)),
           });
@@ -907,9 +909,9 @@ let cancelCapture: (() => void) | null = null;
 const MAX_REC_SEC = 60;
 
 // Voice hints on the full-screen voice page's instruction row.
-const VOICE_LISTENING = 'Listening… release to review';
-const VOICE_REVIEW = 'Tap to send / Double tap to cancel';
-const VOICE_RETURN = 'Tap or double tap to return';
+const voiceListening = () => tr('voiceListening');
+const voiceReview = () => tr('voiceReview');
+const voiceReturn = () => tr('voiceReturn');
 
 async function record(t: Thread, hold = false) {
   if ((hold && !holding) || recording !== null || cancelCapture) return;
@@ -926,7 +928,7 @@ async function record(t: Thread, hold = false) {
   clearInterval(statusAnimation);
   let overlayActive = true;
   let voiceWrites: Promise<void> = Promise.resolve();
-  const voiceScreen: TextScreen = { kind: 'text', title: ' ', text: ' ', voice: true, voiceHint: VOICE_LISTENING, voiceTail: true };
+  const voiceScreen: TextScreen = { kind: 'text', title: ' ', text: ' ', voice: true, voiceHint: voiceListening(), voiceTail: true };
   // Serialize page and row writes; the first call builds the voice page and
   // later calls replace only its transcript and instruction rows.
   const voiceShow = (text: string, hint: string, handlers: { onClick?: () => void; onBack?: () => void } = {}, tail = false) => {
@@ -987,15 +989,15 @@ async function record(t: Thread, hold = false) {
     sending = true;
     cancelCapture = null;
     try {
-      await voiceShow(shown, 'Sending…');
+      await voiceShow(shown, tr('sending'));
       if (choiceMenu) {
         const value = choiceNumber(text);
-        if (!value || !choiceMenu.options.some(o => o.value === value)) throw new Error('Say one of the displayed option numbers. Nothing sent.');
+        if (!value || !choiceMenu.options.some(o => o.value === value)) throw new Error(tr('sayOptionNumber'));
         await api.choice(t.handle, choiceMenu.id, value);
       } else await api.say(t.handle, text);
       await closeVoice();
     } catch (e) {
-      await voiceShow((e as Error).message, VOICE_RETURN, { onBack: () => { void closeVoice(); }, onClick: () => { void closeVoice(); } }).catch(e => diag((e as Error).message));
+      await voiceShow((e as Error).message, voiceReturn(), { onBack: () => { void closeVoice(); }, onClick: () => { void closeVoice(); } }).catch(e => diag((e as Error).message));
     } finally { sending = false; }
   };
   const stop = async (finish: boolean) => {
@@ -1005,7 +1007,7 @@ async function record(t: Thread, hold = false) {
     cleanup();
     await bridge.audioControl(false).catch(() => {});
     try {
-      await voiceShow(caption || 'Finishing transcription…', 'Transcribing…', { onBack: back }, true);
+      await voiceShow(caption || tr('finishingTranscription'), tr('transcribing'), { onBack: back }, true);
       await pending;
       if (cancelled) return;
       const pcm = snapshot();
@@ -1013,22 +1015,22 @@ async function record(t: Thread, hold = false) {
       if (cancelled) return;
       cancelCapture = null;
       if (!text) {
-        await voiceShow(tr('notHeard'), VOICE_RETURN, { onClick: () => { void closeVoice(); }, onBack: () => { void closeVoice(); } });
+        await voiceShow(tr('notHeard'), voiceReturn(), { onClick: () => { void closeVoice(); }, onBack: () => { void closeVoice(); } });
       } else {
         cancelCapture = cancel;
         const choice = choiceMenu?.options.find(o => o.value === choiceNumber(text));
         const shown = choice ? `${choice.value}. ${choice.label}` : text;
-        await voiceShow(shown, VOICE_REVIEW, { onClick: () => { void sendText(text, shown); }, onBack: back });
+        await voiceShow(shown, voiceReview(), { onClick: () => { void sendText(text, shown); }, onBack: back });
       }
     } catch (e) {
       if (cancelled) return;
       cancelCapture = null;
-      await voiceShow((e as Error).message, VOICE_RETURN, { onBack: () => { void closeVoice(); }, onClick: () => { void closeVoice(); } }).catch(e => diag((e as Error).message));
+      await voiceShow((e as Error).message, voiceReturn(), { onBack: () => { void closeVoice(); }, onClick: () => { void closeVoice(); } }).catch(e => diag((e as Error).message));
     }
   };
   if (hold) releaseCapture = () => { void stop(true); };
   try {
-    await voiceShow(hold ? ' ' : tr('recordingHint'), VOICE_LISTENING, { onClick: hold ? undefined : () => { void stop(true); }, onBack: () => { void stop(false); } }, true);
+    await voiceShow(hold ? ' ' : tr('recordingHint'), voiceListening(), { onClick: hold ? undefined : () => { void stop(true); }, onBack: () => { void stop(false); } }, true);
   } catch (e) {
     // The voice page was rejected: the chat is still mounted, so resume it.
     cancel();
@@ -1044,7 +1046,7 @@ async function record(t: Thread, hold = false) {
   if (stopped) { await bridge.audioControl(false); return; }
   if (!ok) {
     cancel();
-    await voiceShow(tr('micFailed'), VOICE_RETURN, { onClick: () => { void closeVoice(); }, onBack: () => { void closeVoice(); } });
+    await voiceShow(tr('micFailed'), voiceReturn(), { onClick: () => { void closeVoice(); }, onBack: () => { void closeVoice(); } });
     return;
   }
   diag('Recording — full-screen voice page.');
@@ -1061,7 +1063,7 @@ async function record(t: Thread, hold = false) {
         if (cancelled) return;
         lastBytes = pcm.length;
         caption = result.text.trim();
-        if (!stopped && caption) await voiceShow(caption, VOICE_LISTENING, { onBack: () => { void stop(false); } }, true);
+        if (!stopped && caption) await voiceShow(caption, voiceListening(), { onBack: () => { void stop(false); } }, true);
       } catch { /* Final transcription reports errors; transient preview failure is not a send. */ }
       finally { pending = null; }
     })();
@@ -1076,7 +1078,7 @@ function usageText(u: Usage, mode: ResetMode) {
     const percent = (value: number) => Math.round(value * 10) / 10;
     const s = v.session ? `5h ${percent(v.session.usedPercent)}% (${formatReset(v.session, mode)})` : '';
     const w = v.weekly ? `${tr('weekly')} ${percent(v.weekly.usedPercent)}% (${formatReset(v.weekly, mode)})` : '';
-    const m = v.monthly ? `Monthly ${percent(v.monthly.usedPercent)}% (${formatReset(v.monthly, mode)})` : '';
+    const m = v.monthly ? `${tr('monthly')} ${percent(v.monthly.usedPercent)}% (${formatReset(v.monthly, mode)})` : '';
     return `${providerName(v.provider || name)}\n  ${[s, w, m].filter(Boolean).join(' / ') || tr('noInfo')}`;
   });
   if (ng.length) lines.push(tr('unavailable', ng.join(', ')));
@@ -1102,7 +1104,7 @@ function usage() {
           screen.usageMode = next;
           if (current !== screen) return;
           await bridge.textContainerUpgrade(new TextContainerUpgrade({ containerID: USAGE_RESET.containerID, containerName: USAGE_RESET.containerName,
-            content: `Reset: ${resetModeLabel(next)}  (Click to change)` }));
+            content: tr('resetLine', resetModeLabel(next)) }));
         }
         if (current !== screen) return;
         const text = usageText(u, usageResetMode);
@@ -1336,6 +1338,20 @@ function useLang(pref: string) {
   applyPage();
 }
 
+// Phone Settings language change: redraw the glasses screen that shows
+// dictionary text. Voice pages and one-off messages keep their text until closed.
+function redrawForLanguage() {
+  const s = current;
+  if (!s) return;
+  if (s.kind === 'list' && (s.sessionList || s.workspacePicker || s.agentPicker)) { refreshGlasses(); return; }
+  if (s.kind === 'text' && s.usageMode) { void usage(); return; }
+  if (s.kind === 'text' && s.reader && !s.voice) {
+    s.activityLabel = readerStatus(s.activityState || 'unknown', s.statusFrame || 0, Date.now() - (s.statusStartedAt ?? Date.now()));
+    s.fineLabel = undefined;
+    void show(s).catch(e => diag((e as Error).message));
+  }
+}
+
 async function main() {
   document.getElementById('app-heading')!.textContent = sessionHeading();
   bridge = await waitForEvenAppBridge();
@@ -1346,8 +1362,7 @@ async function main() {
     const v = q.get(k) ?? q.get(`amp;${k}`);
     if (v != null) await bridge.setLocalStorage(k, v);
   }
-  const pref = 'en';
-  await bridge.setLocalStorage('lang', 'en');
+  const pref = (await bridge.getLocalStorage('lang')) || 'en';
   viewProvider = (await bridge.getLocalStorage('view-provider')) || 'all';
   const savedText = await bridge.getLocalStorage('reader-text');
   if (FINE_FONTS.includes(savedText as FineFont)) readerText = savedText as FineFont;
@@ -1378,6 +1393,15 @@ async function main() {
     },
     agentName: providerName,
   });
+  const langSelect = document.getElementById('lang') as HTMLSelectElement;
+  langSelect.value = getLang();
+  langSelect.addEventListener('change', async () => {
+    const next = detectLang(langSelect.value);
+    await bridge.setLocalStorage('lang', next);
+    useLang(next);
+    phone?.retranslate();
+    redrawForLanguage();
+  });
   const draft = document.getElementById('reply-text') as HTMLTextAreaElement;
   const send = document.getElementById('send-reply') as HTMLButtonElement;
   const status = document.getElementById('reply-status')!;
@@ -1387,7 +1411,7 @@ async function main() {
     ev.preventDefault();
     if (!selectedThread || sending || !draft.value.trim()) return;
     reviewed = { handle: selectedThread.handle, text: draft.value.trim() };
-    status.textContent = `Ready to send to ${selectedThread.title}: ${reviewed.text}`;
+    status.textContent = tr('readyToSend', selectedThread.title, reviewed.text);
     send.hidden = false;
   });
   send.addEventListener('click', async () => {
@@ -1396,12 +1420,12 @@ async function main() {
     reviewed = null;
     sending = true;
     send.hidden = true;
-    status.textContent = 'Sending…';
+    status.textContent = tr('sending');
     try {
       await api.say(message.handle, message.text);
       if (selectedThread?.handle === message.handle) {
         draft.value = '';
-        status.textContent = 'Sent.';
+        status.textContent = tr('sentDone');
       }
     } catch (e) {
       if (selectedThread?.handle === message.handle) status.textContent = (e as Error).message;
@@ -1411,8 +1435,6 @@ async function main() {
     ev.preventDefault();
     cancelCapture?.();
     holding = false;
-    await bridge.setLocalStorage('lang', 'en');
-    useLang('en');
     const code = $('code').value.trim();
     if (code && code !== 'demo' && !parseCode(code)) return diag(tr('badCode'));
     await bridge.setLocalStorage('code', code);

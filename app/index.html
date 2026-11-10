@@ -50,13 +50,13 @@
     <header class="top">
       <h3 id="app-heading">Orca Glass</h3>
       <nav class="tabs">
-        <button type="button" id="tab-home" class="tab on">Home</button>
-        <button type="button" id="tab-settings" class="tab">Settings</button>
+        <button type="button" id="tab-home" class="tab on" data-i18n="tabHome">Home</button>
+        <button type="button" id="tab-settings" class="tab" data-i18n="tabSettings">Settings</button>
       </nav>
     </header>
     <main id="page-home">
       <section class="card">
-        <button type="button" id="conn-toggle" class="status"><span id="conn-dot" class="dot"></span><span id="conn-text">Connecting…</span><span id="conn-chevron">▾</span></button>
+        <button type="button" id="conn-toggle" class="status"><span id="conn-dot" class="dot"></span><span id="conn-text" data-i18n="connConnecting">Connecting…</span><span id="conn-chevron">▾</span></button>
         <div id="conn-body" hidden>
           <form id="conn">
             <label data-i18n="codeLabel"></label>
@@ -67,25 +67,25 @@
         </div>
       </section>
       <section class="card" id="filters-card" hidden>
-        <h4>Filters</h4>
-        <div class="row"><span>Filter by Agent</span><select id="agent-filter" aria-label="Filter by Agent"></select></div>
+        <h4 data-i18n="filtersTitle">Filters</h4>
+        <div class="row"><span data-i18n="filterAgent">Filter by Agent</span><select id="agent-filter" aria-label="Filter by Agent" data-i18n-aria="filterAgent"></select></div>
         <div class="row"><span id="ws-label">Filter by Workspace</span><button type="button" id="ws-toggle" class="pick">All workspaces ▾</button></div>
         <div id="ws-list" hidden></div>
-        <p class="note">Shared with the glasses session list.</p>
+        <p class="note" data-i18n="filtersNote">Shared with the glasses session list.</p>
       </section>
       <section class="card" id="usage-card" hidden>
-        <div class="row" style="margin-top:0"><h4>Usage</h4><div class="seg" id="reset-mode" role="group" aria-label="Reset time"></div></div>
+        <div class="row" style="margin-top:0"><h4 data-i18n="usageTitle">Usage</h4><div class="seg" id="reset-mode" role="group" aria-label="Reset time" data-i18n-aria="resetTimeAria"></div></div>
         <div id="usage-body"></div>
-        <button type="button" id="usage-refresh">Refresh</button>
+        <button type="button" id="usage-refresh" data-i18n="refresh">Refresh</button>
       </section>
       <section class="card" id="composer" hidden>
         <h4 id="reply-target"></h4>
-        <p class="muted">Type a sentence or use your Android keyboard’s microphone, then review it before sending.</p>
+        <p class="muted" data-i18n="composerNote">Type a sentence or use your Android keyboard’s microphone, then review it before sending.</p>
         <form id="reply-form">
-          <label for="reply-text">Message</label>
+          <label for="reply-text" data-i18n="messageLabel">Message</label>
           <textarea id="reply-text" rows="4" maxlength="2000"></textarea>
-          <button id="review-reply" type="submit">Review message</button>
-          <button id="send-reply" type="button" hidden>Send to this session</button>
+          <button id="review-reply" type="submit" data-i18n="reviewMessage">Review message</button>
+          <button id="send-reply" type="button" hidden data-i18n="sendToSession">Send to this session</button>
         </form>
         <p id="reply-status" role="status"></p>
       </section>
@@ -93,7 +93,7 @@
     <main id="page-settings" hidden>
       <section class="card">
         <p data-i18n="pageIntro"></p>
-        <p>In a conversation, hold to talk and release to review. Click to send or double-click to cancel. Double-click while recording to cancel.</p>
+        <p data-i18n="settingsVoiceNote">In a conversation, hold to talk and release to review. Click to send or double-click to cancel. Double-click while recording to cancel.</p>
         <details open>
           <summary style="font-weight:bold" data-i18n="setupTitle"></summary>
           <ol style="padding-left:20px;font-size:14px" data-i18n="setupSteps"></ol>
@@ -102,6 +102,13 @@
           <summary style="font-weight:bold" data-i18n="opsTitle"></summary>
           <ul style="padding-left:20px;font-size:14px" data-i18n="opsList"></ul>
         </details>
+      </section>
+      <section class="card">
+        <label for="lang" data-i18n="langLabel">Language</label>
+        <select id="lang">
+          <option value="en">English</option>
+          <option value="ja">日本語</option>
+        </select>
       </section>
       <section class="card">
         <p id="menu-layout" aria-live="polite"></p>

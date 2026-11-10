@@ -24,7 +24,8 @@ const content = {
 } as const;
 
 export function demoCall(lang: Lang, method: string, path: string, body: unknown): unknown {
-  const c = content[lang];
+  // Sample data is English only; another language falls back to it.
+  const c = (content as Partial<Record<Lang, typeof content.en>>)[lang] ?? content.en;
   // APIパスとクエリだけが必要。ホスト名を持つ仮URLは作らない。
   const queryStart = path.indexOf('?');
   const pathname = queryStart === -1 ? path : path.slice(0, queryStart);

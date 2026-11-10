@@ -1,8 +1,12 @@
 // Right part of the one-row reader status: '[Tap&Hold for Input] Pg77/78', with
 // the provider-reported working duration in front ('13m32s ...'). The hint
 // shrinks step by step and then disappears when the row would not fit.
+import { t } from './i18n';
 export const TAP_HINTS = ['[Tap&Hold for Input]', '[Tap&Hold]', '[T&H]', ''];
 export const CHOICE_HINTS = ['[Click:choices]', '[Click]', ''];
+// The same steps in the current language (the constants above are the English set).
+export const tapHints = () => [t('hintTap'), t('hintTapShort'), t('hintTapTiny'), ''];
+export const choiceHints = () => [t('hintChoices'), t('hintChoicesShort'), ''];
 
 export function compactDuration(seconds?: number | null): string {
   if (seconds == null || !Number.isFinite(seconds) || seconds < 0) return '';
@@ -13,7 +17,7 @@ export function compactDuration(seconds?: number | null): string {
 
 export function statusRight(seconds: number | null | undefined, choices: boolean, page: string, fits: (text: string) => boolean = () => true): string {
   const timer = compactDuration(seconds);
-  for (const hint of choices ? CHOICE_HINTS : TAP_HINTS) {
+  for (const hint of choices ? choiceHints() : tapHints()) {
     const text = [timer, hint, page].filter(Boolean).join(' ');
     if (fits(text)) return text;
   }
