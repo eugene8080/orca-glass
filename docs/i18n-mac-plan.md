@@ -67,3 +67,8 @@ or blank glyphs, layouts match the English ones.
   width in the firmware font, translation quality.
 - Open: J2 (Japanese voice: multilingual Whisper), J4 (store listing / README.ja.md),
   then the macOS stages.
+- 2026-11-10 user: Japanese voice model is downloaded by each Japanese user in their
+  own setup (nothing downloaded on this PC); J2 code (opt-in multilingual model in the
+  setup scripts, bridge accepts `ja` only with a multilingual model) is folded into
+  macOS stage 2. Store listing (J4) deferred until the macOS port is finished. macOS
+  stages 1-3 started the same day.
