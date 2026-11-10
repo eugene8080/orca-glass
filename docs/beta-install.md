@@ -329,6 +329,8 @@ ignored; a named mutex prevents duplicate launcher instances. An occupied bridge
 port is left untouched. Orca itself must still be running for session access.
 
 Reinstall/update the task with `scripts/install-windows-startup.ps1`.
+The task runs `System32/conhost.exe --headless` plus PowerShell 7 and
+`scripts/start-windows.ps1` (same headless pattern as PcSettings Vancouver Proxy).
 Its launcher is `scripts/start-windows.ps1`; private logs are in
 `.local/startup.log`, `.local/custom-output.log`, and `.local/custom-error.log`.
 It starts after sign-in following power-up/reboot, not before Windows sign-in.
