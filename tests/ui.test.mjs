@@ -796,7 +796,8 @@ test('contextual actions refresh roster, open workspace picker and display usage
   await h.back(); await h.pick(2);
   // The reader's own menu only switches text size; session-list actions do nothing there.
   assert.equal(JSON.stringify(h.pages.at(-1).menuObject.menuItems.map(i => [i.itemID, i.itemName])),
-    JSON.stringify([[1101, 'Text: native (on)'], [1102, 'Small: Terminus 6x12'], [1103, 'Next: Misc Fixed 6x13'], [1104, 'Prev: GohuFont 6x11']]));
+    JSON.stringify([[1101, 'Using: Native text'], [1102, 'Native text'], [1110, 'Departure 7x14'], [1111, 'Departure 7x11'],
+      [1112, 'Misc Fixed 6x13'], [1113, 'Terminus 6x12'], [1114, 'GohuFont 6x11'], [1115, 'Scientifica 5x11']]));
   const pages = h.pages.length;
   await h.menu(1002);
   assert.equal(h.pages.length, pages);
@@ -1339,7 +1340,7 @@ test('small text draws the whole screen, status row included, as four tiles and 
   h.bridge.setLocalStorage = async (key, value) => { saved.push([key, value]); };
   await h.pick(2);
   // Terminus 6x12: one blank full-screen swipe target plus four 288x144 tiles.
-  await h.menu(1102);
+  await h.menu(1113);
   const page = h.pages.at(-1);
   assert.deepEqual(saved.slice(-2), [['reader-text', 'terminus'], ['reader-font', 'terminus']]);
   assert.equal(page.containerTotalNum, 5);
@@ -1347,21 +1348,24 @@ test('small text draws the whole screen, status row included, as four tiles and 
   assert.equal(JSON.stringify(page.imageObject.map(i => [i.containerID, i.xPosition, i.yPosition, i.width, i.height])),
     JSON.stringify([[2, 0, 0, 288, 144], [3, 288, 0, 288, 144], [4, 0, 144, 288, 144], [5, 288, 144, 288, 144]]));
   assert.equal(JSON.stringify(page.menuObject.menuItems.map(i => i.itemName)),
-    JSON.stringify(['Text: native', 'Using: Terminus 6x12', 'Next: Misc Fixed 6x13', 'Prev: GohuFont 6x11', 'Compare fonts']));
+    JSON.stringify(['Using: Terminus 6x12', 'Native text', 'Departure 7x14', 'Departure 7x11', 'Misc Fixed 6x13', 'Terminus 6x12',
+      'GohuFont 6x11', 'Scientifica 5x11', 'Compare fonts']));
   // Every possible label fits the menu without truncation (about 210px in the firmware font).
-  for (const f of fineExports.FINE_FONTS) for (const prefix of ['Small', 'Using', 'Next', 'Prev'])
-    assert.ok(listExports.glassWidth(`${prefix}: ${fineExports.fineLabel(f)}`) <= 210, `${prefix}: ${fineExports.fineLabel(f)}`);
+  for (const f of fineExports.FINE_FONTS) assert.ok(listExports.glassWidth(`Using: ${fineExports.fineLabel(f)}`) <= 210, fineExports.fineLabel(f));
   const layout = fineExports.fineLayout('terminus');
   assert.deepEqual([layout.columns, layout.rows], [93, 22]);
   // Every font on its own whole-pixel grid.
   assert.equal(JSON.stringify(Object.fromEntries(fineExports.FINE_FONTS.map(f => { const l = fineExports.fineLayout(f); return [f, [l.cell, l.line, l.columns, l.rows]]; }))),
     JSON.stringify({ scientifica: [5, 11, 112, 24], gohu: [6, 11, 93, 24], terminus: [6, 12, 93, 22], fixed: [6, 13, 93, 20],
       departure11: [7, 11, 80, 24], departure: [7, 14, 80, 18] }));
-  // Next and previous step through all ten fonts and remember the last one used.
-  await h.menu(1103);
+  // Picking a font from the list switches to it; the 'Using:' line changes nothing.
+  await h.menu(1112);
   assert.deepEqual(saved.slice(-2), [['reader-text', 'fixed'], ['reader-font', 'fixed']]);
-  assert.equal(h.pages.at(-1).menuObject.menuItems[1].itemName, 'Using: Misc Fixed 6x13');
-  await h.menu(1104);
+  assert.equal(h.pages.at(-1).menuObject.menuItems[0].itemName, 'Using: Misc Fixed 6x13');
+  const pagesBefore = h.pages.length;
+  await h.menu(1101);
+  assert.equal(h.pages.length, pagesBefore);
+  await h.menu(1113);
   assert.deepEqual(saved.at(-1), ['reader-font', 'terminus']);
   // 50 lines at 22 rows: three pages, opening on the newest. The tiles sent are
   // exactly the rendered screen with the status row drawn in.
@@ -1386,7 +1390,7 @@ test('small text draws the whole screen, status row included, as four tiles and 
   const restored = new Map(sent().slice(-4).map(i => [i.containerName, i.imageData]));
   for (const [name, data] of restored) assert.equal(JSON.stringify(data), JSON.stringify(want[Number(name.slice(5))]));
   // Back to native text on the page holding the same first line.
-  await h.menu(1101);
+  await h.menu(1102);
   assert.deepEqual(saved.at(-1), ['reader-text', 'native']);
   assert.equal(h.pages.at(-1).containerTotalNum, 7);
 });

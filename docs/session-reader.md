@@ -596,3 +596,11 @@ the Hermes Agent CLI (Cursor showed 'Conversation-only text is unavailable').
   longer list ends its page with a non-selectable 'v more below' row and later pages
   start with '^ more above'; swiping onto a cue turns the page.
 - Compare fonts shows each font on two lines: sample + full alphabet and digits.
+- 2026-11-10 reader long-press menu: 'Using: <font or Native text>' (no action), then
+  Native text and every font largest to smallest (Departure 7x14, Departure 7x11, Misc
+  Fixed 6x13, Terminus 6x12, GohuFont 6x11, Scientifica 5x11), then Compare fonts in a
+  small mode: at most nine entries. Replaces Next/Prev.
+- Native sizes (user question): the four BDF fonts use their own bitmap cells (font
+  ascent + descent). Both Departure entries draw the same glyphs at Departure's native
+  11px grid; 7x14 keeps the font's own line metrics (11 up + 3 down), 7x11 crops to the
+  11 rows its ASCII glyphs use. Nothing is scaled.

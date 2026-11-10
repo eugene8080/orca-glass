@@ -50,6 +50,11 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-10 user: reader menu should show the current font then all fonts large to small
+(incl. native) instead of Next/Prev. Built (unreleased): Using line + Native + six fonts +
+Compare fonts. Answered: all fonts native; Departure 7x14 vs 7x11 differ only in line
+spacing. 146 tests. App-only: needs beta 1.0.46.
+
 2026-11-10 user: 'upload beta'. Beta1.0.45 uploaded/promoted, CLI verified 105,620 bytes.
 146 tests pass; prototype dist restored. App-only, no bridge restart. G2 check pending:
 six fonts (Departure 7x11), Filter by Agent cues, Compare fonts two-line layout.

@@ -471,19 +471,17 @@ function requestFineStatus(s: TextScreen) {
 
 // Reader long-press menu: switch between native text and the two small fonts.
 // The glasses OS adds its own Display off / Brightness / Close entries.
-// Ten small fonts exceed the glasses' ten-entry menu, so the menu switches
-// between native and small text and steps through fonts; every entry names the
-// font and its native cell ('Small: Cozette 6x13').
+// Reader long-press menu (2026-11-10): a 'Using:' line naming the current text,
+// then every choice from largest to smallest (native text first) and, in a small
+// mode, Compare fonts. Selecting the 'Using:' line changes nothing. Six fonts keep
+// the menu within the glasses' ten entries; labels stay under the ~210px width.
 function readerMenu() {
-  const on = (yes: boolean) => yes ? ' (on)' : '';
-  const font = readerText === 'native' ? smallFont : readerText;
-  const at = FINE_FONTS.indexOf(font), n = FINE_FONTS.length;
-  const next = FINE_FONTS[(at + 1) % n], previous = FINE_FONTS[(at + n - 1) % n];
+  const current = readerText === 'native' ? 'Native text' : fineLabel(readerText);
+  const largestFirst = [...FINE_FONTS].reverse();
   return [
-    { id: 1101, label: `Text: native${on(readerText === 'native')}`, run: () => setReaderText('native') },
-    { id: 1102, label: `${readerText === 'native' ? 'Small' : 'Using'}: ${fineLabel(font)}`, run: () => setReaderText(font) },
-    { id: 1103, label: `Next: ${fineLabel(next)}`, run: () => setReaderText(next) },
-    { id: 1104, label: `Prev: ${fineLabel(previous)}`, run: () => setReaderText(previous) },
+    { id: 1101, label: `Using: ${current}`, run: () => {} },
+    { id: 1102, label: 'Native text', run: () => setReaderText('native') },
+    ...largestFirst.map((font, i) => ({ id: 1110 + i, label: fineLabel(font), run: () => setReaderText(font) })),
     ...(readerText === 'native' ? [] : [{ id: 1105, label: 'Compare fonts', run: () => showFontComparison() }]),
   ];
 }
