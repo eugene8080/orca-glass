@@ -4,7 +4,7 @@
 
 Orca Glass connects Even Realities G2 glasses to Orca on your PC (Windows today; macOS supported in source with CI smoke tests). Browse connected sessions, read a conversation, check agent activity, and review a spoken instruction before sending it back to your computer.
 
-This is Eugene's Windows/Android fork of [2ero20ne's Orca Glass](https://github.com/2ero20ne/orca-glass), licensed under MIT. Interface and speech recognition use English.
+This is Eugene's Windows/Android fork of [2ero20ne's Orca Glass](https://github.com/2ero20ne/orca-glass), licensed under MIT. It is developed and tested with the Even Realities app on Android; the Even Hub app has no Android-specific code, but it has not been tried on an iPhone.
 
 ## Availability
 

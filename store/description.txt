@@ -10,7 +10,7 @@ Since public 1.0.36 (beta 1.0.49):
 - English and Japanese (switch in the phone app). Shinonome supports Japanese in small-text mode.
 - macOS bridge setup and automated smoke tests are new; pairing on a real Mac is not yet verified.
 
-Requires G2, the Even Realities Android app, Orca and the companion bridge. The packaged connection targets a configured private PC over Tailscale; arbitrary-PC self-service setup is not offered yet. Agents run on your PC, not the glasses. Try the demo without a PC.
+Requires G2, the Even Realities app (iPhone untested), Orca and the companion bridge. The packaged connection targets a configured private PC over Tailscale; arbitrary-PC self-service setup is not offered yet. Agents run on your PC, not the glasses. Try the demo without a PC.
 
 Source/setup: https://github.com/eugene8080/orca-glass/tree/windows-android-codex
 Independent Windows/Android fork of 2ero20ne's Orca Glass under MIT.
