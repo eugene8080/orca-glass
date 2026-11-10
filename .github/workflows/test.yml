@@ -22,7 +22,8 @@ jobs:
       - name: Unit tests
         run: npm test
       - name: Typecheck app
-        run: npx tsc --noEmit -p app
+        working-directory: app
+        run: npx tsc --noEmit -p .
       - name: Build app
         run: npm --prefix app run build
       - name: Bridge smoke (macOS)
