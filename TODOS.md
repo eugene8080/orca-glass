@@ -8,6 +8,11 @@ Completed/superseded release notes: [history](docs/todo-history.md).
 
 ## Open work
 
+- [ ] **Japanese and macOS support -- stage J1 in progress:** user 2026-11-10 chose "Both,
+  Japanese first". Plan, stages and verification limits: docs/i18n-mac-plan.md. Neither the
+  user nor the agent can read Japanese natively or run a Mac; each stage records what was
+  verified.
+
 - [ ] **Small text in the reader (pixel / mono image tiles) -- G2 check pending:**
   2026-11-09 G2 1.0.40: fonts fine, 1px frame good, all checkerboards blotchy, tiles draw
   one by one on page turn, scanner confirmed good. Page-turn ms from Settings log pending.
