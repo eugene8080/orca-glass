@@ -33,13 +33,16 @@ workspace/worktree. This applies to every agent working here.
   remains a scheduled task; this rule does not remove automatic bridge startup.
 - A specific later user request for another launch surface overrides this rule.
 
-## Visual review policy
+## Release policy (supersedes the 2026-11-03 visual review hold)
 
-Eugene's explicit instruction2026-11-03: leave the simulator open for his review
-before shipping visual changes to G2. Do not restore/close the preview immediately
-after automated checks. Hold beta upload/promotion until he approves the preview.
-Necessary reloads/restarts to prepare the preview should be explained; then keep
-it available. Automatic commit/push does not authorize beta promotion.
+Eugene, 2026-11-10: "please just upload beta automatically from now on". After a
+change passes `npm test` and the app build, bump `app/app.json`, run
+`npm run beta:update -- "<changelog>"`, verify the beta channel, restore the
+prototype build, then commit and push. Do not wait for preview approval. This covers
+the BETA channel only: public Even Hub publication still needs his explicit request.
+Bridge restarts are not covered by this note; follow the ownership-check procedure
+and ask when a restart is needed (he has approved each one so far). Simulator or
+render previews are still useful evidence: share them with the release report.
 
 ## Browser policy
 
@@ -49,6 +52,11 @@ with GitHub/Discord open. Confirm the dedicated profile from fresh browser inven
 do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
+
+2026-11-10 user: 'upload beta. please just upload beta automatically from now on'. Beta1.0.46
+uploaded/promoted, CLI verified 105,503 bytes; 146 tests; prototype dist restored. Release
+policy above rewritten: beta uploads are automatic after tests/build; public and bridge
+restarts unchanged. G2 check pending: font list menu.
 
 2026-11-10 user: reader menu should show the current font then all fonts large to small
 (incl. native) instead of Next/Prev. Built (unreleased): Using line + Native + six fonts +
