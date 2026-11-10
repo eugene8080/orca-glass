@@ -19,7 +19,7 @@ vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../app/src/usage-res
 const glyphExports = {};
 vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../app/src/fonts/glyphs.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, { exports: glyphExports });
 const fineExports = {};
-vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../app/src/fine-text.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, { exports: fineExports, require: () => glyphExports, Uint8ClampedArray });
+vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../app/src/fine-text.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, { exports: fineExports, require: name => name === './i18n' ? i18nExports : glyphExports, Uint8ClampedArray });
 const filterExports = {};
 vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../app/src/filters.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, { exports: filterExports, require: () => i18nExports });
 
@@ -802,7 +802,7 @@ test('contextual actions refresh roster, open workspace picker and display usage
   // The reader's own menu only switches text size; session-list actions do nothing there.
   assert.equal(JSON.stringify(h.pages.at(-1).menuObject.menuItems.map(i => [i.itemID, i.itemName])),
     JSON.stringify([[1101, 'Using: Native text'], [1102, 'Native text'], [1110, 'Departure 7x14'], [1111, 'Departure 7x11'],
-      [1112, 'Misc Fixed 6x13'], [1113, 'Terminus 6x12'], [1114, 'GohuFont 6x11'], [1115, 'Scientifica 5x11']]));
+      [1112, 'Misc Fixed 6x13'], [1113, 'Shinonome 6x12'], [1114, 'Terminus 6x12'], [1115, 'GohuFont 6x11'], [1116, 'Scientifica 5x11']]));
   const pages = h.pages.length;
   await h.menu(1002);
   assert.equal(h.pages.length, pages);
@@ -1345,7 +1345,7 @@ test('small text draws the whole screen, status row included, as four tiles and 
   h.bridge.setLocalStorage = async (key, value) => { saved.push([key, value]); };
   await h.pick(2);
   // Terminus 6x12: one blank full-screen swipe target plus four 288x144 tiles.
-  await h.menu(1113);
+  await h.menu(1114);
   const page = h.pages.at(-1);
   assert.deepEqual(saved.slice(-2), [['reader-text', 'terminus'], ['reader-font', 'terminus']]);
   assert.equal(page.containerTotalNum, 5);
@@ -1353,15 +1353,17 @@ test('small text draws the whole screen, status row included, as four tiles and 
   assert.equal(JSON.stringify(page.imageObject.map(i => [i.containerID, i.xPosition, i.yPosition, i.width, i.height])),
     JSON.stringify([[2, 0, 0, 288, 144], [3, 288, 0, 288, 144], [4, 0, 144, 288, 144], [5, 288, 144, 288, 144]]));
   assert.equal(JSON.stringify(page.menuObject.menuItems.map(i => i.itemName)),
-    JSON.stringify(['Using: Terminus 6x12', 'Native text', 'Departure 7x14', 'Departure 7x11', 'Misc Fixed 6x13', 'Terminus 6x12',
-      'GohuFont 6x11', 'Scientifica 5x11', 'Compare fonts']));
+    JSON.stringify(['Using: Terminus 6x12', 'Native text', 'Departure 7x14', 'Departure 7x11', 'Misc Fixed 6x13', 'Shinonome 6x12',
+      'Terminus 6x12', 'GohuFont 6x11', 'Scientifica 5x11', 'Compare fonts']));
+  // Ten items: the SDK's menu maximum. Another font needs one removed first.
+  assert.equal(page.menuObject.menuItems.length, 10);
   // Every possible label fits the menu without truncation (about 210px in the firmware font).
   for (const f of fineExports.FINE_FONTS) assert.ok(listExports.glassWidth(`Using: ${fineExports.fineLabel(f)}`) <= 210, fineExports.fineLabel(f));
   const layout = fineExports.fineLayout('terminus');
   assert.deepEqual([layout.columns, layout.rows], [93, 22]);
   // Every font on its own whole-pixel grid.
   assert.equal(JSON.stringify(Object.fromEntries(fineExports.FINE_FONTS.map(f => { const l = fineExports.fineLayout(f); return [f, [l.cell, l.line, l.columns, l.rows]]; }))),
-    JSON.stringify({ scientifica: [5, 11, 112, 24], gohu: [6, 11, 93, 24], terminus: [6, 12, 93, 22], fixed: [6, 13, 93, 20],
+    JSON.stringify({ scientifica: [5, 11, 112, 24], gohu: [6, 11, 93, 24], terminus: [6, 12, 93, 22], shinonome: [6, 12, 93, 22], fixed: [6, 13, 93, 20],
       departure11: [7, 11, 80, 24], departure: [7, 14, 80, 18] }));
   // Picking a font from the list switches to it; the 'Using:' line changes nothing.
   await h.menu(1112);
@@ -1370,7 +1372,7 @@ test('small text draws the whole screen, status row included, as four tiles and 
   const pagesBefore = h.pages.length;
   await h.menu(1101);
   assert.equal(h.pages.length, pagesBefore);
-  await h.menu(1113);
+  await h.menu(1114);
   assert.deepEqual(saved.at(-1), ['reader-font', 'terminus']);
   // 50 lines at 22 rows: three pages, opening on the newest. The tiles sent are
   // exactly the rendered screen with the status row drawn in.
@@ -1496,4 +1498,30 @@ test('switching the phone language to Japanese redraws glasses labels and keeps 
     for (const item of page.menuObject.menuItems) assert.ok(new TextEncoder().encode(item.itemName).length <= 32, item.itemName);
   } finally { select.value = 'en'; await select.listeners.change(); await h.flush(); }
   assert.equal(statusExports.readerStatus('waiting'), '/Waiting');
+});
+
+test('Japanese draws from the Shinonome wide table in every small font', () => {
+  // あ (U+3042) and 漢 are in the 12x12 table: two cells, real pixels, no canvas fallback.
+  for (const font of fineExports.FINE_FONTS) {
+    const tiles = fineExports.renderFineScreen('あ漢', font, { left: '', right: '' });
+    const lit = tiles.reduce((n, tile) => n + tile.filter(v => v > 0).length, 0);
+    const blank = fineExports.renderFineScreen('', font, { left: '', right: '' }).reduce((n, tile) => n + tile.filter(v => v > 0).length, 0);
+    assert.ok(lit - blank > 40, `${font}: ${lit - blank} glyph pixels`);
+  }
+  assert.equal(fineExports.fineCells('日本語abc'), 9);
+});
+
+test('Japanese wraps between characters but never starts a row with closing punctuation', () => {
+  const nl = String.fromCharCode(10);
+  const cells = t => [...t].reduce((n, c) => n + (c.charCodeAt(0) > 0x2e80 ? 2 : 1), 0) * 6;
+  // 'UTC の実行日…': before, the whole Japanese run moved to the next row.
+  const rows = textExports.readerPages('> 明細の日付を UTC の実行日と比べているため、翌日扱いになりました。', cells, 6 * 24, 20)[0].split(nl);
+  assert.ok(rows.length >= 2);
+  assert.ok(rows.every(row => cells(row) <= 6 * 24), rows.join('|'));
+  assert.ok(cells(rows[0]) >= 6 * 22, `first row filled: ${rows[0]}`);
+  assert.ok(rows.slice(1).every(row => row.startsWith('  ') && !/^\s*[、。」）ー]/.test(row)), rows.join('|'));
+  // Every character kept: only the hanging indent and wrap-point spaces differ.
+  assert.equal(rows.join('').replace(/\s/g, ''), '>明細の日付をUTCの実行日と比べているため、翌日扱いになりました。');
+  // Latin words are still never split.
+  assert.deepEqual([...textExports.readerPages('alpha beta gamma', t => t.length * 6, 6 * 11, 20)[0].split(nl)], ['alpha beta', 'gamma']);
 });

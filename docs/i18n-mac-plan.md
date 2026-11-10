@@ -47,3 +47,23 @@ or blank glyphs, layouts match the English ones.
 2. Startup: launchd agent instead of Task Scheduler; shell setup instead of PowerShell.
 3. CI: GitHub Actions macOS job running `npm test` and a bridge smoke test on every
    push. Real Orca/G2/microphone on a Mac remain unverified until a Mac user tries it.
+
+## Progress
+
+- 2026-11-10 user clarified: code and comments are not translated; the app supports
+  English and Japanese; some pixel fonts must show Japanese; the language is chosen in
+  the phone companion app only, not on the G2.
+- J1 done (6f1061f): phone Settings English / 日本語 (saved as `lang`), 140-key `en`
+  and `ja` dictionaries (49 upstream-author entries tagged `// upstream`, the rest
+  agent-translated, native review pending); glasses and phone text from the dictionary.
+- J3 done: Shinonome 0.9.11 (public domain, app/src/fonts/SHINONOME-LICENSE.txt).
+  'Shinonome 6x12' is a small font of its own; its 12x12 Japanese table (JIS level 1
+  kanji, kana, symbols: 3,489 glyphs) draws two-cell characters in every small font,
+  baseline-aligned. Exact fit in 6x12, 6x13, 7x14; 11-row fonts overflow one row up,
+  Scientifica one column right. Level 2 kanji fall back to the WebView font. The
+  reader wraps Japanese between characters with simple kinsoku. Bundle 340 -> 535 KB
+  (168 KB gzip). The glasses menu is now at the SDK's 10-item maximum.
+- Not verified: native-text Japanese on the G2 (upstream used it), real Japanese text
+  width in the firmware font, translation quality.
+- Open: J2 (Japanese voice: multilingual Whisper), J4 (store listing / README.ja.md),
+  then the macOS stages.

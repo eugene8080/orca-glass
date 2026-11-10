@@ -13,18 +13,19 @@
 // Missing characters: box drawing as geometric lines and Braille as dots, both
 // fitted to the cell; anything else via the WebView monospace font, thresholded
 // to on/off pixels. East Asian wide characters take two cells.
-import { DEPARTURE_MONO, DEPARTURE_MONO_11, TERMINUS, GOHU, SCIENTIFICA, FIXED } from './fonts/glyphs';
+import { getLang, t } from './i18n';
+import { DEPARTURE_MONO, DEPARTURE_MONO_11, TERMINUS, GOHU, SCIENTIFICA, FIXED, SHINONOME, SHINONOME_K12 } from './fonts/glyphs';
 
 // Menu order: narrowest cell first, then by height. (2026-11-10: Spleen, Monogram,
 // Cozette, Pixeloid Mono and JetBrains Mono removed at the user's request.)
 const TABLES = {
-  scientifica: SCIENTIFICA, gohu: GOHU, terminus: TERMINUS, fixed: FIXED,
+  scientifica: SCIENTIFICA, gohu: GOHU, terminus: TERMINUS, shinonome: SHINONOME, fixed: FIXED,
   departure11: DEPARTURE_MONO_11, departure: DEPARTURE_MONO,
 };
 export type FineFont = keyof typeof TABLES;
 export const FINE_FONTS = Object.keys(TABLES) as FineFont[];
 const NAMES: Record<FineFont, string> = {
-  scientifica: 'Scientifica', gohu: 'GohuFont', terminus: 'Terminus', fixed: 'Misc Fixed',
+  scientifica: 'Scientifica', gohu: 'GohuFont', terminus: 'Terminus', shinonome: 'Shinonome', fixed: 'Misc Fixed',
   departure11: 'Departure', departure: 'Departure',
 };
 // 'Cozette 6x13': short name and native cell. The glasses menu truncates labels
@@ -56,6 +57,23 @@ function glyph(font: FineFont, code: number): number[] | undefined {
     parsed.set(font, table);
   }
   return table.get(code);
+}
+
+// Japanese (2026-11-10): one 12x12 wide table (Shinonome, JIS level 1 kanji, kana,
+// symbols) shared by every small font. Rows are 16-bit, bit 15 = leftmost pixel; the
+// glyphs use 11 columns. It fits the 6x12, 6x13 and 7x14 cells exactly; in 11-row
+// fonts it overflows one row upwards, in Scientifica (10px two-cell) one column right.
+const WIDE = SHINONOME_K12;
+let wideParsed: Map<number, number[]> | null = null;
+function wideGlyph(code: number): number[] | undefined {
+  if (!wideParsed) {
+    wideParsed = new Map();
+    for (const entry of WIDE.glyphs.split(';')) {
+      const [hex, rows] = entry.split(':');
+      wideParsed.set(parseInt(hex, 16), Array.from({ length: rows.length / 4 }, (_, i) => parseInt(rows.slice(i * 4, i * 4 + 4), 16)));
+    }
+  }
+  return wideParsed.get(code);
 }
 
 // Two cells for East Asian wide/fullwidth characters and emoji; zero for
@@ -99,8 +117,13 @@ class Surface {
       if (col + cells > maxCells) break;
       const px = x + col * cw, code = c.codePointAt(0) || 0;
       const bitmap = glyph(this.font, code);
+      const wide = !bitmap && cells === 2 ? wideGlyph(code) : undefined;
       if (bitmap) {
         for (let gy = 0; gy < bitmap.length; gy++) for (let gx = 0; gx < cw; gx++) if (bitmap[gy] & (0x80 >> gx)) this.set(px + gx, y + gy);
+      } else if (wide) {
+        // Baseline-aligned to this font; centred in the two-cell box (11 used columns).
+        const dy = TABLES[this.font].ascent - WIDE.ascent, dx = Math.max(0, (2 * cw - 11) >> 1);
+        for (let gy = 0; gy < wide.length; gy++) for (let gx = 0; gx < 16; gx++) if (wide[gy] & (0x8000 >> gx)) this.set(px + dx + gx, y + dy + gy);
       } else if (BOX[c]) {
         this.box(BOX[c], px, y, cw, ch);
       } else if (code >= 0x2800 && code <= 0x28ff) {
@@ -207,6 +230,8 @@ export function renderFineScreen(text: string, font: FineFont, status: FineStatu
 // brackets and operators, box drawing and a Braille spinner frame.
 export const FONT_SAMPLE = 'Quick brown fox 0O1lI| {}[] -> != ─┼─ ⠋';
 export const FONT_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz 0123456789';
+// Japanese mode shows kana, kanji and full-width punctuation on the second line instead.
+export const FONT_SAMPLE_JA = 'あいうえお アイウエオ 日本語の表示、漢字。「東雲」 ABC abc 0123';
 export function renderFontComparison(): number[][] {
   const s = new Surface(FINE_FONTS[0]);
   s.rect(0, 0, SCREEN.width, FRAME); s.rect(0, SCREEN.height - FRAME, SCREEN.width, FRAME);
@@ -218,12 +243,12 @@ export function renderFontComparison(): number[][] {
     const columns = Math.floor(TEXT_WIDTH / TABLES[font].width);
     s.text(`${fineLabel(font).padEnd(nameCells)}${FONT_SAMPLE}`, TEXT_X, y, columns);
     y += TABLES[font].height;
-    s.text(`${''.padEnd(nameCells)}${FONT_ALPHABET}`, TEXT_X, y, columns);
+    s.text(`${''.padEnd(nameCells)}${getLang() === 'ja' ? FONT_SAMPLE_JA : FONT_ALPHABET}`, TEXT_X, y, columns);
     y += TABLES[font].height + 4;
   }
   s.font = FINE_FONTS[0];
   s.rect(TEXT_X + 8, y + 2, TEXT_WIDTH - 16, 1);
-  s.text('Swipe to return to the chat.', TEXT_X, y + 8, Math.floor(TEXT_WIDTH / TABLES[s.font].width));
+  s.text(t('compareBack'), TEXT_X, y + 8, Math.floor(TEXT_WIDTH / TABLES[s.font].width));
   return s.tiles();
 }
 

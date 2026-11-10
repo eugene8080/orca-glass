@@ -151,6 +151,16 @@ export function latestResponseStart(text: string): number {
   return start;
 }
 
+// Wrap points. Latin text breaks at spaces only. Japanese (and Chinese) has no
+// spaces, so each kana/kanji/full-width character is its own token and a row may
+// break between any two of them, with simple kinsoku: closing punctuation, small
+// kana and the long-vowel mark stay on the row before (never start a row), and an
+// opening bracket stays with the character after it (never ends a row).
+const CJK = '\\u3001-\\u303f\\u3040-\\u30ff\\u3400-\\u4dbf\\u4e00-\\u9fff\\uf900-\\ufaff\\uff01-\\uff60';
+const NO_START = '、。，．・：；？！」』）】〕〉》ーぁぃぅぇぉっゃゅょゎァィゥェォッャュョヮヵヶ…‥\\uff09\\uff0c\\uff0e\\uff1a\\uff1b\\uff1f\\uff01\\uff5d\\uff3d';
+const NO_END = '「『（【〔〈《\\uff08\\uff3b\\uff5b';
+const WRAP_TOKENS = new RegExp(`\\s+|[${NO_END}]*[${CJK}][${NO_START}]*|[^\\s${CJK}]+`, 'gu');
+
 export function readerPages(text: string, measure: (text: string) => number, width = 550, rowsPerPage = 6, byteLimit = 900): string[] {
   const rows: string[] = [];
   const fits = (candidate: string) => measure(candidate) <= width && enc.encode(candidate).length <= byteLimit;
@@ -172,7 +182,7 @@ export function readerPages(text: string, measure: (text: string) => number, wid
     }
     let row = '';
     const wrap = () => { rows.push(row.trimEnd()); row = indent; }; // the space before a wrap point is dropped too
-    for (const token of line.match(/\s+|\S+/gu) || []) {
+    for (const token of line.match(WRAP_TOKENS) || []) {
       if (fits(row + token)) { row += token; continue; }
       if (row.trim()) wrap();
       if (!token.trim()) continue; // whitespace at a wrap point is dropped, never leads a row

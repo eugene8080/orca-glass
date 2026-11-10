@@ -35,7 +35,9 @@ export default defineConfig({
           + '\n\nscientifica 2.3 (glyph table), SIL Open Font License 1.1:\n\n'
           + readFileSync(new URL('./src/fonts/SCIENTIFICA-OFL.txt', import.meta.url), 'utf8')
           + '\n\nX11 misc-fixed 6x13 (glyph table):\n\n'
-          + readFileSync(new URL('./src/fonts/MISC-FIXED-COPYING.txt', import.meta.url), 'utf8'),
+          + readFileSync(new URL('./src/fonts/MISC-FIXED-COPYING.txt', import.meta.url), 'utf8')
+          + '\n\nShinonome 0.9.11, 6x12 and 12x12 Japanese (glyph tables, public domain):\n\n'
+          + readFileSync(new URL('./src/fonts/SHINONOME-LICENSE.txt', import.meta.url), 'utf8'),
       });
     },
   }],

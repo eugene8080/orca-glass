@@ -6,7 +6,20 @@ Inputs (downloaded release archives, unpacked):
   --gohu        gohufont-uni-11.bdf, github.com/hchargois/gohufont   (WTFPL, Hugo Chargois)
   --scientifica scientifica-11.bdf, github.com/nerdypepper/scientifica v2.3   (OFL-1.1, Akshay Oppiliappan)
   --fixed       6x13.bdf, gitlab.freedesktop.org/xorg/font/misc-misc   (public domain)
-Output: app/src/fonts/glyphs.ts with one table per font.
+  --shinonome   shinonome-0.9.11/bdf/ from openlab.jp/efont/dist/shinonome/shinonome-0.9.11p1.tar.bz2
+                (public domain): shnm6x12a.bdf (Latin 6x12) and shnmk12.bdf (Japanese,
+                JIS X 0208, 12x12; every font uses it for two-cell characters. The 14x14 set
+                was left out: +73 KB compressed for Departure 7x14 alone)
+Output: app/src/fonts/glyphs.ts with one table per font. Every table records its
+ascent (baseline row) so Japanese glyphs can be aligned to any font.
+
+Japanese (2026-11-10, user: the app should support English and Japanese with some
+pixel fonts that show Japanese): Shinonome 6x12 is a font of its own, and the 12x12
+set is the wide companion table every small font uses for two-cell (East Asian wide)
+characters. Only JIS rows 0x21-0x4F are kept: symbols, kana, Greek,
+Cyrillic, box drawing and the JIS level 1 kanji (~3,000 everyday characters); level 2
+kanji would roughly double the app's size. JIS codes are mapped to Unicode through
+EUC-JP (each byte | 0x80).
 
 Monospace only: every font must have one advance width for all of its glyphs.
 Bitmap (BDF) fonts are read at their native cell. Departure Mono is an outline
@@ -173,17 +186,78 @@ def crop_rows(glyphs: list[str], height: int, keep: int) -> tuple[int, list[str]
     return top, [e.split(":")[0] + ":" + "".join(f"{v:02x}" for v in rows_of(e)[top:top + keep]) for e in glyphs]
 
 
+def bdf_ascent(path: Path) -> int:
+    lines = path.read_text(encoding="latin-1").splitlines()
+    return int(next(l for l in lines if l.startswith("FONT_ASCENT ")).split()[1])
+
+
+def jis_wide(path: Path, last_row: int = 0x4F) -> tuple[int, int, int, list[str]]:
+    """A JIS X 0208 BDF as a wide table: two bytes (4 hex digits) per row, bit 15 = left.
+    Rows above `last_row` (JIS level 2 kanji) are left out."""
+    lines = path.read_text(encoding="latin-1").splitlines()
+    box = next(l for l in lines if l.startswith("FONTBOUNDINGBOX")).split()
+    cell_w, cell_h, base_y = int(box[1]), int(box[2]), int(box[4])
+    if cell_w > 16:
+        raise SystemExit(f"{path.name}: {cell_w}px is wider than the 16-bit row format")
+    ascent = bdf_ascent(path)
+    out: list[str] = []
+    i = 0
+    while i < len(lines):
+        if not lines[i].startswith("STARTCHAR"):
+            i += 1
+            continue
+        jis = w = h = xoff = yoff = None
+        rows: list[int] = []
+        i += 1
+        while not lines[i].startswith("ENDCHAR"):
+            parts = lines[i].split()
+            if parts[0] == "ENCODING":
+                jis = int(parts[1])
+            elif parts[0] == "BBX":
+                w, h, xoff, yoff = (int(v) for v in parts[1:5])
+            elif parts[0] == "BITMAP":
+                i += 1
+                while not lines[i].startswith("ENDCHAR"):
+                    rows.append(int(lines[i], 16))
+                    i += 1
+                break
+            i += 1
+        if jis is None or w is None or (jis >> 8) > last_row:
+            continue
+        try:
+            char = bytes([(jis >> 8) | 0x80, (jis & 0xFF) | 0x80]).decode("euc_jp")
+        except UnicodeDecodeError:
+            continue
+        if len(char) != 1:
+            continue
+        cell = [0] * cell_h
+        top = (cell_h + base_y) - (yoff + h)
+        byte_bits = ((w + 7) // 8) * 8
+        for r, value in enumerate(rows):
+            y = top + r
+            if 0 <= y < cell_h:
+                bits = value >> (byte_bits - w)
+                cell[y] = (bits << (16 - w - xoff)) & 0xFFFF
+        out.append(f"{ord(char):x}:" + "".join(f"{v:04x}" for v in cell))
+    return cell_w, cell_h, ascent, out
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
-    for name in ("departure", "terminus", "gohu", "scientifica", "fixed"):
+    for name in ("departure", "terminus", "gohu", "scientifica", "fixed", "shinonome"):
         ap.add_argument(f"--{name}", type=Path, required=True)
     args = ap.parse_args()
-    bitmaps = {name: bdf(getattr(args, name), TEXT_RANGES) for name in ("terminus", "gohu", "scientifica", "fixed")}
+    sources = {"terminus": args.terminus, "gohu": args.gohu, "scientifica": args.scientifica, "fixed": args.fixed,
+               "shinonome": args.shinonome / "shnm6x12a.bdf"}
+    bitmaps = {name: (*bdf(path, TEXT_RANGES), bdf_ascent(path)) for name, path in sources.items()}
+    k12 = jis_wide(args.shinonome / "shnmk12.bdf")
     dsize = pixel_grid_size(args.departure)
     dw, dh, departure = outline(args.departure, dsize, all_codes(args.departure))
     top, departure11 = crop_rows(departure, dh, dsize)
+    from PIL import ImageFont
+    dascent = ImageFont.truetype(str(args.departure), dsize).getmetrics()[0]
     target = REPO / "app" / "src" / "fonts" / "glyphs.ts"
-    table = lambda name, w, h, g: f"export const {name} = {{ width: {w}, height: {h}, glyphs: '{';'.join(g)}' }};\n"
+    table = lambda name, w, h, a, g: f"export const {name} = {{ width: {w}, height: {h}, ascent: {a}, glyphs: '{';'.join(g)}' }};\n"
     target.write_text(
         "// Generated by scripts/build-fine-fonts.py. Do not edit by hand.\n"
         "// Departure Mono 1.500 (c) 2022-2024 Helena Zhang, OFL-1.1: fonts/DEPARTURE-MONO-OFL.txt.\n"
@@ -191,14 +265,18 @@ def main() -> None:
         "// GohuFont (c) Hugo Chargois, WTFPL: fonts/GOHUFONT-LICENSE.txt.\n"
         "// scientifica 2.3 (c) Akshay Oppiliappan, OFL-1.1: fonts/SCIENTIFICA-OFL.txt.\n"
         "// X11 misc-fixed 6x13: public domain, fonts/MISC-FIXED-COPYING.txt.\n"
-        "// Entry: hex code point ':' then one byte per row (bit 7 = leftmost pixel).\n"
-        + table("DEPARTURE_MONO", dw, dh, departure)
+        "// Shinonome 0.9.11 (The Electronic Font Open Laboratory): public domain, fonts/SHINONOME-LICENSE.txt.\n"
+        "// Entry: hex code point ':' then one byte per row (bit 7 = leftmost pixel); wide (Japanese)\n"
+        "// tables use two bytes per row (bit 15 = leftmost). ascent = rows above the baseline.\n"
+        + table("DEPARTURE_MONO", dw, dh, dascent, departure)
         + f"// Departure Mono rows {top}..{top + dsize - 1} of the {dh}-row line: the 11 its ASCII glyphs use.\n"
-        + table("DEPARTURE_MONO_11", dw, dsize, departure11)
-        + "".join(table(name.upper(), w, h, g) for name, (w, h, g) in bitmaps.items()),
+        + table("DEPARTURE_MONO_11", dw, dsize, dascent - top, departure11)
+        + "".join(table(name.upper(), w, h, a, g) for name, (w, h, g, a) in bitmaps.items())
+        + table("SHINONOME_K12", k12[0], k12[1], k12[2], k12[3]),
         encoding="utf-8")
     print("ok", f"departure {dsize}px {dw}x{dh}/{len(departure)} and {dw}x{dsize} from row {top}",
-          *[f"{n} {w}x{h}/{len(g)}" for n, (w, h, g) in bitmaps.items()], target.stat().st_size, "bytes")
+          *[f"{n} {w}x{h}/{len(g)}" for n, (w, h, g, a) in bitmaps.items()],
+          f"k12 {k12[0]}x{k12[1]}/{len(k12[3])}", target.stat().st_size, "bytes")
 
 
 if __name__ == "__main__":
