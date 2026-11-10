@@ -50,6 +50,13 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-10 user relaunched Pi; Orca records its session (key,id,transcriptPath); bridge
+reads pi-transcript live (2 messages, Qwopus-Pi-128k). Bridge restarted after ownership
+check (old 46344/10480/85852; new supervisor54676, server57080, whisper70704 --vad; three
+old child PIDs had already exited); local and stable HTTPS healthz ok. Beta1.0.43
+uploaded/promoted, CLI verified 126,935 bytes. 144 tests; prototype dist restored. G2
+check pending: Cursor, OpenCode 2, Pi readers; OpenClaude screen; Hermes CLI row.
+
 2026-11-09 user chose to load Orca's Pi extension. pc-settings c6d4045: Start-PiVps.ps1
 adds -e orca-agent-status.ts. Bridge Pi reader added (exact session ID; current branch;
 no thinking/tools); app accepts pi-transcript. 144 tests. Pending: user relaunches Pi so

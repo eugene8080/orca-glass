@@ -572,3 +572,5 @@ the Hermes Agent CLI (Cursor showed 'Conversation-only text is unavailable').
   sessions or PcSettings/PiQwopusTrial/agent/sessions; header id must match; current
   branch via parentId; user text + assistant text only. Checked on the saved session
   (2 messages). Live Orca record for a relaunched Pi pane not yet verified.
+- 2026-11-10 user relaunched Pi: Orca records the pi pane (key,id,transcriptPath); bridge
+  readHistory returns pi-transcript, model Qwopus-Pi-128k, 2 messages. Verified live.
