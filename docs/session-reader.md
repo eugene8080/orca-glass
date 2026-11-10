@@ -551,3 +551,17 @@ the Hermes Agent CLI (Cursor showed 'Conversation-only text is unavailable').
 - Pi: not on PATH and no sessions under ~/.pi; not implemented.
 - Hermes Agent CLI panes: Orca Glass lists Hermes through the gateway (Hermes rows),
   never the terminal pane; what fails for the user is not yet known.
+- Live check 2026-11-09 (user opened one pane each; read-only through bridge readThread/
+  readHistory): Cursor -> cursor-transcript, 2 messages, Composer-2.5. OpenCode 2 (the
+  opencode command also reports as opencode2) -> opencode-transcript, 2 messages; model
+  'qwopus-pi-128k:latest' now labelled Qwopus-Pi-128k (Ollama tag handling). OpenClaude ->
+  Claude screen parser works ('/ hi > Hi! How can I help?'); Orca records no session for
+  openclaude panes, so no transcript link (no guessing by folder/newest file). Hermes CLI
+  pane -> listed as Hermes row 'hi' (Sessions, orca-glass) and reads via the gateway
+  (hermes-transcript); the pane itself is deliberately not a second route.
+- Pi: launched by D:/dev/pc-settings/scripts/pi.cmd from %LOCALAPPDATA%/PcSettings/
+  PiQwopusTrial with --no-extensions, so Orca's Pi extension (~/.pi/agent/extensions/
+  orca-agent-status.ts, which reports session_id/session_file) never loads and Orca has no
+  record for the pane. Sessions are saved under PiQwopusTrial/agent/sessions/<cwd>/
+  <timestamp>_<uuid>.jsonl. The screen is plain text (user line, thinking and reply look
+  alike), so no reliable screen parser. Exact link needs the extension loaded: user decision.

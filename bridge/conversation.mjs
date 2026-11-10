@@ -76,7 +76,9 @@ async function readOpencodeStore(binding) {
     const { messages, model } = opencodeMessages(db.prepare('SELECT type, data FROM session_message WHERE session_id = ? ORDER BY seq').all(binding.id));
     let kept = messages, size = 0;
     for (let i = messages.length - 1; i >= 0; i--) { size += messages[i].text.length; if (size > MAX_TEXT) { kept = messages.slice(i + 1); break; } }
-    return { text: formatMessages(kept), model: model ? modelLabel(model) || undefined : undefined, source: 'opencode-transcript', limited: kept.length !== messages.length, messageCount: kept.length };
+    // Ollama model IDs carry a tag ('qwopus-pi-128k:latest'): drop ':latest', keep others as '-tag'.
+    const name = model ? model.replace(/:latest$/, '').replace(/:/g, '-') : '';
+    return { text: formatMessages(kept), model: name ? modelLabel(name) || undefined : undefined, source: 'opencode-transcript', limited: kept.length !== messages.length, messageCount: kept.length };
   } finally { db.close(); }
 }
 

@@ -50,6 +50,13 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-09 user opened Pi/OpenClaude/OpenCode/Hermes/Cursor panes. Read-only live check:
+Cursor and OpenCode 2 transcripts work; OpenClaude screen works (Orca keeps no session
+record, so no transcript link); Hermes CLI reads as gateway row 'hi'; Pi blocked: its
+pc-settings launcher passes --no-extensions so Orca's Pi extension cannot record the
+session. Fixed OpenCode Ollama model label (bridge, not yet restarted). Decision on Pi
+launcher pending with user (other repo).
+
 2026-11-09 user: 'upload beta'. Bridge restarted after ownership check (old 72872/71132/
 71672; new supervisor46344, server10480, whisper85852 --vad); local and stable HTTPS
 healthz ok. Beta1.0.42 uploaded/promoted, CLI verified beta channel 126,930 bytes. 143
