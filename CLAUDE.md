@@ -53,6 +53,11 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-10 user screenshot: wrapped rows must hang under the text after '/ ' and '> '. Fixed in
+readerPages (also list markers; wrap-point spaces dropped). 148 tests. Beta1.0.47 uploaded/
+promoted automatically per release policy, CLI verified 105,611 bytes; prototype dist
+restored. App-only. G2 check pending.
+
 2026-11-10 user: 'upload beta. please just upload beta automatically from now on'. Beta1.0.46
 uploaded/promoted, CLI verified 105,503 bytes; 146 tests; prototype dist restored. Release
 policy above rewritten: beta uploads are automatic after tests/build; public and bridge

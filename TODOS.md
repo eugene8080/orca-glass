@@ -1,7 +1,7 @@
 # Orca Glass TODOs
 Updated: 2026-11-05
 
-Current beta: **1.0.46** (font list menu; six small fonts incl. Departure 7x11). Public: **1.0.36**.
+Current beta: **1.0.47** (hanging indents for wrapped lines; font list menu). Public: **1.0.36**.
 Workspace-filter preview approved, released and retired with merged worktree cleanup.
 Future visual changes require preview approval before beta upload.
 Completed/superseded release notes: [history](docs/todo-history.md).
