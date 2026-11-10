@@ -438,7 +438,8 @@ test('reader page wrapping retains every character with proportional widths and 
   const measure = t => [...t].reduce((n, c) => n + (c === 'W' ? 24 : 9), 0);
   const text = Array.from({ length: 19 }, (_, i) => `  ${i + 1}. WWW item ${i + 1} with wide words and punctuation; ` + '🙂'.repeat(100)).join('\n');
   const pages = [...textExports.readerPages(text, measure)];
-  assert.equal(pages.join('').replaceAll('\n', ''), text.replaceAll('\n', ''));
+  // Wrapping adds hanging-indent spaces and drops wrap-point spaces only.
+  assert.equal(pages.join('').replace(/\s/g, ''), text.replace(/\s/g, ''));
   assert.ok(pages.every(page => page.split('\n').length <= 6 && new TextEncoder().encode(page).length <= 900));
   assert.ok(pages.every(page => page.split('\n').every(row => measure(row) <= 550)));
   assert.ok(pages.some(page => page.includes('19.')));
@@ -1438,4 +1439,27 @@ test('Filter by Agent pages past ten rows with visible more-below and more-above
   // Swipe up past the first agent: back to page one.
   await h.scroll('up'); await h.scroll('up'); await h.scroll('up');
   assert.equal(rows()[0], 'Hermes Agent');
+});
+
+test('wrapped rows hang under the text after the / and > markers', () => {
+  const nl = String.fromCharCode(10);
+  const mono = t => [...t].length * 6;
+  const text = ['/ blah blah blah blah blah blah', '> blah blah blah blah blah blah', '  blah blah blah blah blah blah', 'plain blah blah blah blah blah'].join(nl);
+  const rows = textExports.readerPages(text, mono, 6 * 18, 20)[0].split(nl);
+  assert.deepEqual([...rows], [
+    '/ blah blah blah', '  blah blah blah',
+    '> blah blah blah', '  blah blah blah',
+    '  blah blah blah', '  blah blah blah',
+    'plain blah blah', 'blah blah blah']);
+  // Proportional native text: the indent is the run of spaces closest in width to '> '.
+  const native = t => [...t].reduce((n, c) => n + (c === ' ' ? 5 : c === '>' ? 12 : 10), 0);
+  const second = textExports.readerPages('> ' + 'word '.repeat(20), native, 120, 20)[0].split(nl)[1];
+  assert.match(second, /^ {3}\S/);
+});
+
+test('wrapped list items hang under the item text', () => {
+  const nl = String.fromCharCode(10);
+  const mono = t => [...t].length * 6;
+  const rows = textExports.readerPages(['  - blah blah blah blah blah', '> 12. blah blah blah blah blah'].join(nl), mono, 6 * 18, 20)[0].split(nl);
+  assert.deepEqual([...rows], ['  - blah blah blah', '    blah blah', '> 12. blah blah', '      blah blah', '      blah']);
 });

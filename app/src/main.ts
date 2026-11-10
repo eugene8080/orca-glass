@@ -135,7 +135,7 @@ function readerLayout(s: TextScreen) {
       const text = alignMarkdownTables(s.text);
       const start = latestResponseStart(text);
       const whole = readerPages(text, measure, width, rows, Infinity);
-      const chars = (text: string) => text.replaceAll('\n', '').length;
+      const chars = (text: string) => text.replace(/\s/g, '').length; // wrapping only adds/drops spaces
       if (start < 0) { s.pages = whole; s.responsePage = undefined; }
       else if (chars(text.slice(0, start)) >= chars(whole.slice(0, -1).join(''))) { s.pages = whole; s.responsePage = whole.length - 1; }
       else {
@@ -156,7 +156,7 @@ function readerLayout(s: TextScreen) {
     // newlines at row breaks, so non-newline counts locate the start.
     const start = latestResponseStart(s.text);
     const whole = readerPages(s.text, measure, READER_WRAP_WIDTH, READER_ROWS);
-    const chars = (text: string) => text.replaceAll('\n', '').length;
+    const chars = (text: string) => text.replace(/\s/g, '').length; // wrapping only adds/drops spaces
     if (start < 0) {
       s.pages = whole;
       s.responsePage = undefined;
@@ -505,7 +505,7 @@ async function setReaderText(mode: ReaderText) {
   if (s?.kind !== 'text' || !s.reader || s.voice) return;
   const pages = readerLayout(s);
   const atEnd = (s.offset ?? 0) >= pages.length - 1;
-  const chars = (text: string) => text.replaceAll('\n', '').length;
+  const chars = (text: string) => text.replace(/\s/g, '').length; // wrapping only adds/drops spaces
   const before = chars(pages.slice(0, s.offset ?? 0).join(''));
   s.fine = mode === 'native' ? undefined : mode;
   const next = readerLayout(s);

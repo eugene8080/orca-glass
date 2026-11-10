@@ -153,16 +153,31 @@ export function latestResponseStart(text: string): number {
 
 export function readerPages(text: string, measure: (text: string) => number, width = 550, rowsPerPage = 6, byteLimit = 900): string[] {
   const rows: string[] = [];
+  const fits = (candidate: string) => measure(candidate) <= width && enc.encode(candidate).length <= byteLimit;
   for (const line of text.split('\n')) {
     if (!line) { rows.push(''); continue; }
+    // Hanging indent: a wrapped row continues under the text after the role
+    // marker ('/ ', '> ') or the two-space continuation, never at column 0.
+    // The indent is the run of spaces closest in width to that prefix: exactly
+    // two cells in a monospace font, nearest match in the proportional native font.
+    // A list marker after it ('- ', '* ', '• ', '1. ', '2) ') extends the hang to the item text.
+    const prefix = /^(?:[/>] | {2})(?:\s*(?:[-*•]|\d{1,3}[.)]) )?/u.exec(line)?.[0] ?? '';
+    let indent = '';
+    if (prefix) {
+      const target = measure(prefix);
+      for (let k = 1; k <= 12; k++) {
+        const spaces = ' '.repeat(k);
+        if (!indent || Math.abs(measure(spaces) - target) < Math.abs(measure(indent) - target)) indent = spaces;
+      }
+    }
     let row = '';
+    const wrap = () => { rows.push(row.trimEnd()); row = indent; }; // the space before a wrap point is dropped too
     for (const token of line.match(/\s+|\S+/gu) || []) {
-      if (measure(row + token) <= width && enc.encode(row + token).length <= byteLimit) { row += token; continue; }
-      if (row) { rows.push(row); row = ''; }
+      if (fits(row + token)) { row += token; continue; }
+      if (row.trim()) wrap();
+      if (!token.trim()) continue; // whitespace at a wrap point is dropped, never leads a row
       for (const ch of token) {
-        if (row && (measure(row + ch) > width || enc.encode(row + ch).length > byteLimit)) {
-          rows.push(row); row = '';
-        }
+        if (row.trim() && !fits(row + ch)) wrap();
         row += ch;
       }
     }

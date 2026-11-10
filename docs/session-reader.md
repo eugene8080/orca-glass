@@ -604,3 +604,9 @@ the Hermes Agent CLI (Cursor showed 'Conversation-only text is unavailable').
   ascent + descent). Both Departure entries draw the same glyphs at Departure's native
   11px grid; 7x14 keeps the font's own line metrics (11 up + 3 down), 7x11 crops to the
   11 rows its ASCII glyphs use. Nothing is scaled.
+- 2026-11-10 user (screenshot): wrapped rows started at column 0 instead of under the
+  text after '/ ' and '> '. readerPages (app/src/text.ts) now hangs each wrapped row
+  under its prefix ('/ ', '> ', the two-space continuation, plus a list marker such as
+  '- ' or '12. '): spaces closest in width to the prefix (exact in monospace, nearest in
+  the native font). Wrap-point spaces are dropped (no leading/trailing space). Page
+  position logic compares non-whitespace characters, which wrapping never changes.
