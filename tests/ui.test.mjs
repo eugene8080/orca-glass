@@ -1346,7 +1346,7 @@ test('small text draws the whole screen, status row included, as four tiles and 
   assert.equal(JSON.stringify(page.imageObject.map(i => [i.containerID, i.xPosition, i.yPosition, i.width, i.height])),
     JSON.stringify([[2, 0, 0, 288, 144], [3, 288, 0, 288, 144], [4, 0, 144, 288, 144], [5, 288, 144, 288, 144]]));
   assert.equal(JSON.stringify(page.menuObject.menuItems.map(i => i.itemName)),
-    JSON.stringify(['Text: native', 'Using: Spleen 6x12', 'Next: Terminus 6x12', 'Prev: JetBrains 6x14', 'Display test pattern']));
+    JSON.stringify(['Text: native', 'Using: Spleen 6x12', 'Next: Terminus 6x12', 'Prev: JetBrains 6x14', 'Compare fonts']));
   // Every possible label fits the menu without truncation (about 210px in the firmware font).
   for (const f of fineExports.FINE_FONTS) for (const prefix of ['Small', 'Using', 'Next', 'Prev'])
     assert.ok(listExports.glassWidth(`${prefix}: ${fineExports.fineLabel(f)}`) <= 210, `${prefix}: ${fineExports.fineLabel(f)}`);
@@ -1380,7 +1380,7 @@ test('small text draws the whole screen, status row included, as four tiles and 
   assert.ok(!h.upgrades.some(u => ['body', 'voice', 'hint'].includes(u.containerName)));
   // The display test replaces the tiles; the next swipe restores the page.
   await h.menu(1105); await h.flush();
-  assert.equal(JSON.stringify(sent().slice(-4).map(i => i.imageData)), JSON.stringify(fineExports.renderTestPattern('pixel')));
+  assert.equal(JSON.stringify(sent().slice(-4).map(i => i.imageData)), JSON.stringify(fineExports.renderFontComparison()));
   await h.scroll('down'); await h.flush();
   const restored = new Map(sent().slice(-4).map(i => [i.containerName, i.imageData]));
   for (const [name, data] of restored) assert.equal(JSON.stringify(data), JSON.stringify(want[Number(name.slice(5))]));
@@ -1414,4 +1414,18 @@ test('small-text modes pad Markdown tables so columns line up in monospace', () 
     '  Done.'].join(nl));
   // Pipe text without a rule row is not a table and stays as written.
   assert.equal(fineExports.alignMarkdownTables('> a | b |' + nl + '  | x |'), '> a | b |' + nl + '  | x |');
+});
+
+test('Filter by Agent pages when the agent list is longer than nine rows', async () => {
+  const h = await harness();
+  h.api.threads = async () => ['codex', 'claude', 'cursor', 'opencode2', 'pi', 'openclaude', 'gemini'].map((agent, i) => ({ handle: `t${i}`, title: agent, agent }));
+  await h.pick(0);
+  const rows = () => h.pages.at(-1).textObject.find(c => c.containerName === 'body').content.split(String.fromCharCode(10)).map(r => r.replace(/^[> ] /, '').trim());
+  assert.equal(rows().length, 9);
+  assert.deepEqual(rows().slice(0, 4), ['<-', 'Hermes Agent', '-------------------------', 'All Orca Sessions ✓']);
+  // Swipe past the last row: page two starts with '<-' and holds the rest.
+  for (let i = 0; i < 6; i++) await h.scroll('down');
+  assert.equal(rows()[0], '<-');
+  assert.ok(rows().some(r => /Gemini/.test(r)));
+  assert.ok(rows().length >= 2 && rows().length <= 9);
 });

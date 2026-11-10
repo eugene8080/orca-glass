@@ -50,6 +50,12 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-10 user: models missing for all but Pi; Filter by Agent cut off; replace test
+pattern with a font comparison. Built (unreleased): modelName()/footer models for Cursor,
+OpenCode, OpenClaude, Hermes model from gateway (live check: every agent shows a model);
+agent picker pages at nine rows; 'Compare fonts' screen. 146 tests. Needs bridge restart
++ beta 1.0.44. OpenCode2 missing from Orca Android's + menu is Orca's own (not Orca Glass).
+
 2026-11-10 user relaunched Pi; Orca records its session (key,id,transcriptPath); bridge
 reads pi-transcript live (2 messages, Qwopus-Pi-128k). Bridge restarted after ownership
 check (old 46344/10480/85852; new supervisor54676, server57080, whisper70704 --vad; three

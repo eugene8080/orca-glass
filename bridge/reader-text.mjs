@@ -20,15 +20,33 @@ export function modelLabel(model, effort) {
   return level ? `${name} ${level}` : name;
 }
 
+// Raw model IDs from local runtimes carry routing noise the status row cannot
+// show: a provider path ('hf.co/Jackrong/...'), an Ollama tag (':latest', ':Q4_K_M')
+// and a '-GGUF' packaging suffix. Keep the model's own name, then compact it.
+export function modelName(raw) {
+  if (typeof raw !== 'string' || !raw.trim()) return '';
+  const name = raw.trim().split('/').pop().replace(/:[\w.-]+$/, '').replace(/[-_.]gguf$/i, '');
+  return modelLabel(name) || '';
+}
+
 // Codex prints 'GPT-6-Astra medium · <cwd> · <title>' in its footer. Read the
 // model from the bottom rows only when no saved transcript supplies it.
 export function terminalModel(lines) {
   for (const line of (lines || []).slice(-8).reverse()) {
     const match = /^\s*(gpt-[\w.-]+)\s+(minimal|low|medium|high|xhigh)\s+·\s/i.exec(line);
     if (match) return modelLabel(match[1].toLowerCase(), match[2].toLowerCase());
-    // Cursor's agent CLI: 'Composer 2.5 Fast · 33.6% · 1 file edited'.
-    const cursor = /^\s*([A-Z][\w.+-]*(?: [\w.+-]+){0,3}) · \d+(?:\.\d+)?%(?: ·|\s*$)/.exec(line);
+    // Cursor's agent CLI: 'Composer 2.5 Fast · 33.6%   Run Everything'.
+    const cursor = /^\s*([A-Z][\w.+-]*(?: [\w.+-]+){0,3}) · \d+(?:\.\d+)?%(?:\s|$)/.exec(line);
     if (cursor && cursor[1].length <= 24) return cursor[1];
+    // OpenClaude (Claude Code fork): 'GPT-5.6 Sol · ctx ~984/272K (<1%) · $0.00   ● high · /effort'.
+    const open = /^\s*([A-Za-z][\w.+-]*(?: [\w.+-]+){0,3}) · ctx\b/.exec(line);
+    if (open && open[1].length <= 24) {
+      const effort = /●\s*(minimal|low|medium|high|xhigh)\b/i.exec(line)?.[1]?.toLowerCase();
+      return effort ? `${open[1]} ${EFFORT[effort]}` : open[1];
+    }
+    // OpenCode: '┃  Build · hf.co/Jackrong/Qwopus3.8-27B-Coder-Flash-GGUF:Q4_K_M'.
+    const opencode = /^\s*┃\s+[A-Z][a-z]+ · (\S+)\s*$/.exec(line);
+    if (opencode) { const name = modelName(opencode[1]); if (name) return name; }
   }
   return '';
 }

@@ -82,3 +82,14 @@ test('Pi shows the current branch: user text and reply text, not thinking, tools
   assert.deepEqual(piMessages(entries), { model: 'qwopus-pi-128k', messages: [
     { role: 'user', text: 'hi' }, { role: 'assistant', text: 'Hello!' }, { role: 'user', text: 'list files' }, { role: 'assistant', text: 'Two files.' }] });
 });
+
+test('model names drop provider paths and runtime tags; footers give a fallback model', async () => {
+  const { modelName, terminalModel } = await import('../bridge/reader-text.mjs');
+  assert.equal(modelName('hf.co/Jackrong/Qwopus3.8-27B-Coder-Flash-GGUF:Q4_K_M'), 'Qwopus3.8-27B-Coder-Flash');
+  assert.equal(modelName('qwopus-pi-128k:latest'), 'Qwopus-Pi-128k');
+  assert.equal(modelName('claude-opus-5-5'), 'Opus5.5');
+  assert.equal(modelName(undefined), '');
+  assert.equal(terminalModel(['  Composer 2.5 Fast · 16.3%                Run Everything', '  D:\dev · main']), 'Composer 2.5 Fast');
+  assert.equal(terminalModel(['  GPT-5.6 Sol · ctx ~984/272K (<1%) · $0.00     ● high · /effort', '  ▶▶ bypass permissions on']), 'GPT-5.6 Sol high');
+  assert.equal(terminalModel(['  ┃  Build · hf.co/Jackrong/Qwopus3.8-27B-Coder-Flash-GGUF:Q4_K_M', '  ╹▀▀▀', '  D:\dev  11.5K (4%)  ctrl+p commands']), 'Qwopus3.8-27B-Coder-Flash');
+});

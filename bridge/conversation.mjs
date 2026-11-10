@@ -4,7 +4,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { open, readdir, readFile, realpath, stat } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { basename, join, relative, resolve } from 'node:path';
-import { formatMessages, modelLabel } from './reader-text.mjs';
+import { formatMessages, modelLabel, modelName } from './reader-text.mjs';
 
 const appData = process.env.APPDATA || join(homedir(), 'AppData', 'Roaming');
 const orcaHome = join(appData, 'orca');
@@ -123,8 +123,7 @@ async function readPiSession(binding) {
   const { messages, model } = piMessages(entries);
   let kept = messages, size = 0;
   for (let i = messages.length - 1; i >= 0; i--) { size += messages[i].text.length; if (size > MAX_TEXT) { kept = messages.slice(i + 1); break; } }
-  const name = model ? model.replace(/:latest$/, '').replace(/:/g, '-') : '';
-  return { text: formatMessages(kept), model: name ? modelLabel(name) || undefined : undefined, source: 'pi-transcript', limited: kept.length !== messages.length, messageCount: kept.length };
+  return { text: formatMessages(kept), model: modelName(model) || undefined, source: 'pi-transcript', limited: kept.length !== messages.length, messageCount: kept.length };
 }
 
 async function readOpencodeStore(binding) {
@@ -134,11 +133,10 @@ async function readOpencodeStore(binding) {
   try {
     if (!db.prepare('SELECT 1 FROM session_v2 WHERE id = ?').get(binding.id)) return null; // unknown or older-format session: use the screen
     const { messages, model } = opencodeMessages(db.prepare('SELECT type, data FROM session_message WHERE session_id = ? ORDER BY seq').all(binding.id));
+    const sessionModel = () => { try { return JSON.parse(db.prepare('SELECT model FROM session_v2 WHERE id = ?').get(binding.id)?.model || 'null')?.id; } catch { return undefined; } };
     let kept = messages, size = 0;
     for (let i = messages.length - 1; i >= 0; i--) { size += messages[i].text.length; if (size > MAX_TEXT) { kept = messages.slice(i + 1); break; } }
-    // Ollama model IDs carry a tag ('qwopus-pi-128k:latest'): drop ':latest', keep others as '-tag'.
-    const name = model ? model.replace(/:latest$/, '').replace(/:/g, '-') : '';
-    return { text: formatMessages(kept), model: name ? modelLabel(name) || undefined : undefined, source: 'opencode-transcript', limited: kept.length !== messages.length, messageCount: kept.length };
+    return { text: formatMessages(kept), model: modelName(model ?? sessionModel()) || undefined, source: 'opencode-transcript', limited: kept.length !== messages.length, messageCount: kept.length };
   } finally { db.close(); }
 }
 
@@ -202,7 +200,7 @@ async function readCursorStore(binding) {
     const messages = cursorMessages(meta, id => { const row = query.get(id); return row ? Buffer.from(row.data) : null; });
     let kept = messages, size = 0;
     for (let i = messages.length - 1; i >= 0; i--) { size += messages[i].text.length; if (size > MAX_TEXT) { kept = messages.slice(i + 1); break; } }
-    const model = typeof meta.lastUsedModel === 'string' ? modelLabel(meta.lastUsedModel) || undefined : undefined;
+    const model = modelName(meta.lastUsedModel) || undefined;
     return { text: formatMessages(kept), model, source: 'cursor-transcript', limited: kept.length !== messages.length, messageCount: kept.length };
   } finally { db.close(); }
 }

@@ -84,7 +84,8 @@ class Surface {
   readonly pixels = new Uint8ClampedArray(SCREEN.width * SCREEN.height);
   private canvas: CanvasRenderingContext2D | null = null;
   private canvasUsed = false;
-  constructor(private font: FineFont) {}
+  // font is switchable so one screen can compare several fonts.
+  constructor(public font: FineFont) {}
   set(x: number, y: number, level = 255) { if (x >= 0 && y >= 0 && x < SCREEN.width && y < SCREEN.height) this.pixels[y * SCREEN.width + x] = level; }
   rect(x: number, y: number, w: number, h: number, level = 255) { for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) this.set(x + i, y + j, level); }
   // Draw text from (x, y) in whole cells; stops at maxCells. Returns cells used.
@@ -199,46 +200,26 @@ export function renderFineScreen(text: string, font: FineFont, status: FineStatu
   return s.tiles();
 }
 
-// Display test: one-pixel gratings and a checkerboard. On a 1:1 display every
-// line is equally sharp and evenly spaced; scaling to the 640x350 panel would
-// make some lines thicker, fainter or unevenly spaced.
-export function renderTestPattern(font: FineFont): number[][] {
-  const s = new Surface(font);
-  const { line } = fineLayout(font);
-  s.rect(0, 0, SCREEN.width, 1); s.rect(0, SCREEN.height - 1, SCREEN.width, 1);
-  s.rect(0, 0, 1, SCREEN.height); s.rect(SCREEN.width - 1, 0, 1, SCREEN.height);
-  const label = (text: string, x: number, y: number) => s.text(text, x, y, Math.floor((568 - x) / TABLES[font].width));
-  label('1:1 test. Every line should be equally sharp and evenly spaced.', 8, 4);
-  const top = 8 + line;
-  [1, 2, 3].forEach((gap, i) => {           // vertical lines: period 2, 3, 4 px
-    const x0 = 8 + i * 140;
-    label(`vertical ${gap + 1}px`, x0, top);
-    for (let x = x0; x < x0 + 120; x += gap + 1) s.rect(x, top + line + 2, 1, 50);
-  });
-  const y1 = top + line + 60;
-  [1, 2, 3].forEach((gap, i) => {           // horizontal lines
-    const x0 = 8 + i * 140;
-    label(`horizontal ${gap + 1}px`, x0, y1);
-    for (let y = y1 + line + 2; y < y1 + line + 52; y += gap + 1) s.rect(x0, y, 120, 1);
-  });
-  // Checkerboards of 1, 2 and 3px squares. Blotches only in the 1px board point
-  // to the pixels/optics; blotches in the same bands in all three to resampling.
-  const checkTop = top + line + 2, checkBottom = y1 + line + 52, band = Math.floor((checkBottom - checkTop - 2 * line) / 3);
-  [1, 2, 3].forEach((size, i) => {
-    const y0 = checkTop + i * (band + line);
-    label(`checker ${size}px`, 428, y0 - line - 1 + (i ? 0 : -1));
-    for (let y = y0; y < y0 + band; y++) for (let x = 428; x < 568; x++)
-      if ((Math.floor((x - 428) / size) + Math.floor((y - y0) / size)) % 2 === 0) s.set(x, y);
-  });
-  // Solid patches at full, half and quarter brightness. Blotches in a solid
-  // fill cannot come from resampling: they are panel or waveguide brightness.
-  const solidTop = checkBottom + line + 6, solidBottom = SCREEN.height - 10 - line;
-  [[255, '100%'], [128, '50%'], [64, '25%']].forEach(([level, name], i) => {
-    const x0 = 8 + i * 186;
-    label(`solid ${name}`, x0, solidTop - line - 1);
-    s.rect(x0, solidTop, 176, Math.max(8, solidBottom - solidTop), level as number);
-  });
-  label('Swipe to return to the chat.', 8, SCREEN.height - 6 - line);
+// Font comparison (replaces the 1:1 display test, which settled that the G2
+// shows the canvas 1:1): every small font on one screen, one line each, drawn in
+// that font: its name and cell, a sample sentence, look-alike characters,
+// brackets and operators, box drawing and a Braille spinner frame.
+export const FONT_SAMPLE = 'Quick brown fox 0O1lI| {}[] -> != ─┼─ ⠋';
+export function renderFontComparison(): number[][] {
+  const s = new Surface(FINE_FONTS[0]);
+  s.rect(0, 0, SCREEN.width, FRAME); s.rect(0, SCREEN.height - FRAME, SCREEN.width, FRAME);
+  s.rect(0, 0, FRAME, SCREEN.height); s.rect(SCREEN.width - FRAME, 0, FRAME, SCREEN.height);
+  const nameCells = Math.max(...FINE_FONTS.map(font => fineLabel(font).length)) + 2;
+  let y = TOP;
+  for (const font of FINE_FONTS) {
+    s.font = font;
+    const columns = Math.floor(TEXT_WIDTH / TABLES[font].width);
+    s.text(`${fineLabel(font).padEnd(nameCells)}${FONT_SAMPLE}`, TEXT_X, y, columns);
+    y += TABLES[font].height + 3;
+  }
+  s.font = FINE_FONTS[0];
+  s.rect(TEXT_X + 8, y + 2, TEXT_WIDTH - 16, 1);
+  s.text('Swipe to return to the chat.', TEXT_X, y + 8, Math.floor(TEXT_WIDTH / TABLES[s.font].width));
   return s.tiles();
 }
 

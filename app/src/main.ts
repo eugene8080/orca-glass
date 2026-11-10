@@ -25,7 +25,7 @@ import { statusRight } from './footer-hint';
 import { formatReset, RESET_MODES, resetModeLabel, type ResetMode } from './usage-reset';
 import { orcaAgents, workspaceSections, toggleWorkspace, workspaceSummary, type PickerRow } from './filters';
 import { createPhone } from './phone';
-import { FINE_FONTS, FINE_TILES, fineLabel, alignMarkdownTables, FINE_TEXT_WIDTH, SCANNER_WIDTH, fineLayout, fineMeasure, fineCells, renderFineScreen, renderTestPattern, type FineFont, type FineStatus } from './fine-text';
+import { FINE_FONTS, FINE_TILES, fineLabel, alignMarkdownTables, FINE_TEXT_WIDTH, SCANNER_WIDTH, fineLayout, fineMeasure, fineCells, renderFineScreen, renderFontComparison, type FineFont, type FineStatus } from './fine-text';
 import { agentLabel, sessionRow, sessionListTitle, sessionHeading, MENU_LEFT, MENU_RIGHT, MENU_CURSOR, sessionAgentLabel, menuNativeText, menuCursorText, nativeRight, glassWidth, compactSessionTitle, type SessionColumns } from './session-list';
 
 // 画面 576x288。上に見出し(テキスト)、下に本文(リスト or テキスト)の2段構成で統一する。
@@ -419,7 +419,7 @@ async function show(s: Screen, reloadText = false) {
 // when the screen changed meanwhile; throws if the glasses reject a tile.
 async function paintFine(s: TextScreen, content: string, page: number, pattern = false): Promise<boolean> {
   const t0 = Date.now();
-  const tiles = pattern ? renderTestPattern(s.fine!) : renderFineScreen(content, s.fine!, fineStatus(s, page));
+  const tiles = pattern ? renderFontComparison() : renderFineScreen(content, s.fine!, fineStatus(s, page));
   let sent = 0;
   for (let i = 0; i < tiles.length; i++) {
     if (current !== s) return false;
@@ -456,7 +456,7 @@ function fineStatus(s: TextScreen, page: number): FineStatus {
 }
 
 // Coalesced repaint of the current small-text page (status changes, dismissing
-// the test pattern). Serialized with page turns on the reader write queue; only
+// the font comparison). Serialized with page turns on the reader write queue; only
 // tiles whose pixels changed are sent, usually the bottom two.
 function requestFineStatus(s: TextScreen) {
   if (s.fineQueued) return;
@@ -484,12 +484,12 @@ function readerMenu() {
     { id: 1102, label: `${readerText === 'native' ? 'Small' : 'Using'}: ${fineLabel(font)}`, run: () => setReaderText(font) },
     { id: 1103, label: `Next: ${fineLabel(next)}`, run: () => setReaderText(next) },
     { id: 1104, label: `Prev: ${fineLabel(previous)}`, run: () => setReaderText(previous) },
-    ...(readerText === 'native' ? [] : [{ id: 1105, label: 'Display test pattern', run: () => showTestPattern() }]),
+    ...(readerText === 'native' ? [] : [{ id: 1105, label: 'Compare fonts', run: () => showFontComparison() }]),
   ];
 }
 
-// Paint the 1:1 display test into the tiles; the next swipe restores the page.
-function showTestPattern() {
+// Paint the font comparison into the tiles; the next swipe restores the page.
+function showFontComparison() {
   const s = current;
   if (s?.kind !== 'text' || !s.reader || !s.fine) return;
   s.pattern = true;
@@ -658,7 +658,10 @@ function home(page = 0, selected = 0) {
 // Filter by Agent: Hermes Agent first, a divider, then All Orca sessions and each
 // Orca agent harness (Claude, Codex, then any others seen). Rendered as native
 // text so the divider is not selectable.
-function viewOptions() {
+// Nine rows fit under the title, so long agent lists page like the workspace
+// picker: swipe past the last row for the next page; later pages start with '<-'.
+const AGENT_ROWS = 9;
+function viewOptions(page?: number, selected?: number) {
   return guard('Filter by Agent', async () => {
     const threads = await api.threads();
     const orca = orcaAgents(threads, viewProvider);
@@ -675,10 +678,20 @@ function viewOptions() {
       { label: '-------------------------', run: () => {} },
       ...orca.map(id => ({ label: label(id, id === 'all' ? 'All Orca Sessions' : providerName(id)), run: choose(id) })),
     ];
-    const headings = [2];
-    const selected = Math.max(0, actions.findIndex(a => a.label.endsWith(' ✓')));
-    await show({ kind: 'list', agentPicker: true, title: 'Filter by Agent', items: actions.map(a => a.label), headings, selected,
-      onPick: i => { if (!headings.includes(i)) void actions[i]?.run(); }, onBack: home });
+    const back = actions[0];
+    const pages: (typeof actions)[] = [actions.slice(0, AGENT_ROWS)];
+    for (let i = AGENT_ROWS; i < actions.length; i += AGENT_ROWS - 1) pages.push([back, ...actions.slice(i, i + AGENT_ROWS - 1)]);
+    // Open on the page that holds the current choice.
+    const ticked = (rows: typeof actions) => rows.findIndex(a => a.label.endsWith(' ✓'));
+    const at = Math.max(0, Math.min(page ?? Math.max(0, pages.findIndex(rows => ticked(rows) >= 0)), pages.length - 1));
+    const rows = pages[at];
+    const headings = rows.map((row, i) => row.label.startsWith('---') ? i : -1).filter(i => i >= 0);
+    let selection = selected === undefined ? Math.max(0, ticked(rows)) : selected < 0 ? rows.length - 1 : Math.min(selected, rows.length - 1);
+    while (headings.includes(selection)) selection--;
+    await show({ kind: 'list', agentPicker: true, title: 'Filter by Agent', items: rows.map(a => a.label), headings, selected: selection,
+      onPreviousPage: at > 0 ? () => viewOptions(at - 1, -1) : undefined,
+      onNextPage: at + 1 < pages.length ? () => viewOptions(at + 1, 1) : undefined,
+      onPick: i => { if (!headings.includes(i)) void rows[i]?.run(); }, onBack: home });
   }, home);
 }
 

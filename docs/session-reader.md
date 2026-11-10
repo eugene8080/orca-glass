@@ -574,3 +574,15 @@ the Hermes Agent CLI (Cursor showed 'Conversation-only text is unavailable').
   (2 messages). Live Orca record for a relaunched Pi pane not yet verified.
 - 2026-11-10 user relaunched Pi: Orca records the pi pane (key,id,transcriptPath); bridge
   readHistory returns pi-transcript, model Qwopus-Pi-128k, 2 messages. Verified live.
+- 2026-11-10 G2: Pi shows its model; the others did not. Causes: Cursor footer regex
+  required end-of-line after the %, OpenCode model IDs carry a provider path and quant
+  tag ('hf.co/Jackrong/...-GGUF:Q4_K_M') the label formatter rejects, OpenClaude's
+  footer was not parsed, Hermes reads passed no model. Fix: modelName() in
+  bridge/reader-text.mjs cleans raw IDs for every reader; terminalModel() reads Cursor,
+  OpenClaude ('GPT-5.6 Sol · ctx ... ● high') and OpenCode ('┃ Build · <model>') footers;
+  Hermes reads carry the gateway session model ('Auto' for auto-routed sessions).
+- Filter by Agent pages at nine rows (later pages start with '<-'); the page holding
+  the current choice opens first.
+- The reader menu's 'Display test pattern' is replaced by 'Compare fonts': every small
+  font on one screen in its own font (name, cell, sample with look-alikes, brackets,
+  operators, box drawing, Braille). The 1:1 question was settled on the G2.

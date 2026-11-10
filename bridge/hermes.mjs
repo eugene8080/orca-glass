@@ -7,7 +7,7 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
-import { formatMessages } from './reader-text.mjs';
+import { formatMessages, modelName } from './reader-text.mjs';
 
 const root = process.env.ORCA_GLASS_HERMES_HOME || join(process.env.LOCALAPPDATA || join(homedir(), 'AppData', 'Local'), 'hermes');
 const launcher = process.env.ORCA_GLASS_HERMES_CLI || join(root, 'bin', 'hermes.exe');
@@ -197,7 +197,9 @@ export function createHermesAdapter(transport = localTransport, { document = orc
       // number), exactly like a terminal prompt; otherwise list the batch as text.
       const menu = open?.menu || null;
       const text = [formatMessages(result.messages || []), menu ? '' : clarifyText(result.questions, open?.answerable)].filter(Boolean).join('\n');
-      return { text, source: 'hermes-transcript', limited: !!result.limited, messageCount: result.messages?.length || 0, menu, progress: '' };
+      // The gateway lists each session's model; the status row shows it.
+      const model = modelName(sessions.find(s => hermesHandle(s.target) === handle)?.model) || undefined;
+      return { text, model, source: 'hermes-transcript', limited: !!result.limited, messageCount: result.messages?.length || 0, menu, progress: '' };
     },
     async choose(handle, id, value) {
       if (typeof id !== 'string' || !/^[0-9a-f]{64}$/.test(id) || typeof value !== 'string' || !/^[1-9]$/.test(value)) throw new Error('Unknown choice');
