@@ -72,9 +72,9 @@ function wav(pcm) {
 }
 
 export async function transcribe(pcm, lang = 'en') {
+  if (lang !== 'en' && lang !== 'ja') throw new Error('Unsupported transcription language');
   if (!voiceAvailable()) throw new Error('Local speech recognition is not configured');
   if (!Buffer.isBuffer(pcm) || pcm.length % 2 || pcm.length > 16000 * 2 * 90) throw new Error('Invalid microphone PCM');
-  if (lang !== 'en' && lang !== 'ja') throw new Error('Unsupported transcription language');
   if (lang === 'ja' && !whisperModelIsMultilingual(MODEL)) {
     throw new Error('Japanese transcription requires a multilingual Whisper model (run setup with --multilingual or set WHISPER_MODEL)');
   }
