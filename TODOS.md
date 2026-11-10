@@ -1,14 +1,14 @@
 # Orca Glass TODOs
 Updated: 2026-11-05
 
-Current beta: **1.0.47** (hanging indents for wrapped lines; font list menu). Public: **1.0.36**.
+Current beta: **1.0.48** (Japanese UI and pixel fonts; hanging indents). Public: **1.0.36**.
 Workspace-filter preview approved, released and retired with merged worktree cleanup.
 Future visual changes require preview approval before beta upload.
 Completed/superseded release notes: [history](docs/todo-history.md).
 
 ## Open work
 
-- [ ] **Japanese and macOS support -- stage J1 in progress:** user 2026-11-10 chose "Both,
+- [ ] **Japanese and macOS support -- J1 (UI) and J3 (fonts) in beta 1.0.48; J2 voice, J4 listing, macOS open:** user 2026-11-10 chose "Both,
   Japanese first". Plan, stages and verification limits: docs/i18n-mac-plan.md. Neither the
   user nor the agent can read Japanese natively or run a Mac; each stage records what was
   verified.

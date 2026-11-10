@@ -53,6 +53,11 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-10 user: re-enable Japanese and Mac (chose both, Japanese first); language switch in the
+phone app only; code/comments not translated. J1 UI dictionary (6f1061f) + J3 Shinonome fonts.
+152 tests. Beta1.0.48 uploaded/promoted automatically, 180,892 bytes; prototype dist restored.
+Native review of Japanese and G2 check pending. Plan: docs/i18n-mac-plan.md.
+
 2026-11-10 user screenshot: wrapped rows must hang under the text after '/ ' and '> '. Fixed in
 readerPages (also list markers; wrap-point spaces dropped). 148 tests. Beta1.0.47 uploaded/
 promoted automatically per release policy, CLI verified 105,611 bytes; prototype dist
