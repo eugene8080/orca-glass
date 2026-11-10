@@ -163,6 +163,7 @@ portal himself; no agent opened the portal or a browser.
 | `8-hermes-workspaces.png` | Hermes Bots / Sessions / Scheduled jobs |
 | `9-hermes-sessions.png` | Hermes session list |
 | `13-japanese.png` | Session list with the interface language set to Japanese |
+| `14-departure-dense.png` | Full 24-row reader page in Departure 7x11 (80 columns): text density showcase. Rendered offline with the app's own renderer (`app/src/fine-text.ts`), fictional content, 2026-11-10 |
 | `phone-companion.png` | Phone companion page (420x900, headless localhost capture of the phone preview with its own demo data; not a glasses capture) |
 
 - Removed: `6-actions.png` (the simulator omits the G2 system entries, so it was never accurate).
