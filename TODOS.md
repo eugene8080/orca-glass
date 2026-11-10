@@ -8,10 +8,11 @@ Completed/superseded release notes: [history](docs/todo-history.md).
 
 ## Open work
 
-- [ ] **Japanese and macOS support -- J1 (UI) and J3 (fonts) in beta 1.0.48; J2 voice, J4 listing, macOS open:** user 2026-11-10 chose "Both,
-  Japanese first". Plan, stages and verification limits: docs/i18n-mac-plan.md. Neither the
-  user nor the agent can read Japanese natively or run a Mac; each stage records what was
-  verified.
+- [ ] **Japanese and macOS support -- J1 (UI) and J3 (fonts) in beta 1.0.48; J2 voice code in tree; J4 listing; macOS source+CI done, hardware open:** user 2026-11-10 chose "Both,
+  Japanese first". Plan and progress: docs/i18n-mac-plan.md, paths in docs/macos.md.
+  macOS stages 1-3 committed 2026-11-10 (platform layer, launchd/setup scripts, GitHub
+  Actions). Verified on Windows CI paths + 158 tests; macOS job runs tests, build and
+  healthz smoke only. Not verified: Mac Orca/G2/mic, LaunchAgent, J2 on glasses, J4.
 
 - [ ] **Small text in the reader (pixel / mono image tiles) -- G2 check pending:**
   2026-11-09 G2 1.0.40: fonts fine, 1px frame good, all checkerboards blotchy, tiles draw

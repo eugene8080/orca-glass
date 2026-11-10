@@ -72,3 +72,16 @@ or blank glyphs, layouts match the English ones.
   setup scripts, bridge accepts `ja` only with a multilingual model) is folded into
   macOS stage 2. Store listing (J4) deferred until the macOS port is finished. macOS
   stages 1-3 started the same day.
+- 2026-11-10 Progress (Cursor Composer): macOS stages 1-3 landed in source. Stage 1:
+  `bridge/platform.mjs` centralizes Orca/Hermes/OpenCode/Cursor/Pi/Whisper paths with
+  injectable context; bridge modules and `scripts/pair.mjs` migrated; zsh/bash shell
+  prompt guard in `bridge/orca.mjs`; `tests/platform.test.mjs` (158 tests total).
+  Stage 2: `scripts/start-macos.sh`, `install-macos-startup.sh`, `setup-voice.sh`
+  (verified ggml-base.bin sha256 `60ed5bc3…` on this PC); `-Multilingual` /
+  `--multilingual` on both setup scripts; bridge accepts `lang=ja` when the model name
+  has no `.en.`; `docs/macos.md` + README dual-OS setup; `scripts/doctor.mjs` voice
+  check. Stage 3: `.github/workflows/test.yml` matrix windows-latest + macos-latest,
+  `scripts/ci-bridge-smoke.sh` curls `/healthz`. Verified: `npm test`, app `tsc`/build
+  on Windows; `bash -n` on shell scripts. Not verified: real Mac hardware, LaunchAgent,
+  Homebrew whisper, J2 on G2. Open: J4 listing, native Japanese translation review,
+  Mac user acceptance.

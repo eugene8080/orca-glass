@@ -1,0 +1,30 @@
+name: test
+on:
+  push:
+  pull_request:
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Install app dependencies
+        run: npm ci --prefix app
+      - name: Unit tests
+        run: npm test
+      - name: Typecheck app
+        run: npx tsc --noEmit -p app
+      - name: Build app
+        run: npm --prefix app run build
+      - name: Bridge smoke (macOS)
+        if: matrix.os == 'macos-latest'
+        run: bash scripts/ci-bridge-smoke.sh
