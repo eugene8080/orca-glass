@@ -8,7 +8,7 @@ This is Eugene's Windows/Android fork of [2ero20ne's Orca Glass](https://github.
 
 ## Availability
 
-As of 2026-11-06, the Even Hub **public build is 1.0.36** and the **latest beta is 1.0.44** (ten small-text fonts with a comparison screen, aligned tables, Cursor/OpenCode 2/Pi conversations, models for every agent). The newer controls described below require the beta. The installed build connects to a specific PC over Tailscale; it is not yet a self-service installation for arbitrary PCs. Orca and the companion bridge must remain running. The phone and glasses do not run the coding agent.
+As of 2026-11-06, the Even Hub **public build is 1.0.36** and the **latest beta is 1.0.45** (six small-text fonts incl. Departure 7x11, comparison screen, aligned tables, Cursor/OpenCode 2/Pi conversations, models for every agent). The newer controls described below require the beta. The installed build connects to a specific PC over Tailscale; it is not yet a self-service installation for arbitrary PCs. Orca and the companion bridge must remain running. The phone and glasses do not run the coding agent.
 
 The active app is the custom Orca Glass bridge. Earlier native Even Terminal experiments are historical. See [current work](TODOS.md) and [beta setup/release history](docs/beta-install.md).
 

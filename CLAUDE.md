@@ -50,6 +50,10 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-10 user: 'upload beta'. Beta1.0.45 uploaded/promoted, CLI verified 105,620 bytes.
+146 tests pass; prototype dist restored. App-only, no bridge restart. G2 check pending:
+six fonts (Departure 7x11), Filter by Agent cues, Compare fonts two-line layout.
+
 2026-11-10 user: remove Spleen/Monogram/Cozette/Pixeloid/JetBrains; add Departure 11px; agent
 picker needs a visible next-page cue, no title/divider/back row. Built (unreleased): five
 fonts + Departure 7x11 (ASCII rows 2..12, 80x24); default Terminus; agent picker ten rows
