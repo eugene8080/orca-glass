@@ -738,7 +738,7 @@ function thread(t: Thread, note = '') {
     const title = () => `${t.title}${note ? `  ${note}` : ''}`;
     const snapshot = await api.thread(t.handle);
     const saved = await api.history(t.handle).catch(() => null);
-    const useSaved = ['codex-transcript', 'claude-transcript', 'cursor-transcript', 'opencode-transcript', 'hermes-transcript'].includes(saved?.source || '');
+    const useSaved = ['codex-transcript', 'claude-transcript', 'cursor-transcript', 'opencode-transcript', 'pi-transcript', 'hermes-transcript'].includes(saved?.source || '');
     const conversationText = useSaved ? saved!.text : snapshot.text;
     const state = await api.activity(t.handle).catch(e => {
       diag(`Activity request failed: ${(e as Error).message}`);
@@ -806,7 +806,7 @@ function startReaderUpdates(screen: Screen | null): (() => Promise<void>) | unde
     }
     if (screen.reading) { reading = false; return; }
     let r = await (screen.savedHistory ? api.history(t.handle) : Promise.resolve(snapshot)).catch(() => null);
-    if (screen.savedHistory && (!r || !('source' in r) || !['codex-transcript', 'claude-transcript', 'cursor-transcript', 'opencode-transcript', 'hermes-transcript'].includes(r.source || ''))) {
+    if (screen.savedHistory && (!r || !('source' in r) || !['codex-transcript', 'claude-transcript', 'cursor-transcript', 'opencode-transcript', 'pi-transcript', 'hermes-transcript'].includes(r.source || ''))) {
       r = snapshot;
       // Stay on live output after losing the verified saved-history association.
       if (r && current === screen) screen.savedHistory = false;
@@ -841,7 +841,7 @@ function history(t: Thread) {
   return guard(t.title, async () => {
     const r = await api.history(t.handle);
     if (current !== previous) return;
-    await show({ kind: 'text', title: ['codex-transcript', 'claude-transcript', 'cursor-transcript', 'opencode-transcript', 'hermes-transcript'].includes(r.source || '') ? 'Conversation history' : 'Terminal buffer only',
+    await show({ kind: 'text', title: ['codex-transcript', 'claude-transcript', 'cursor-transcript', 'opencode-transcript', 'pi-transcript', 'hermes-transcript'].includes(r.source || '') ? 'Conversation history' : 'Terminal buffer only',
       text: r.text || r.reason || 'No older terminal output is retained.', tail: true, reader: t,
       onBack: () => thread(t),
       onHold: () => { void record(t, true); } });

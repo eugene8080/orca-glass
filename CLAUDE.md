@@ -50,6 +50,11 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-09 user chose to load Orca's Pi extension. pc-settings c6d4045: Start-PiVps.ps1
+adds -e orca-agent-status.ts. Bridge Pi reader added (exact session ID; current branch;
+no thinking/tools); app accepts pi-transcript. 144 tests. Pending: user relaunches Pi so
+Orca records the session; then bridge restart + beta 1.0.43.
+
 2026-11-09 user opened Pi/OpenClaude/OpenCode/Hermes/Cursor panes. Read-only live check:
 Cursor and OpenCode 2 transcripts work; OpenClaude screen works (Orca keeps no session
 record, so no transcript link); Hermes CLI reads as gateway row 'hi'; Pi blocked: its

@@ -63,3 +63,22 @@ test('OpenCode 2 shows user text and assistant text parts, not reasoning, tools 
 test('OpenClaude panes use the Claude screen format', () => {
   assert.equal(terminalConversation(['❯ Question', '⏺ Bash(secret)', '  output', '⏺ Answer'], 'openclaude'), '/ Question\n> Answer');
 });
+
+test('Pi shows the current branch: user text and reply text, not thinking, tools or system', async () => {
+  const { piMessages } = await import('../bridge/conversation.mjs');
+  const entries = [
+    { type: 'session', id: 'sess', cwd: 'D:/x' },
+    { type: 'model_change', id: 'm', parentId: null, modelId: 'qwopus-pi-128k' },
+    { type: 'message', id: 'a', parentId: 'm', message: { role: 'system', content: 'rules' } },
+    { type: 'message', id: 'b', parentId: 'a', message: { role: 'user', content: [{ type: 'text', text: 'hi' }] } },
+    { type: 'message', id: 'c', parentId: 'b', message: { role: 'assistant', model: 'qwopus-pi-128k', content: [{ type: 'thinking', thinking: 'private' }, { type: 'text', text: 'Hello!' }] } },
+    // An abandoned branch from 'b' that the user moved away from.
+    { type: 'message', id: 'd', parentId: 'b', message: { role: 'assistant', content: [{ type: 'text', text: 'Old answer' }] } },
+    { type: 'message', id: 'e', parentId: 'c', message: { role: 'user', content: [{ type: 'text', text: 'list files' }] } },
+    { type: 'message', id: 'f', parentId: 'e', message: { role: 'assistant', content: [{ type: 'toolCall', name: 'ls' }] } },
+    { type: 'message', id: 'g', parentId: 'f', message: { role: 'toolResult', content: [{ type: 'text', text: 'secret listing' }] } },
+    { type: 'message', id: 'h', parentId: 'g', message: { role: 'assistant', content: [{ type: 'text', text: 'Two files.' }] } },
+  ];
+  assert.deepEqual(piMessages(entries), { model: 'qwopus-pi-128k', messages: [
+    { role: 'user', text: 'hi' }, { role: 'assistant', text: 'Hello!' }, { role: 'user', text: 'list files' }, { role: 'assistant', text: 'Two files.' }] });
+});

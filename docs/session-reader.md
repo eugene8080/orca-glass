@@ -565,3 +565,10 @@ the Hermes Agent CLI (Cursor showed 'Conversation-only text is unavailable').
   record for the pane. Sessions are saved under PiQwopusTrial/agent/sessions/<cwd>/
   <timestamp>_<uuid>.jsonl. The screen is plain text (user line, thinking and reply look
   alike), so no reliable screen parser. Exact link needs the extension loaded: user decision.
+- Pi (user chose 2026-11-09 to load Orca's extension): D:/dev/pc-settings/scripts/
+  Start-PiVps.ps1 now passes -e <~/.pi/agent/extensions/orca-agent-status.ts> (explicit
+  -e paths still load under --no-extensions), commit c6d4045 in pc-settings. Bridge
+  reader readPiSession: the record's file or the single '*_<id>.jsonl' in ~/.pi/agent/
+  sessions or PcSettings/PiQwopusTrial/agent/sessions; header id must match; current
+  branch via parentId; user text + assistant text only. Checked on the saved session
+  (2 messages). Live Orca record for a relaunched Pi pane not yet verified.
