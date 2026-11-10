@@ -1,9 +1,12 @@
 import { readFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
+import { aiRouteFile } from './platform.mjs';
 
 try {
-  const route = JSON.parse(await readFile(join(process.env.LOCALAPPDATA, 'PcSettings/AiRouting/route.json'), 'utf8'));
+  const routeFile = aiRouteFile();
+  if (!routeFile) throw new Error('Windows routing configuration is unavailable');
+  const route = JSON.parse(await readFile(routeFile, 'utf8'));
   const probe = await fetch('https://api.ipify.org', { signal: AbortSignal.timeout(15000) });
   if (!probe.ok || (await probe.text()).trim() !== route.expectedExitIp) {
     throw new Error('Selected proxy egress verification failed');

@@ -2,13 +2,11 @@
 // Never infer identity from a working directory or choose the newest transcript.
 import { DatabaseSync } from 'node:sqlite';
 import { open, readdir, readFile, realpath, stat } from 'node:fs/promises';
-import { homedir } from 'node:os';
 import { basename, join, relative, resolve } from 'node:path';
 import { formatMessages, modelLabel, modelName } from './reader-text.mjs';
+import { cursorChatsDir, opencodeDatabase, orcaProfileDir, piSessionRoots, transcriptRoots } from './platform.mjs';
 
-const appData = process.env.APPDATA || join(homedir(), 'AppData', 'Roaming');
-const orcaHome = join(appData, 'orca');
-const profile = process.env.ORCA_GLASS_PROFILE_DIR || join(orcaHome, 'profiles', 'local-default');
+const profile = orcaProfileDir();
 const cache = new Map();
 const reads = new Map();
 const MAX_TEXT = 1_000_000;
@@ -100,8 +98,7 @@ export function piMessages(entries) {
 }
 
 async function readPiSession(binding) {
-  const roots = [join(homedir(), '.pi', 'agent', 'sessions'),
-    join(process.env.LOCALAPPDATA || join(homedir(), 'AppData', 'Local'), 'PcSettings', 'PiQwopusTrial', 'agent', 'sessions')];
+  const roots = piSessionRoots();
   const suffix = `_${binding.id}.jsonl`;
   let file = binding.path && basename(binding.path).endsWith(suffix) && await stat(binding.path).then(s => s.isFile(), () => false) ? binding.path : null;
   if (!file) {
@@ -127,7 +124,7 @@ async function readPiSession(binding) {
 }
 
 async function readOpencodeStore(binding) {
-  const file = join(process.env.XDG_DATA_HOME || join(homedir(), '.local', 'share'), 'opencode', 'opencode.db');
+  const file = opencodeDatabase();
   if (!await stat(file).then(s => s.isFile(), () => false)) return null;
   const db = new DatabaseSync(file, { readOnly: true });
   try {
@@ -184,7 +181,7 @@ export function cursorMessages(meta, blob) {
 }
 
 async function readCursorStore(binding) {
-  const chats = join(homedir(), '.cursor', 'chats');
+  const chats = cursorChatsDir();
   const matches = [];
   for (const dir of await readdir(chats).catch(() => [])) {
     if (!/^[a-f0-9]{32}$/i.test(dir)) continue;
@@ -308,9 +305,7 @@ export async function readConversation(terminal) {
   if (binding.provider === 'opencode') return readOpencodeStore(binding);
   if (binding.provider === 'pi') return readPiSession(binding);
   const file = await realpath(binding.path);
-  const roots = binding.provider === 'claude' ? [join(homedir(), '.claude', 'projects')]
-    : binding.provider === 'openclaude' ? [join(homedir(), '.openclaude', 'projects')]
-    : [join(homedir(), '.codex'), join(orcaHome, 'codex-runtime-home')];
+  const roots = transcriptRoots(binding.provider);
   const allowed = await Promise.all(roots.map(async root => {
     const actual = await realpath(root).catch(() => null);
     if (!actual) return false;

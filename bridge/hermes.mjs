@@ -3,14 +3,14 @@ import { execFile } from 'node:child_process';
 import { createHash, randomUUID } from 'node:crypto';
 import { access } from 'node:fs/promises';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
-import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
 import { formatMessages, modelName } from './reader-text.mjs';
+import { hermesHome, hermesLauncher, orcaProfileDir } from './platform.mjs';
 
-const root = process.env.ORCA_GLASS_HERMES_HOME || join(process.env.LOCALAPPDATA || join(homedir(), 'AppData', 'Local'), 'hermes');
-const launcher = process.env.ORCA_GLASS_HERMES_CLI || join(root, 'bin', 'hermes.exe');
+const root = hermesHome();
+const launcher = hermesLauncher(root);
 const helper = fileURLToPath(new URL('./hermes-client.py', import.meta.url));
 const normalize = value => String(value || '').replaceAll('\\', '/').replace(/\/$/, '').toLowerCase();
 const digest = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
@@ -145,7 +145,7 @@ export function mergeHermesThreads(threads, sessions, terminals = [], document =
 }
 
 function orcaDocument() {
-  const directory = process.env.ORCA_GLASS_PROFILE_DIR || join(process.env.APPDATA || join(homedir(), 'AppData', 'Roaming'), 'orca', 'profiles', 'local-default');
+  const directory = orcaProfileDir();
   let db;
   try {
     db = new DatabaseSync(join(directory, 'profile-state.db'), { readOnly: true });

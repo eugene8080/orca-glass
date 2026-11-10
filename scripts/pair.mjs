@@ -2,6 +2,7 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { clipboardCommand } from '../bridge/platform.mjs';
 
 const dir = fileURLToPath(new URL('../bridge/', import.meta.url));
 for (const f of ['.token', '.topic']) {
@@ -11,8 +12,10 @@ for (const f of ['.token', '.topic']) {
   }
 }
 const code = `eho1.${readFileSync(dir + '.topic', 'utf8').trim()}.${readFileSync(dir + '.token', 'utf8').trim()}`;
+const clipboard = clipboardCommand();
 try {
-  execFileSync(process.platform === 'win32' ? 'clip.exe' : 'pbcopy', { input: code, windowsHide: true });
+  if (!clipboard) throw new Error('clipboard unavailable');
+  execFileSync(clipboard, { input: code, windowsHide: true });
   console.log('Pairing code copied. Paste it into Orca Glass in the Even Realities app on your phone.');
 } catch {
   console.log('Pairing code (paste into Orca Glass on your phone):');

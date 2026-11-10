@@ -14,6 +14,10 @@ import { hermes, isHermes, hermesCatalog } from './hermes.mjs';
 const run = promisify(execFile);
 const ORCA = orcaExecutable();
 
+export function looksLikeShellPrompt(line) {
+  return /^\s*(?:PS\s+.+>|[A-Za-z]:\\[^>]*>|[^\s@]+@[^\s]+\s+\S+\s+%\s*$|\$\s*$)/.test(line);
+}
+
 export async function orca(args, { timeoutMs = 15000 } = {}) {
   const { stdout } = await run(ORCA, [...args, '--json'], {
     timeout: timeoutMs,
@@ -177,7 +181,7 @@ export async function readThread(handle) {
   // Native voice must see a current Codex input row, never type into that shell.
   const bottom = lines.slice(-12);
   const inputReady = bottom.some(l => /^\s*›(?:\s|$)/.test(l)) &&
-    !bottom.slice(-4).some(l => /^\s*(?:PS\s+.+>|[A-Za-z]:\\[^>]*>)/.test(l));
+    !bottom.slice(-4).some(l => looksLikeShellPrompt(l));
   // The selected ❯ 1. row is a menu cursor, not a new user message. Deliver
   // the prompt structurally and retain saved/previous chat in the reader.
   return { text: menu ? '' : answer || (['codex', 'claude', 'cursor', 'openclaude'].includes(agent) ? '' : '> Conversation-only text is unavailable for this terminal format.'), menu, progress: menu ? '' : progressSummary(lines, agent), inputReady, model: terminalModel(lines) || undefined };

@@ -4,6 +4,7 @@ import { promisify } from 'node:util';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { isIP } from 'node:net';
+import { aiRouteFile } from './platform.mjs';
 
 const run = promisify(execFile);
 let cached;
@@ -39,9 +40,9 @@ export async function proxyUsage() {
   if (cached && Date.now() - cached.time < 60000) return cached.value;
   if (pending) return pending;
   pending = (async () => {
-    const root = process.env.LOCALAPPDATA;
-    if (!root) throw new Error('Windows routing configuration is unavailable');
-    const route = JSON.parse(await readFile(join(root, 'PcSettings/AiRouting/route.json'), 'utf8'));
+    const routeFile = aiRouteFile();
+    if (!routeFile) throw new Error('Windows routing configuration is unavailable');
+    const route = JSON.parse(await readFile(routeFile, 'utf8'));
     const proxy = new URL(route.proxyUrl);
     if (proxy.protocol !== 'http:' || proxy.username || proxy.password ||
         !['127.0.0.1', 'localhost', '[::1]', '100.73.110.10'].includes(proxy.hostname) || !isIP(route.expectedExitIp)) {
