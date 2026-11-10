@@ -2,24 +2,13 @@
 import { spawn } from 'node:child_process';
 import { createServer } from 'node:net';
 import { existsSync } from 'node:fs';
-import { homedir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { executable } from './platform.mjs';
+import { resolveWhisperModel, whisperBinaries, whisperModelIsMultilingual } from './platform.mjs';
 const localVoice = fileURLToPath(new URL('../.local/voice/', import.meta.url));
-export const WHISPER_BIN = process.env.WHISPER_BIN || executable('whisper-cli') || join(localVoice, 'bin', 'whisper-cli.exe');
-// 既定は setup が置く場所。VoiceInk が同じモデルを持っていればそれを使う
-const MODEL_NAME = 'ggml-large-v3-turbo-q5_0.bin';
-export const MODEL =
-  process.env.WHISPER_MODEL ||
-  [
-    join(localVoice, 'ggml-base.en.bin'),
-    join(homedir(), '.cache/orca-glass', MODEL_NAME),
-    join(homedir(), 'Library/Application Support/com.prakashjoshipax.VoiceInk/WhisperModels', MODEL_NAME),
-  ].find(existsSync) ||
-  join(homedir(), '.cache/orca-glass', MODEL_NAME);
-
-export const WHISPER_SERVER = process.env.WHISPER_SERVER || join(dirname(WHISPER_BIN), process.platform === 'win32' ? 'whisper-server.exe' : 'whisper-server');
+const { bin: WHISPER_BIN, server: WHISPER_SERVER } = whisperBinaries(localVoice);
+export { WHISPER_BIN, WHISPER_SERVER };
+export const MODEL = resolveWhisperModel(localVoice);
 export const voiceAvailable = () => existsSync(WHISPER_SERVER) && existsSync(MODEL);
 // Whisper invents short phrases ('you', 'Thank you.') for quiet microphone noise,
 // and its no-speech probability does not flag them. Silero voice-activity
@@ -85,7 +74,10 @@ function wav(pcm) {
 export async function transcribe(pcm, lang = 'en') {
   if (!voiceAvailable()) throw new Error('Local speech recognition is not configured');
   if (!Buffer.isBuffer(pcm) || pcm.length % 2 || pcm.length > 16000 * 2 * 90) throw new Error('Invalid microphone PCM');
-  if (lang !== 'en') throw new Error('Unsupported transcription language');
+  if (lang !== 'en' && lang !== 'ja') throw new Error('Unsupported transcription language');
+  if (lang === 'ja' && !whisperModelIsMultilingual(MODEL)) {
+    throw new Error('Japanese transcription requires a multilingual Whisper model (run setup with --multilingual or set WHISPER_MODEL)');
+  }
   // Empty/tiny captures and digital silence must not produce a hallucinated reply.
   if (pcm.length < 8000) return '';
   let energy = 0;

@@ -40,7 +40,7 @@ const L = {
     dialog: 'a confirmation dialog is open', notReady: 'the agent did not become ready',
   },
 };
-const langOf = (_q) => 'en';
+const langOf = (q) => (q?.get('lang') === 'ja' ? 'ja' : 'en');
 const msg = (lang, key, ...a) => L[lang][key].replace(/\{(\d)\}/g, (_, i) => a[i]);
 // Accept English strings and legacy localized objects containing an en value.
 const pick = (v, lang) => (typeof v === 'string' ? v : v.en ?? '');

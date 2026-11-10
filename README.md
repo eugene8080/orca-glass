@@ -2,7 +2,7 @@
 
 **Read your Orca sessions. Speak your next step.**
 
-Orca Glass connects Even Realities G2 glasses to Orca on Windows. Browse connected sessions, read a conversation, check agent activity, and review a spoken instruction before sending it back to your PC.
+Orca Glass connects Even Realities G2 glasses to Orca on your PC (Windows today; macOS supported in source with CI smoke tests). Browse connected sessions, read a conversation, check agent activity, and review a spoken instruction before sending it back to your computer.
 
 This is Eugene's Windows/Android fork of [2ero20ne's Orca Glass](https://github.com/2ero20ne/orca-glass), licensed under MIT. Interface and speech recognition use English.
 
@@ -48,7 +48,9 @@ The simulator omits OS contextual entries. See [store profile/capture instructio
 
 ## Development
 
-Requirements: Windows, Node.js 20+, installed/running Orca, and local Whisper for voice. The installed beta and earlier Quick Tunnel prototype use different network routes.
+Requirements: Node.js 20+, installed/running Orca, and local Whisper for voice. Windows is the primary verified environment; macOS setup is documented separately. The installed beta and earlier Quick Tunnel prototype use different network routes.
+
+**Windows**
 
 ```powershell
 npm --prefix app ci
@@ -57,7 +59,20 @@ npm --prefix app run build
 npm run doctor
 ```
 
-Run development servers and the simulator in named PowerShell terminals inside this repo's Orca workspace. See [project instructions](CLAUDE.md), [voice implementation](docs/voice-input.md), [reader behavior](docs/session-reader.md) and [session-list behavior](docs/session-list.md).
+Voice: `pwsh -File scripts/setup-voice.ps1` (add `-Multilingual` for Japanese UI voice).
+
+**macOS**
+
+```bash
+npm ci --prefix app
+npm test
+npm --prefix app run build
+npm run doctor
+```
+
+Voice: `bash scripts/setup-voice.sh` (add `--multilingual` for Japanese). Startup: `bash scripts/install-macos-startup.sh install`. Details: [docs/macos.md](docs/macos.md).
+
+Run development servers and the simulator in named terminals inside this repo's Orca workspace (PowerShell on Windows). See [project instructions](CLAUDE.md), [voice implementation](docs/voice-input.md), [reader behavior](docs/session-reader.md) and [session-list behavior](docs/session-list.md).
 
 Pairing codes are credentials: keep them, authenticated QR files and local runtime settings out of Git and screenshots. Audio travels through the phone to the configured PC for local transcription. A confirmed reply is sent to the selected desktop agent, whose own provider/data policies then apply. Earlier prototype routes use Cloudflare and ntfy; the personal installed beta uses the configured Tailscale connection.
 
