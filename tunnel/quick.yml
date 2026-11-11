@@ -1,2 +1,3 @@
 # Deliberately isolated from the user's existing named-tunnel configuration.
-{}
+# Stay outside cloudflared's default 20241..20245 range and PMS's fixed 20251.
+metrics: 127.0.0.1:20261

@@ -1,5 +1,5 @@
 # Orca Glass TODOs
-Updated: 2026-11-05
+Updated: 2026-11-10
 
 Current beta: **1.0.48** (Japanese UI and pixel fonts; hanging indents). Public: **1.0.36**.
 Workspace-filter preview approved, released and retired with merged worktree cleanup.
@@ -7,6 +7,20 @@ Future visual changes require preview approval before beta upload.
 Completed/superseded release notes: [history](docs/todo-history.md).
 
 ## Open work
+
+- [ ] **Quick Tunnel fixed metrics port -- next restart verification:**
+  2026-11-10 pin `tunnel/quick.yml` to loopback 127.0.0.1:20261, outside the
+  default 20241..20245 range and PMS's 20251. All launch paths share this config.
+  Live tunnel intentionally retained: the prototype app-loading QR is static
+  and is not automatically regenerated. Apply at the next planned tunnel restart
+  or reboot, then check 20261/ready and regenerate the private prototype QR if
+  needed. See `docs/windows-android.md` for launch audit and restart safety.
+  Verified: cloudflared's config-driven `tunnel ready` targets 20261 (expected
+  connection refusal until restart); 158 Node tests plus 16 Python helper tests,
+  app build and doctor pass. PMS PID 50832 unchanged before/after, 20251/ready
+  HTTP 200 with readyConnections=4; Orca Glass PID 22564 unchanged on 20241.
+  No tunnel/bridge restart, PMS changes, QR regeneration or beta release: this
+  changes only the tunnel configuration, not the app package.
 
 - [ ] **Japanese and macOS support -- J1 (UI) and J3 (fonts) in beta 1.0.48; J2 voice code in tree; J4 listing; macOS source+CI done, hardware open:** user 2026-11-10 chose "Both,
   Japanese first". Plan and progress: docs/i18n-mac-plan.md, paths in docs/macos.md.
