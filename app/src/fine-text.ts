@@ -7,8 +7,8 @@
 // table (app/src/fonts/glyphs.ts): no canvas text and no anti-aliasing.
 // All monospace, each at its own native pixel grid (the G2 shows the 576x288
 // canvas 1:1, confirmed with the display test pattern on 2026-11-09):
-// cell sizes below; a page is 560px / cell width columns. Bitmap fonts come from
-// their BDF files, outline pixel fonts are rasterised at their own pixel grid,
+// cell sizes below; a page is as many whole cells as fit inside the 1px frame.
+// Bitmap fonts come from their BDF files, outline pixel fonts are rasterised at their own pixel grid,
 // JetBrains Mono by FreeType in monochrome mode (see scripts/build-fine-fonts.py).
 // Missing characters: box drawing as geometric lines and Braille as dots, both
 // fitted to the cell; anything else via the WebView monospace font, thresholded
@@ -34,15 +34,21 @@ export const fineLabel = (font: FineFont) => `${NAMES[font]} ${TABLES[font].widt
 export const SCREEN = { width: 576, height: 288 };
 export const FINE_TILES = [0, 1, 2, 3].map(i => ({ xPosition: (i % 2) * 288, yPosition: Math.floor(i / 2) * 144, width: 288, height: 144 }));
 
-// Layout in whole cells: a 2px frame, chat rows from y4, a 2px divider, then one
-// status row at the bottom. Chat and status share the 560px text column at x8.
-const TEXT_X = 8, TEXT_WIDTH = 560, TOP = 4, FRAME = 1;
+// Layout in whole cells: a 1px frame, chat rows from y4, a divider, then one
+// status row at the bottom. Chat and status share every whole cell that fits
+// inside the frame (574px). A 7px cell fills it exactly (82 columns); 5px and
+// 6px cells leave less than one cell, centred.
+const TOP = 4, FRAME = 1;
+const INNER = SCREEN.width - 2 * FRAME;
 export function fineLayout(font: FineFont) {
   const { width: cell, height: line } = TABLES[font];
   const statusY = SCREEN.height - FRAME - 2 - line;
   const dividerY = statusY - 3;
   const rows = Math.floor((dividerY - 2 - TOP) / line);
-  return { cell, line, rows, columns: Math.floor(TEXT_WIDTH / cell), statusY, dividerY };
+  const columns = Math.floor(INNER / cell);
+  const textWidth = columns * cell;
+  const textX = FRAME + Math.floor((INNER - textWidth) / 2);
+  return { cell, line, rows, columns, textWidth, textX, statusY, dividerY };
 }
 
 const parsed = new Map<FineFont, Map<number, number[]>>();
@@ -97,7 +103,6 @@ export function cellWidth(ch: string): number {
 export const fineCells = (text: string) => { let n = 0; for (const ch of text) n += cellWidth(ch); return n; };
 // Width in pixels for the reader's word wrap (readerPages measures in pixels).
 export const fineMeasure = (font: FineFont) => (text: string) => fineCells(text) * TABLES[font].width;
-export const FINE_TEXT_WIDTH = TEXT_WIDTH;
 
 class Surface {
   readonly pixels = new Uint8ClampedArray(SCREEN.width * SCREEN.height);
@@ -203,20 +208,20 @@ export function scannerLevels(frame: number): number[] {
 export type FineStatus = { left: string; right: string; model?: string; scanner?: number };
 export function renderFineScreen(text: string, font: FineFont, status: FineStatus): number[][] {
   const s = new Surface(font);
-  const { line, rows, columns, statusY, dividerY } = fineLayout(font);
+  const { line, rows, columns, textX, textWidth, statusY, dividerY } = fineLayout(font);
   s.rect(0, 0, SCREEN.width, FRAME); s.rect(0, SCREEN.height - FRAME, SCREEN.width, FRAME);
   s.rect(0, 0, FRAME, SCREEN.height); s.rect(SCREEN.width - FRAME, 0, FRAME, SCREEN.height);
-  text.split('\n').slice(0, rows).forEach((row, r) => s.text(row, TEXT_X, TOP + r * line, columns));
-  s.rect(TEXT_X + 8, dividerY, TEXT_WIDTH - 16, 1);
+  text.split('\n').slice(0, rows).forEach((row, r) => s.text(row, textX, TOP + r * line, columns));
+  s.rect(textX, dividerY, textWidth, 1);
   const rightCells = Math.min(fineCells(status.right), columns);
-  s.text(status.right, TEXT_X + (columns - rightCells) * TABLES[font].width, statusY, rightCells);
+  s.text(status.right, textX + (columns - rightCells) * TABLES[font].width, statusY, rightCells);
   const leftCells = Math.max(0, columns - rightCells - 1);
-  if (status.scanner === undefined) s.text(status.left, TEXT_X, statusY, leftCells);
+  if (status.scanner === undefined) s.text(status.left, textX, statusY, leftCells);
   else {
     // 'Opus5.5 [scanner] Thinking...': the model stays put, the light sweeps.
     const cw = TABLES[font].width;
-    const modelCells = status.model ? s.text(`${status.model} `, TEXT_X, statusY, leftCells) : 0;
-    const x0 = TEXT_X + modelCells * cw, barCells = Math.ceil(SCANNER_WIDTH / cw) + 1;
+    const modelCells = status.model ? s.text(`${status.model} `, textX, statusY, leftCells) : 0;
+    const x0 = textX + modelCells * cw, barCells = Math.ceil(SCANNER_WIDTH / cw) + 1;
     const h = Math.max(3, Math.floor(line / 3)), y0 = statusY + Math.floor((line - h) / 2);
     scannerLevels(status.scanner).forEach((level, i) => { if (level) s.rect(x0 + i * (SCANNER_SEGMENT + SCANNER_GAP), y0, SCANNER_SEGMENT, h, level); });
     s.text(status.left, x0 + barCells * cw, statusY, Math.max(0, leftCells - modelCells - barCells));
@@ -240,15 +245,16 @@ export function renderFontComparison(): number[][] {
   let y = TOP;
   for (const font of FINE_FONTS) {
     s.font = font;
-    const columns = Math.floor(TEXT_WIDTH / TABLES[font].width);
-    s.text(`${fineLabel(font).padEnd(nameCells)}${FONT_SAMPLE}`, TEXT_X, y, columns);
+    const layout = fineLayout(font);
+    s.text(`${fineLabel(font).padEnd(nameCells)}${FONT_SAMPLE}`, layout.textX, y, layout.columns);
     y += TABLES[font].height;
-    s.text(`${''.padEnd(nameCells)}${getLang() === 'ja' ? FONT_SAMPLE_JA : FONT_ALPHABET}`, TEXT_X, y, columns);
+    s.text(`${''.padEnd(nameCells)}${getLang() === 'ja' ? FONT_SAMPLE_JA : FONT_ALPHABET}`, layout.textX, y, layout.columns);
     y += TABLES[font].height + 4;
   }
   s.font = FINE_FONTS[0];
-  s.rect(TEXT_X + 8, y + 2, TEXT_WIDTH - 16, 1);
-  s.text(t('compareBack'), TEXT_X, y + 8, Math.floor(TEXT_WIDTH / TABLES[s.font].width));
+  const back = fineLayout(s.font);
+  s.rect(back.textX, y + 2, back.textWidth, 1);
+  s.text(t('compareBack'), back.textX, y + 8, back.columns);
   return s.tiles();
 }
 

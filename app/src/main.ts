@@ -25,7 +25,7 @@ import { statusRight } from './footer-hint';
 import { formatReset, RESET_MODES, resetModeLabel, type ResetMode } from './usage-reset';
 import { orcaAgents, workspaceSections, toggleWorkspace, workspaceSummary, type PickerRow } from './filters';
 import { createPhone } from './phone';
-import { FINE_FONTS, FINE_TILES, fineLabel, alignMarkdownTables, FINE_TEXT_WIDTH, SCANNER_WIDTH, fineLayout, fineMeasure, fineCells, renderFineScreen, renderFontComparison, type FineFont, type FineStatus } from './fine-text';
+import { FINE_FONTS, FINE_TILES, fineLabel, alignMarkdownTables, SCANNER_WIDTH, fineLayout, fineMeasure, fineCells, renderFineScreen, renderFontComparison, type FineFont, type FineStatus } from './fine-text';
 import { agentLabel, sessionRow, sessionListTitle, sessionHeading, MENU_LEFT, MENU_RIGHT, MENU_CURSOR, sessionAgentLabel, menuNativeText, menuCursorText, nativeRight, glassWidth, compactSessionTitle, type SessionColumns } from './session-list';
 
 // 画面 576x288。上に見出し(テキスト)、下に本文(リスト or テキスト)の2段構成で統一する。
@@ -131,8 +131,9 @@ function readerLayout(s: TextScreen) {
     s.pagesFine = s.fine;
     if (s.fine) {
       // Monospace small text: wrap by cells; images have no native byte limit.
+      const layout = fineLayout(s.fine);
       const measure = fineMeasure(s.fine);
-      const width = FINE_TEXT_WIDTH, rows = fineLayout(s.fine).rows;
+      const width = layout.textWidth, rows = layout.rows;
       // Monospace: Markdown tables are padded so their columns line up.
       const text = alignMarkdownTables(s.text);
       const start = latestResponseStart(text);

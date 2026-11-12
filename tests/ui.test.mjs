@@ -1377,11 +1377,26 @@ test('small text draws the whole screen, status row included, as four tiles and 
   // Every possible label fits the menu without truncation (about 210px in the firmware font).
   for (const f of fineExports.FINE_FONTS) assert.ok(listExports.glassWidth(`Using: ${fineExports.fineLabel(f)}`) <= 210, fineExports.fineLabel(f));
   const layout = fineExports.fineLayout('terminus');
-  assert.deepEqual([layout.columns, layout.rows], [93, 22]);
-  // Every font on its own whole-pixel grid.
+  assert.deepEqual([layout.columns, layout.rows], [95, 22]);
+  // Every font on its own whole-pixel grid, filling the 574px inside the frame.
   assert.equal(JSON.stringify(Object.fromEntries(fineExports.FINE_FONTS.map(f => { const l = fineExports.fineLayout(f); return [f, [l.cell, l.line, l.columns, l.rows]]; }))),
-    JSON.stringify({ scientifica: [5, 11, 112, 24], gohu: [6, 11, 93, 24], terminus: [6, 12, 93, 22], shinonome: [6, 12, 93, 22], fixed: [6, 13, 93, 20],
-      departure11: [7, 11, 80, 24], departure: [7, 14, 80, 18] }));
+    JSON.stringify({ scientifica: [5, 11, 114, 24], gohu: [6, 11, 95, 24], terminus: [6, 12, 95, 22], shinonome: [6, 12, 95, 22], fixed: [6, 13, 95, 20],
+      departure11: [7, 11, 82, 24], departure: [7, 14, 82, 18] }));
+  // A full row is exactly `columns` cells, and one more cell wraps. The gap
+  // inside the frame is shorter than one cell, so Departure 7px (82) and the
+  // narrower fonts both run to the right edge.
+  const sentence = 'The quick brown fox jumps over the lazy dog. '.repeat(8);
+  for (const f of fineExports.FINE_FONTS) {
+    const l = fineExports.fineLayout(f);
+    assert.ok(l.textX >= 1 && l.textX + l.textWidth <= 575, f);
+    assert.ok(574 - l.textWidth < l.cell, f);
+    const measure = fineExports.fineMeasure(f);
+    const full = 'M'.repeat(l.columns);
+    assert.equal(textExports.readerPages(full, measure, l.textWidth, l.rows, Infinity)[0], full);
+    assert.deepEqual(textExports.readerPages(full + 'N', measure, l.textWidth, l.rows, Infinity)[0].split('\n'), [full, 'N']);
+    const row = textExports.readerPages(sentence, measure, l.textWidth, l.rows, Infinity)[0].split('\n')[0];
+    assert.ok(l.columns - fineExports.fineCells(row) < 6, `${f} left ${l.columns - fineExports.fineCells(row)} cells`);
+  }
   // Picking a font from the list switches to it; the 'Using:' line changes nothing.
   await h.menu(1112);
   assert.deepEqual(saved.slice(-2), [['reader-text', 'fixed'], ['reader-font', 'fixed']]);

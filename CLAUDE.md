@@ -53,7 +53,9 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
-2026-11-11 user: chats stop loading when the Android screen turns off; they want to keep working with the screen off. Workout Glass keeps its countdown because it does not stop on pagehide and restores the saved run if Even recreates the page. Orca Glass was clearing every poll on pagehide. Beta 1.0.50 keeps the polls running, reopens the chat that was on screen, and drops a bridge read that stalls for 8 seconds so the next poll can try again. 160 tests. Uploaded/promoted, CLI verified beta channel 180,950 bytes; prototype dist restored. App-only. G2 check pending.
+2026-11-11 user: Departure Mono 7px wraps short of the right edge, and the narrower small fonts leave unused width on the G2. The small-text column was the native reader's 560px, which is two 7px cells short of the 574px inside the 1px frame and leaves a gap for 5px and 6px cells. Each font now uses every whole cell that fits, and sentences wrap to that same width (Departure 82 columns, 6px fonts 95, Scientifica 114). 160 tests. Beta 1.0.51 uploaded/promoted, CLI verified 180,884 bytes; prototype dist restored. App-only. G2 check pending.
+
+2026-11-11 user: chats stop loading when the Android screen turns off; they want to keep working with the screen off. Workout Glass keeps its countdown because it does not stop on pagehide and restores the saved run if Even recreates the page. Orca Glass was clearing every poll on pagehide. Beta 1.0.50 keeps the polls running, reopens the chat that was on screen, and drops a bridge read that stalls for 8 seconds so the next poll can try again. 160 tests. Uploaded/promoted, CLI verified beta channel 180,950 bytes; prototype dist restored. App-only. Confirmed on G2 with the phone closed and locked.
 
 2026-11-10 user: re-enable Japanese and Mac (chose both, Japanese first); language switch in the
 phone app only; code/comments not translated. J1 UI dictionary (6f1061f) + J3 Shinonome fonts.
