@@ -496,7 +496,7 @@ function readerMenu() {
 
 // Ten native rows, no title and no blank row between entries. A swipe past the
 // last row opens the next page; a swipe past the first opens the previous one.
-// The font list also wraps: past the first row lands on the last, and the reverse.
+// Both lists wrap: past the first row lands on the last, and the reverse.
 const TEXT_PICKER_ROWS = 10;
 function showTextPicker(reader: TextScreen, labels: string[], selected: number, onPick: (i: number) => unknown, wrap = false) {
   const pageCount = Math.max(1, Math.ceil(labels.length / TEXT_PICKER_ROWS));
@@ -530,7 +530,8 @@ function showFonts() {
   return showTextPicker(reader, rows.map((row, i) => i === currentIndex ? `${row.label} ✓` : row.label), currentIndex, i => rows[i].run(), true);
 }
 
-// Steps 15 down to 1, ten per page. Click one and the reader comes back at that ink.
+// Steps 15 down to 1, ten per page. A swipe past either end wraps to the other.
+// Click one and the reader comes back at that ink.
 function showBrightness() {
   const reader = current;
   if (reader?.kind !== 'text' || !reader.reader) return;
@@ -540,7 +541,7 @@ function showBrightness() {
     inkLevel = levels[i];
     await bridge.setLocalStorage('reader-ink', String(inkLevel));
     await show(reader);
-  });
+  }, true);
 }
 
 // Paint the font comparison into the tiles. From native text this rebuilds the

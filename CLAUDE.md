@@ -53,6 +53,8 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-12 user: App Brightness wraps the same way as the font list. A swipe past 15 lands on 1, and a swipe past 1 lands on 15. The levels in between still page ten at a time. 164 tests. Beta 1.0.59 uploaded/promoted, CLI verified 203,582 bytes; prototype dist restored. App-only. G2 check pending.
+
 2026-11-12 user: the font list wraps. A swipe past the first row lands on the last, and a swipe past the last lands on the first. App Brightness still pages and does not wrap. 164 tests. Beta 1.0.58 uploaded/promoted, CLI verified 203,585 bytes; prototype dist restored. App-only. G2 check pending.
 
 2026-11-12 user: the reader menu reads Font: with the current face, and App Brightness: with the level. 164 tests. Beta 1.0.57 uploaded/promoted, CLI verified 203,582 bytes; prototype dist restored. App-only. G2 check pending.

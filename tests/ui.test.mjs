@@ -1453,6 +1453,13 @@ test('small text draws the whole screen, status row included, as four tiles and 
   assert.equal(bright.yPosition, 4);
   assert.equal(bright.height, 280);
   assert.deepEqual(menuItems(h), ['15 ✓', '14', '13', '12', '11', '10', '9', '8', '7', '6']);
+  const brightCursor = () => h.pages.at(-1).textObject.find(c => c.containerName === 'body').content.split('\n').findIndex(row => row.startsWith('>'));
+  await h.scroll('up');
+  assert.deepEqual(menuItems(h), ['5', '4', '3', '2', '1']);
+  assert.equal(brightCursor(), 4);
+  await h.scroll('down');
+  assert.equal(menuItems(h)[0], '15 ✓');
+  assert.equal(brightCursor(), 0);
   for (let i = 0; i < 10; i++) await h.scroll('down');
   assert.deepEqual(menuItems(h), ['5', '4', '3', '2', '1']);
   await h.scroll('up');
