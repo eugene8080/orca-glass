@@ -818,8 +818,8 @@ test('contextual actions refresh roster, open workspace picker and display usage
   await h.back(); await h.pick(2);
   // The reader's own menu only switches text size; session-list actions do nothing there.
   assert.equal(JSON.stringify(h.pages.at(-1).menuObject.menuItems.map(i => [i.itemID, i.itemName])),
-    JSON.stringify([[1101, 'Using: Native text'], [1102, 'Native text'], [1110, 'Misc Fixed 10x20'], [1111, 'Misc Fixed 9x15'],
-      [1112, 'Misc Fixed 8x13'], [1113, 'Departure 7x14'], [1114, 'Departure 7x11'], [1115, 'Misc Fixed 6x13'], [1106, 'Smaller fonts']]));
+    JSON.stringify([[1101, 'Using: Native text'], [1102, 'Native text'], [1110, 'Misc Fixed 9x15'], [1111, 'Terminus 8x16'],
+      [1112, 'Terminus 8x14'], [1113, 'GohuFont 8x14'], [1114, 'Misc Fixed 8x13'], [1115, 'Departure 7x14'], [1106, 'Smaller fonts']]));
   const pages = h.pages.length;
   await h.menu(1002);
   assert.equal(h.pages.length, pages);
@@ -1361,11 +1361,12 @@ test('small text draws the whole screen, status row included, as four tiles and 
   const saved = [];
   h.bridge.setLocalStorage = async (key, value) => { saved.push([key, value]); };
   await h.pick(2);
-  // Terminus is on the second page (the menu holds ten entries). One blank
+  // Terminus 6x12 is on Smaller fonts (the menu holds ten entries). One blank
   // full-screen swipe target plus four 288x144 tiles.
   await h.menu(1106);
-  assert.deepEqual([...h.pages.at(-1).listObject[0].itemContainer.itemName], ['Shinonome 6x12', 'Terminus 6x12', 'GohuFont 6x11', 'Scientifica 5x11']);
-  await h.pick(1);
+  assert.deepEqual([...h.pages.at(-1).listObject[0].itemContainer.itemName],
+    ['Departure 7x11', 'Misc Fixed 6x13', 'Shinonome 6x12', 'Terminus 6x12', 'GohuFont 6x11', 'Scientifica 5x11']);
+  await h.pick(3);
   const page = h.pages.at(-1);
   assert.deepEqual(saved.slice(-2), [['reader-text', 'terminus'], ['reader-font', 'terminus']]);
   assert.equal(page.containerTotalNum, 5);
@@ -1373,8 +1374,8 @@ test('small text draws the whole screen, status row included, as four tiles and 
   assert.equal(JSON.stringify(page.imageObject.map(i => [i.containerID, i.xPosition, i.yPosition, i.width, i.height])),
     JSON.stringify([[2, 0, 0, 288, 144], [3, 288, 0, 288, 144], [4, 0, 144, 288, 144], [5, 288, 144, 288, 144]]));
   assert.equal(JSON.stringify(page.menuObject.menuItems.map(i => i.itemName)),
-    JSON.stringify(['Using: Terminus 6x12', 'Native text', 'Misc Fixed 10x20', 'Misc Fixed 9x15', 'Misc Fixed 8x13',
-      'Departure 7x14', 'Departure 7x11', 'Misc Fixed 6x13', 'Smaller fonts', 'Compare fonts']));
+    JSON.stringify(['Using: Terminus 6x12', 'Native text', 'Misc Fixed 9x15', 'Terminus 8x16', 'Terminus 8x14',
+      'GohuFont 8x14', 'Misc Fixed 8x13', 'Departure 7x14', 'Smaller fonts', 'Compare fonts']));
   // Ten items: the SDK's menu maximum.
   assert.equal(page.menuObject.menuItems.length, 10);
   // Every possible label fits the menu without truncation (about 210px in the firmware font).
@@ -1384,7 +1385,8 @@ test('small text draws the whole screen, status row included, as four tiles and 
   // Every font on its own whole-pixel grid, filling the 574px inside the frame.
   assert.equal(JSON.stringify(Object.fromEntries(fineExports.FINE_FONTS.map(f => { const l = fineExports.fineLayout(f); return [f, [l.cell, l.line, l.columns, l.rows]]; }))),
     JSON.stringify({ scientifica: [5, 11, 114, 24], gohu: [6, 11, 95, 24], terminus: [6, 12, 95, 22], shinonome: [6, 12, 95, 22], fixed: [6, 13, 95, 20],
-      departure11: [7, 11, 82, 24], departure: [7, 14, 82, 18], fixed8: [8, 13, 71, 20], fixed9: [9, 15, 63, 17], fixed10: [10, 20, 57, 12] }));
+      departure11: [7, 11, 82, 24], departure: [7, 14, 82, 18], fixed8: [8, 13, 71, 20],
+      gohu14: [8, 14, 71, 18], terminus14: [8, 14, 71, 18], terminus16: [8, 16, 71, 16], fixed9: [9, 15, 63, 17] }));
   // A full row is exactly `columns` cells, and one more cell wraps. The gap
   // inside the frame is shorter than one cell, so Departure 7px (82) and the
   // narrower fonts both run to the right edge.
@@ -1400,21 +1402,26 @@ test('small text draws the whole screen, status row included, as four tiles and 
     const row = textExports.readerPages(sentence, measure, l.textWidth, l.rows, Infinity)[0].split('\n')[0];
     assert.ok(l.columns - fineExports.fineCells(row) < 6, `${f} left ${l.columns - fineExports.fineCells(row)} cells`);
   }
-  // 10x20 stores two bytes per row. M's right stem is column 8 of the cell and column 9 stays empty.
-  const wide = fineExports.fineLayout('fixed10');
-  const wideTile = fineExports.renderFineScreen('M', 'fixed10', { left: '', right: '' })[0];
-  const ink = 7 * 288;
-  assert.ok(wideTile[ink + wide.textX + 8] > 0, 'right stem');
-  assert.equal(wideTile[ink + wide.textX + 9], 0);
+  // The new faces are 8px cells: M's ink stays inside the cell and the next pixel is empty.
+  for (const font of ['gohu14', 'terminus14', 'terminus16']) {
+    const cell = fineExports.fineLayout(font);
+    const tile = fineExports.renderFineScreen('M', font, { left: '', right: '' })[0];
+    let ink = 0;
+    for (let y = 4; y < 4 + cell.line; y++) {
+      for (let x = 0; x < cell.cell; x++) if (tile[y * 288 + cell.textX + x] > 0) ink++;
+      assert.equal(tile[y * 288 + cell.textX + cell.cell], 0, font);
+    }
+    assert.ok(ink > 8, `${font} drew ${ink} pixels`);
+  }
   // Picking a font from the menu switches to it; the 'Using:' line changes nothing.
   await h.menu(1115);
-  assert.deepEqual(saved.slice(-2), [['reader-text', 'fixed'], ['reader-font', 'fixed']]);
-  assert.equal(h.pages.at(-1).menuObject.menuItems[0].itemName, 'Using: Misc Fixed 6x13');
+  assert.deepEqual(saved.slice(-2), [['reader-text', 'departure'], ['reader-font', 'departure']]);
+  assert.equal(h.pages.at(-1).menuObject.menuItems[0].itemName, 'Using: Departure 7x14');
   const pagesBefore = h.pages.length;
   await h.menu(1101);
   assert.equal(h.pages.length, pagesBefore);
   await h.menu(1106);
-  await h.pick(1);
+  await h.pick(3);
   assert.deepEqual(saved.at(-1), ['reader-font', 'terminus']);
   // 50 lines at 22 rows: three pages, opening on the newest. The tiles sent are
   // exactly the rendered screen with the status row drawn in.

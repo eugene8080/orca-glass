@@ -14,21 +14,21 @@
 // fitted to the cell; anything else via the WebView monospace font, thresholded
 // to on/off pixels. East Asian wide characters take two cells.
 import { getLang, t } from './i18n';
-import { DEPARTURE_MONO, DEPARTURE_MONO_11, TERMINUS, GOHU, SCIENTIFICA, FIXED, FIXED_8, FIXED_9, FIXED_10, SHINONOME, SHINONOME_K12 } from './fonts/glyphs';
+import { DEPARTURE_MONO, DEPARTURE_MONO_11, TERMINUS, TERMINUS_14, TERMINUS_16, GOHU, GOHU_14, SCIENTIFICA, FIXED, FIXED_8, FIXED_9, SHINONOME, SHINONOME_K12 } from './fonts/glyphs';
 
 // Menu order: narrowest cell first, then by height. (2026-11-10: Spleen, Monogram,
 // Cozette, Pixeloid Mono and JetBrains Mono removed at the user's request.)
 const TABLES = {
   scientifica: SCIENTIFICA, gohu: GOHU, terminus: TERMINUS, shinonome: SHINONOME, fixed: FIXED,
   departure11: DEPARTURE_MONO_11, departure: DEPARTURE_MONO,
-  fixed8: FIXED_8, fixed9: FIXED_9, fixed10: FIXED_10,
+  fixed8: FIXED_8, gohu14: GOHU_14, terminus14: TERMINUS_14, terminus16: TERMINUS_16, fixed9: FIXED_9,
 };
 export type FineFont = keyof typeof TABLES;
 export const FINE_FONTS = Object.keys(TABLES) as FineFont[];
 const NAMES: Record<FineFont, string> = {
   scientifica: 'Scientifica', gohu: 'GohuFont', terminus: 'Terminus', shinonome: 'Shinonome', fixed: 'Misc Fixed',
   departure11: 'Departure', departure: 'Departure',
-  fixed8: 'Misc Fixed', fixed9: 'Misc Fixed', fixed10: 'Misc Fixed',
+  fixed8: 'Misc Fixed', gohu14: 'GohuFont', terminus14: 'Terminus', terminus16: 'Terminus', fixed9: 'Misc Fixed',
 };
 // 'Cozette 6x13': short name and native cell. The glasses menu truncates labels
 // beyond about 210px, so names are short (Pixeloid Mono -> Pixeloid).
@@ -233,8 +233,8 @@ export function renderFineScreen(text: string, font: FineFont, status: FineStatu
   return s.tiles();
 }
 
-// Font comparison: every small font on one screen, one line each (ten fonts no
-// longer fit a second alphabet line), drawn in that font: its name and cell, a
+// Font comparison: every small font on one screen, one line each (twelve fonts
+// do not fit a second alphabet line), drawn in that font: its name and cell, a
 // sample sentence, look-alike characters, brackets and operators, box drawing
 // and a Braille spinner frame.
 export const FONT_SAMPLE = 'Quick brown fox 0O1lI| {}[] -> != ─┼─ ⠋';
