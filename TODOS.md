@@ -1,7 +1,7 @@
 # Orca Glass TODOs
 Updated: 2026-11-10
 
-Current beta: **1.0.51** (small fonts wrap to the full G2 width). Public: **1.0.36**. Phone-off chats confirmed on G2 in 1.0.50.
+Current beta: **1.0.52** (Misc Fixed 8x13, 9x15 and 10x20). Public: **1.0.36**. Phone-off chats confirmed on G2 in 1.0.50. Narrower small fonts (5px and 6px) confirmed wrapping on G2 in 1.0.51; Departure Mono 7px wrap still pending.
 Workspace-filter preview approved, released and retired with merged worktree cleanup.
 Future visual changes require preview approval before beta upload.
 Completed/superseded release notes: [history](docs/todo-history.md).

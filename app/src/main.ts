@@ -472,21 +472,36 @@ function requestFineStatus(s: TextScreen) {
   readerWrites = run.catch(e => diag((e as Error).message));
 }
 
-// Reader long-press menu: switch between native text and the two small fonts.
-// The glasses OS adds its own Display off / Brightness / Close entries.
 // Reader long-press menu (2026-11-10): a 'Using:' line naming the current text,
-// then every choice from largest to smallest (native text first) and, in a small
-// mode, Compare fonts. Selecting the 'Using:' line changes nothing. Six fonts keep
-// the menu within the glasses' ten entries; labels stay under the ~210px width.
+// then choices from largest to smallest, and in a small mode, Compare fonts.
+// The glasses menu holds ten entries. The six largest fonts stay here; the rest
+// are a list opened by Smaller fonts. Selecting the 'Using:' line changes nothing.
+const MENU_FONT_SLOTS = 6;
 function readerMenu() {
   const current = readerText === 'native' ? tr('nativeText') : fineLabel(readerText);
   const largestFirst = [...FINE_FONTS].reverse();
+  const shown = largestFirst.slice(0, MENU_FONT_SLOTS);
+  const more = largestFirst.slice(MENU_FONT_SLOTS);
   return [
     { id: 1101, label: tr('usingFont', current), run: () => {} },
     { id: 1102, label: tr('nativeText'), run: () => setReaderText('native') },
-    ...largestFirst.map((font, i) => ({ id: 1110 + i, label: fineLabel(font), run: () => setReaderText(font) })),
+    ...shown.map((font, i) => ({ id: 1110 + i, label: fineLabel(font), run: () => setReaderText(font) })),
+    ...(more.length ? [{ id: 1106, label: tr('smallerFonts'), run: () => showSmallerFonts(more) }] : []),
     ...(readerText === 'native' ? [] : [{ id: 1105, label: tr('compareFonts'), run: () => showFontComparison() }]),
   ];
+}
+
+// The four narrower fonts. Click one and the reader comes back in that face.
+function showSmallerFonts(fonts: FineFont[]) {
+  const reader = current;
+  if (reader?.kind !== 'text' || !reader.reader) return;
+  return show({
+    kind: 'list',
+    title: tr('smallerFonts'),
+    items: fonts.map(fineLabel),
+    onPick: (i) => setReaderText(fonts[i], reader),
+    onBack: () => show(reader),
+  });
 }
 
 // Paint the font comparison into the tiles; the next swipe restores the page.
@@ -500,11 +515,11 @@ function showFontComparison() {
 
 // Switch fonts in place and keep the reader near the same text: the first
 // character of the current page stays on screen; the newest page stays newest.
-async function setReaderText(mode: ReaderText) {
+async function setReaderText(mode: ReaderText, screen: Screen | null = current) {
   await bridge.setLocalStorage('reader-text', mode);
   readerText = mode;
   if (mode !== 'native') { smallFont = mode; await bridge.setLocalStorage('reader-font', mode); }
-  const s = current;
+  const s = screen;
   if (s?.kind !== 'text' || !s.reader || s.voice) return;
   const pages = readerLayout(s);
   const atEnd = (s.offset ?? 0) >= pages.length - 1;

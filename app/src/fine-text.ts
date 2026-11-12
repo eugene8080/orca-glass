@@ -14,19 +14,21 @@
 // fitted to the cell; anything else via the WebView monospace font, thresholded
 // to on/off pixels. East Asian wide characters take two cells.
 import { getLang, t } from './i18n';
-import { DEPARTURE_MONO, DEPARTURE_MONO_11, TERMINUS, GOHU, SCIENTIFICA, FIXED, SHINONOME, SHINONOME_K12 } from './fonts/glyphs';
+import { DEPARTURE_MONO, DEPARTURE_MONO_11, TERMINUS, GOHU, SCIENTIFICA, FIXED, FIXED_8, FIXED_9, FIXED_10, SHINONOME, SHINONOME_K12 } from './fonts/glyphs';
 
 // Menu order: narrowest cell first, then by height. (2026-11-10: Spleen, Monogram,
 // Cozette, Pixeloid Mono and JetBrains Mono removed at the user's request.)
 const TABLES = {
   scientifica: SCIENTIFICA, gohu: GOHU, terminus: TERMINUS, shinonome: SHINONOME, fixed: FIXED,
   departure11: DEPARTURE_MONO_11, departure: DEPARTURE_MONO,
+  fixed8: FIXED_8, fixed9: FIXED_9, fixed10: FIXED_10,
 };
 export type FineFont = keyof typeof TABLES;
 export const FINE_FONTS = Object.keys(TABLES) as FineFont[];
 const NAMES: Record<FineFont, string> = {
   scientifica: 'Scientifica', gohu: 'GohuFont', terminus: 'Terminus', shinonome: 'Shinonome', fixed: 'Misc Fixed',
   departure11: 'Departure', departure: 'Departure',
+  fixed8: 'Misc Fixed', fixed9: 'Misc Fixed', fixed10: 'Misc Fixed',
 };
 // 'Cozette 6x13': short name and native cell. The glasses menu truncates labels
 // beyond about 210px, so names are short (Pixeloid Mono -> Pixeloid).
@@ -56,9 +58,10 @@ function glyph(font: FineFont, code: number): number[] | undefined {
   let table = parsed.get(font);
   if (!table) {
     table = new Map();
+    const digits = TABLES[font].width > 8 ? 4 : 2;
     for (const entry of TABLES[font].glyphs.split(';')) {
       const [hex, rows] = entry.split(':');
-      table.set(parseInt(hex, 16), Array.from({ length: rows.length / 2 }, (_, i) => parseInt(rows.slice(i * 2, i * 2 + 2), 16)));
+      table.set(parseInt(hex, 16), Array.from({ length: rows.length / digits }, (_, i) => parseInt(rows.slice(i * digits, i * digits + digits), 16)));
     }
     parsed.set(font, table);
   }
@@ -124,7 +127,8 @@ class Surface {
       const bitmap = glyph(this.font, code);
       const wide = !bitmap && cells === 2 ? wideGlyph(code) : undefined;
       if (bitmap) {
-        for (let gy = 0; gy < bitmap.length; gy++) for (let gx = 0; gx < cw; gx++) if (bitmap[gy] & (0x80 >> gx)) this.set(px + gx, y + gy);
+        const high = cw > 8 ? 0x8000 : 0x80;
+        for (let gy = 0; gy < bitmap.length; gy++) for (let gx = 0; gx < cw; gx++) if (bitmap[gy] & (high >> gx)) this.set(px + gx, y + gy);
       } else if (wide) {
         // Baseline-aligned to this font; centred in the two-cell box (11 used columns).
         const dy = TABLES[this.font].ascent - WIDE.ascent, dx = Math.max(0, (2 * cw - 11) >> 1);
@@ -229,10 +233,10 @@ export function renderFineScreen(text: string, font: FineFont, status: FineStatu
   return s.tiles();
 }
 
-// Font comparison (replaces the 1:1 display test, which settled that the G2
-// shows the canvas 1:1): every small font on one screen, one line each, drawn in
-// that font: its name and cell, a sample sentence, look-alike characters,
-// brackets and operators, box drawing and a Braille spinner frame.
+// Font comparison: every small font on one screen, one line each (ten fonts no
+// longer fit a second alphabet line), drawn in that font: its name and cell, a
+// sample sentence, look-alike characters, brackets and operators, box drawing
+// and a Braille spinner frame.
 export const FONT_SAMPLE = 'Quick brown fox 0O1lI| {}[] -> != ─┼─ ⠋';
 export const FONT_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz 0123456789';
 // Japanese mode shows kana, kanji and full-width punctuation on the second line instead.
@@ -246,10 +250,9 @@ export function renderFontComparison(): number[][] {
   for (const font of FINE_FONTS) {
     s.font = font;
     const layout = fineLayout(font);
-    s.text(`${fineLabel(font).padEnd(nameCells)}${FONT_SAMPLE}`, layout.textX, y, layout.columns);
-    y += TABLES[font].height;
-    s.text(`${''.padEnd(nameCells)}${getLang() === 'ja' ? FONT_SAMPLE_JA : FONT_ALPHABET}`, layout.textX, y, layout.columns);
-    y += TABLES[font].height + 4;
+    const sample = getLang() === 'ja' ? FONT_SAMPLE_JA : FONT_SAMPLE;
+    s.text(`${fineLabel(font).padEnd(nameCells)}${sample}`, layout.textX, y, layout.columns);
+    y += TABLES[font].height + 2;
   }
   s.font = FINE_FONTS[0];
   const back = fineLayout(s.font);

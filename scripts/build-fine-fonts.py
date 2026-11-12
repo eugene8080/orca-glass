@@ -42,9 +42,11 @@ MONO_RANGES = [range(0x20, 0x7F), range(0xA0, 0x180), range(0x2010, 0x2070), ran
 TEXT_RANGES = [(0x20, 0x24F), (0x2000, 0x206F), (0x2190, 0x23FF), (0x2500, 0x27BF), (0x2800, 0x28FF)]
 
 
-def encode(code: int, rows: list[int]) -> str:
-    # Rows are at most 8 pixels wide: one byte (two hex digits) per row, bit 7 = left.
-    return f"{code:x}:" + "".join(f"{r:02x}" for r in rows)
+def encode(code: int, rows: list[int], row_bits: int = 8) -> str:
+    # One byte per row when the cell is at most 8px (bit 7 = left). Wider cells use
+    # two bytes per row (bit 15 = left), the same packing as the Japanese wide table.
+    digits = row_bits // 4
+    return f"{code:x}:" + "".join(f"{r:0{digits}x}" for r in rows)
 
 
 def bdf(path: Path, ranges=None) -> tuple[int, int, list[str]]:
@@ -67,8 +69,10 @@ def bdf(path: Path, ranges=None) -> tuple[int, int, list[str]]:
     if len(ascii_adv) != 1:
         raise SystemExit(f"{path.name} is not monospaced: ASCII advances {sorted(ascii_adv)}")
     cell_w = ascii_adv.pop()
-    if cell_w > 8:
-        raise SystemExit(f"{path.name}: cell {cell_w}px is wider than the 8-bit row format")
+    if cell_w > 16:
+        raise SystemExit(f"{path.name}: cell {cell_w}px is wider than the 16-bit row format")
+    row_bits = 16 if cell_w > 8 else 8
+    row_mask = (1 << row_bits) - 1
     base_y = -descent
     out: list[str] = []
     i = 0
@@ -102,10 +106,10 @@ def bdf(path: Path, ranges=None) -> tuple[int, int, list[str]]:
             y = top + r
             if 0 <= y < cell_h:
                 bits = value >> (byte_bits - w)  # the glyph's own w pixels, left-aligned
-                shift = 8 - w - xoff  # into an 8-bit row at xoff, bit 7 = left
+                shift = row_bits - w - xoff  # into the row at xoff, high bit = left
                 row = bits << shift if shift >= 0 else bits >> -shift
-                cell[y] = row & (0xFF << (8 - cell_w)) & 0xFF  # clip to the cell
-        out.append(encode(code, cell))
+                cell[y] = row & (row_mask << (row_bits - cell_w)) & row_mask  # clip to the cell
+        out.append(encode(code, cell, row_bits))
     return cell_w, cell_h, out
 
 
