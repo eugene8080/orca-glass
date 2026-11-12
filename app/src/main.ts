@@ -61,8 +61,8 @@ const TEXT_BYTES = 999;
 const POLL_MS = 1000;
 
 type Screen =
-  | { kind: 'list'; title: string; items: string[]; sessionList?: boolean; workspacePicker?: boolean; agentPicker?: boolean; headings?: number[]; menuActions?: { id: number; label: string; run: () => unknown }[]; compat?: boolean; columns?: SessionColumns[]; connectedCount?: number; selected?: number; paintedSelection?: number; menuFrame?: number; paintedCursor?: string; cursorWriting?: boolean; paging?: boolean; onPreviousPage?: () => unknown; onNextPage?: () => unknown; onPick: (i: number) => void; onBack?: () => void }
-  | { kind: 'text'; title: string; text: string; usageMode?: ResetMode; conversationText?: string; choiceMenu?: ChoiceMenu | null; tail?: boolean; offset?: number; pageText?: string; pages?: string[]; pageTarget?: number; pageWriting?: boolean; reading?: boolean; refreshing?: boolean; responsePage?: number; openAtResponse?: boolean; model?: string; voice?: boolean; voiceHint?: string; voiceTail?: boolean; activityLabel?: string; activityState?: string; reportedSeconds?: number | null; statusFrame?: number; statusStartedAt?: number; savedHistory?: boolean; reader?: Thread; fine?: FineFont; pagesFine?: FineFont; tiles?: number[][]; fineLabel?: string; fineQueued?: boolean; pattern?: boolean; menuActions?: { id: number; label: string; run: () => unknown }[]; onClick?: () => void; onBack?: () => void; onHold?: () => void; };
+  | { kind: 'list'; title: string; items: string[]; sessionList?: boolean; workspacePicker?: boolean; agentPicker?: boolean; textPicker?: boolean; headings?: number[]; menuActions?: { id: number; label: string; run: () => unknown }[]; compat?: boolean; columns?: SessionColumns[]; connectedCount?: number; selected?: number; paintedSelection?: number; menuFrame?: number; paintedCursor?: string; cursorWriting?: boolean; paging?: boolean; onPreviousPage?: () => unknown; onNextPage?: () => unknown; onPick: (i: number) => void; onBack?: () => void }
+  | { kind: 'text'; title: string; text: string; usageMode?: ResetMode; conversationText?: string; choiceMenu?: ChoiceMenu | null; tail?: boolean; offset?: number; pageText?: string; pages?: string[]; pageTarget?: number; pageWriting?: boolean; reading?: boolean; refreshing?: boolean; responsePage?: number; openAtResponse?: boolean; model?: string; voice?: boolean; voiceHint?: string; voiceTail?: boolean; activityLabel?: string; activityState?: string; reportedSeconds?: number | null; statusFrame?: number; statusStartedAt?: number; savedHistory?: boolean; reader?: Thread; fine?: FineFont; pagesFine?: FineFont; tiles?: number[][]; fineLabel?: string; fineQueued?: boolean; pattern?: boolean; pendingPattern?: boolean; menuActions?: { id: number; label: string; run: () => unknown }[]; onClick?: () => void; onBack?: () => void; onHold?: () => void; };
 
 let bridge: EvenAppBridge;
 let current: Screen | null = null;
@@ -85,7 +85,7 @@ type ReaderText = 'native' | FineFont;
 let readerText: ReaderText = 'native';
 // The small font the menu offers when native text is on (last one used).
 let smallFont: FineFont = 'terminus';
-// Reader ink, panel steps 0..15. 15 is full white. This is the font and frame, not the system brightness.
+// Reader ink, panel steps 1..15. 15 is full white. 0 is not offered: it would blank the font and frame. This is not the system brightness.
 let inkLevel = 15;
 const textBrightness = () => nativeTextColor(inkLevel);
 let usageResetMode: ResetMode = 'computer';
@@ -231,7 +231,13 @@ function readerHint(s: TextScreen, seconds: number | null | undefined) {
 }
 
 function flipReader(s: TextScreen, delta: number) {
-  if (s.pattern) { s.pattern = false; requestFineStatus(s); return; }
+  if (s.pattern) {
+    s.pattern = false;
+    // Comparison opened over native text rebuilt the tile page; a swipe restores that page.
+    if (readerText === 'native') { void show(s); return; }
+    requestFineStatus(s);
+    return;
+  }
   const pages = readerLayout(s);
   // Swiping down past the last page resumes live updates and fetches now.
   if (delta > 0 && !s.pageWriting && (s.offset ?? 0) >= pages.length - 1) { void refreshReader(s); return; }
@@ -320,10 +326,12 @@ async function show(s: Screen, reloadText = false) {
   clearInterval(menuPoll);
   if (s.kind === 'text' && s.reader) s.activityLabel ??= readerStatus('unknown');
   if (s.kind === 'text' && s.reader && !s.voice) {
-    s.fine = readerText === 'native' ? undefined : readerText;
+    const compare = !!s.pendingPattern;
+    s.pendingPattern = false;
+    s.fine = readerText === 'native' ? (compare ? smallFont : undefined) : readerText;
     s.tiles = undefined; // A rebuild clears every image container.
     s.menuActions = readerMenu();
-    s.pattern = false;
+    s.pattern = compare;
   }
   const previous = current;
   current = s;
@@ -394,7 +402,7 @@ async function show(s: Screen, reloadText = false) {
     if (s.kind === 'list' && s.sessionList && compactMenuOnly) {
       s.compat = true; page = compatibilityMenu(s, menu) as typeof page;
     }
-    if (s.kind === 'list' && (s.workspacePicker || s.agentPicker)) { s.compat = true; page = compatibilityMenu(s, {}) as typeof page; }
+    if (s.kind === 'list' && (s.workspacePicker || s.agentPicker || s.textPicker)) { s.compat = true; page = compatibilityMenu(s, {}) as typeof page; }
     let accepted = await bridge.rebuildPageContainer(new RebuildPageContainer(page));
     if (!accepted && s.kind === 'list' && s.sessionList && !s.compat) {
       s.compat = true;
@@ -410,7 +418,7 @@ async function show(s: Screen, reloadText = false) {
     }
     if (s.kind === 'list' && s.sessionList && !s.compat) startMenuSpinner(s);
     if (s.kind === 'text' && s.reader) {
-      if (s.fine && !s.voice) await paintFine(s, content, s.offset ?? 0);
+      if (s.fine && !s.voice) await paintFine(s, content, s.offset ?? 0, s.pattern);
       else await bridge.updateImageRawData(new ImageRawDataUpdate({ containerID: STATUS_ICON.containerID, containerName: STATUS_ICON.containerName, imageData: statusPixels(s.activityLabel![0] === '/' ? '' : s.activityLabel![0], inkByte(inkLevel)) })).catch(e => diag((e as Error).message));
       startReaderUpdates(s);
     }
@@ -475,63 +483,70 @@ function requestFineStatus(s: TextScreen) {
   readerWrites = run.catch(e => diag((e as Error).message));
 }
 
-// Reader long-press menu. The glasses menu holds ten entries: Using, Native,
-// the five largest fonts, Smaller fonts, Brightness, and in a small mode,
-// Compare fonts. Selecting the 'Using:' line changes nothing.
-const MENU_FONT_SLOTS = 5;
+// Reader long-press menu. Fonts (native, every small face, and the comparison
+// page) and App brightness each open a ten-row list. The Using line shows the
+// face in use and opens that list.
 function readerMenu() {
-  const current = readerText === 'native' ? tr('nativeText') : fineLabel(readerText);
-  const largestFirst = [...FINE_FONTS].reverse();
-  const shown = largestFirst.slice(0, MENU_FONT_SLOTS);
-  const more = largestFirst.slice(MENU_FONT_SLOTS);
+  const name = readerText === 'native' ? tr('nativeText') : fineLabel(readerText);
   return [
-    { id: 1101, label: tr('usingFont', current), run: () => {} },
-    { id: 1102, label: tr('nativeText'), run: () => setReaderText('native') },
-    ...shown.map((font, i) => ({ id: 1110 + i, label: fineLabel(font), run: () => setReaderText(font) })),
-    ...(more.length ? [{ id: 1106, label: tr('smallerFonts'), run: () => showSmallerFonts(more) }] : []),
+    { id: 1101, label: tr('usingFont', name), run: () => showFonts() },
     { id: 1107, label: tr('brightness', inkLevel), run: () => showBrightness() },
-    ...(readerText === 'native' ? [] : [{ id: 1105, label: tr('compareFonts'), run: () => showFontComparison() }]),
   ];
 }
 
-// Panel steps 15 down to 0. Click one and the reader comes back at that ink.
+// Ten native rows, no title and no blank row between entries. A swipe past the
+// last row opens the next page; a swipe past the first opens the previous one.
+const TEXT_PICKER_ROWS = 10;
+function showTextPicker(reader: TextScreen, labels: string[], selected: number, onPick: (i: number) => unknown) {
+  const pageCount = Math.max(1, Math.ceil(labels.length / TEXT_PICKER_ROWS));
+  const open = (page: number, cursor: number): Promise<void> => {
+    const start = page * TEXT_PICKER_ROWS;
+    const items = labels.slice(start, start + TEXT_PICKER_ROWS);
+    const at = cursor < 0 ? items.length - 1 : Math.max(0, Math.min(cursor, items.length - 1));
+    return show({
+      kind: 'list', textPicker: true, title: ' ', items, selected: at, paintedSelection: at,
+      onPreviousPage: page > 0 ? () => open(page - 1, -1) : undefined,
+      onNextPage: page + 1 < pageCount ? () => open(page + 1, 0) : undefined,
+      onPick: i => onPick(start + i),
+      onBack: () => show(reader),
+    });
+  };
+  const at = Math.max(0, Math.min(selected, labels.length - 1));
+  return open(Math.floor(at / TEXT_PICKER_ROWS), at % TEXT_PICKER_ROWS);
+}
+
+// Native, then every small font largest first, then the comparison page.
+function showFonts() {
+  const reader = current;
+  if (reader?.kind !== 'text' || !reader.reader) return;
+  const fonts = [...FINE_FONTS].reverse();
+  const rows: { label: string; run: () => unknown }[] = [
+    { label: tr('nativeText'), run: () => setReaderText('native', reader) },
+    ...fonts.map(font => ({ label: fineLabel(font), run: () => setReaderText(font, reader) })),
+    { label: tr('compareFonts'), run: () => openComparison(reader) },
+  ];
+  const currentIndex = readerText === 'native' ? 0 : fonts.indexOf(readerText) + 1;
+  return showTextPicker(reader, rows.map((row, i) => i === currentIndex ? `${row.label} ✓` : row.label), currentIndex, i => rows[i].run());
+}
+
+// Steps 15 down to 1, ten per page. Click one and the reader comes back at that ink.
 function showBrightness() {
   const reader = current;
   if (reader?.kind !== 'text' || !reader.reader) return;
-  const levels = Array.from({ length: 16 }, (_, i) => 15 - i);
-  return show({
-    kind: 'list',
-    title: tr('brightnessTitle'),
-    items: levels.map(n => n === inkLevel ? `${n} ✓` : String(n)),
-    onPick: async (i) => {
-      inkLevel = levels[i];
-      await bridge.setLocalStorage('reader-ink', String(inkLevel));
-      await show(reader);
-    },
-    onBack: () => show(reader),
+  const levels = Array.from({ length: 15 }, (_, i) => 15 - i);
+  const at = Math.max(0, levels.indexOf(inkLevel));
+  return showTextPicker(reader, levels.map(n => n === inkLevel ? `${n} ✓` : String(n)), at, async i => {
+    inkLevel = levels[i];
+    await bridge.setLocalStorage('reader-ink', String(inkLevel));
+    await show(reader);
   });
 }
 
-// The narrower fonts. Click one and the reader comes back in that face.
-function showSmallerFonts(fonts: FineFont[]) {
-  const reader = current;
-  if (reader?.kind !== 'text' || !reader.reader) return;
-  return show({
-    kind: 'list',
-    title: tr('smallerFonts'),
-    items: fonts.map(fineLabel),
-    onPick: (i) => setReaderText(fonts[i], reader),
-    onBack: () => show(reader),
-  });
-}
-
-// Paint the font comparison into the tiles; the next swipe restores the page.
-function showFontComparison() {
-  const s = current;
-  if (s?.kind !== 'text' || !s.reader || !s.fine) return;
-  s.pattern = true;
-  const run = readerWrites.then(() => paintFine(s, '', s.offset ?? 0, true));
-  readerWrites = run.then(() => {}, e => diag((e as Error).message));
+// Paint the font comparison into the tiles. From native text this rebuilds the
+// tile page in the saved small font; the next swipe restores the reader.
+function openComparison(reader: TextScreen) {
+  reader.pendingPattern = true;
+  return show(reader);
 }
 
 // Switch fonts in place and keep the reader near the same text: the first
@@ -592,7 +607,7 @@ async function guard(title: string, f: () => Promise<void>, back: () => void) {
 type SessionMenuScreen = Extract<Screen, { kind: 'list' }>;
 function compatibilityMenu(screen: SessionMenuScreen, menu: object) {
   // The workspace picker has no title row: its ten 27px rows start at the top.
-  const picker = !!screen.workspacePicker || !!screen.agentPicker; // no title row: ten rows
+  const picker = !!screen.workspacePicker || !!screen.agentPicker || !!screen.textPicker; // no title row: ten rows
   return { containerTotalNum: 3, ...menu, textObject: [
     new TextContainerProperty({ ...HEAD, height: 28, content: picker ? ' ' : screen.title, isEventCapture: 0 }),
     new TextContainerProperty({ ...BODY, yPosition: picker ? 4 : 28, height: picker ? 280 : 260, content: compatibilityText(screen), isEventCapture: 0 }),
@@ -1271,7 +1286,7 @@ function onEvent(e: EvenHubEvent) {
   // Ignore repeated swipes/clicks during a fetch so one edge gesture changes
   // exactly one page and cannot activate a row from the page being replaced.
   if (s.kind === 'list' && s.paging) return;
-  if (s.kind === 'list' && (s.sessionList || s.workspacePicker || s.agentPicker) && (type === OsEventTypeList.SCROLL_TOP_EVENT || type === OsEventTypeList.SCROLL_BOTTOM_EVENT)) {
+  if (s.kind === 'list' && (s.sessionList || s.workspacePicker || s.agentPicker || s.textPicker) && (type === OsEventTypeList.SCROLL_TOP_EVENT || type === OsEventTypeList.SCROLL_BOTTOM_EVENT)) {
     const step = type === OsEventTypeList.SCROLL_TOP_EVENT ? -1 : 1;
     let next = (s.selected || 0) + step;
     while (s.headings?.includes(next)) next += step; // Headings are not selectable.
@@ -1312,7 +1327,7 @@ function onEvent(e: EvenHubEvent) {
   if (type !== OsEventTypeList.CLICK_EVENT) return;
   if (s.kind === 'list') {
     // 先頭項目(0)も既定値として省かれうる
-    if (s.sessionList || s.workspacePicker || s.agentPicker) {
+    if (s.sessionList || s.workspacePicker || s.agentPicker || s.textPicker) {
       const index = e.listEvent?.currentSelectItemIndex ?? s.selected ?? 0;
       // Finish in-flight cursor writes before reusing BODY on the next page.
       void sessionCursorWrites.then(() => { if (current === s) s.onPick(index); });

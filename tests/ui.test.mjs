@@ -818,8 +818,7 @@ test('contextual actions refresh roster, open workspace picker and display usage
   await h.back(); await h.pick(2);
   // The reader's own menu only switches text size; session-list actions do nothing there.
   assert.equal(JSON.stringify(h.pages.at(-1).menuObject.menuItems.map(i => [i.itemID, i.itemName])),
-    JSON.stringify([[1101, 'Using: Native text'], [1102, 'Native text'], [1110, 'Misc Fixed 9x15'], [1111, 'GohuFont 8x14'],
-      [1112, 'Departure 7x14'], [1113, 'Misc Fixed 6x13'], [1114, 'Shinonome 6x12'], [1106, 'Smaller fonts'], [1107, 'Brightness 15']]));
+    JSON.stringify([[1101, 'Using: Native text'], [1107, 'App brightness 15']]));
   const pages = h.pages.length;
   await h.menu(1002);
   assert.equal(h.pages.length, pages);
@@ -1361,12 +1360,11 @@ test('small text draws the whole screen, status row included, as four tiles and 
   const saved = [];
   h.bridge.setLocalStorage = async (key, value) => { saved.push([key, value]); };
   await h.pick(2);
-  // Terminus 6x12 is on Smaller fonts (the menu holds ten entries). One blank
-  // full-screen swipe target plus four 288x144 tiles.
-  await h.menu(1106);
-  assert.deepEqual([...h.pages.at(-1).listObject[0].itemContainer.itemName],
-    ['Terminus 6x12', 'GohuFont 6x11', 'Scientifica 5x11']);
-  await h.pick(0);
+  // Fonts, including the comparison page, are one ten-row list. Terminus 6x12 is the sixth small face.
+  await h.menu(1101);
+  assert.deepEqual(menuItems(h), ['Native text ✓', 'Misc Fixed 9x15', 'GohuFont 8x14', 'Departure 7x14', 'Misc Fixed 6x13',
+    'Shinonome 6x12', 'Terminus 6x12', 'GohuFont 6x11', 'Scientifica 5x11', 'Compare fonts']);
+  await h.pick(6);
   const page = h.pages.at(-1);
   assert.deepEqual(saved.slice(-2), [['reader-text', 'terminus'], ['reader-font', 'terminus']]);
   assert.equal(page.containerTotalNum, 5);
@@ -1374,10 +1372,7 @@ test('small text draws the whole screen, status row included, as four tiles and 
   assert.equal(JSON.stringify(page.imageObject.map(i => [i.containerID, i.xPosition, i.yPosition, i.width, i.height])),
     JSON.stringify([[2, 0, 0, 288, 144], [3, 288, 0, 288, 144], [4, 0, 144, 288, 144], [5, 288, 144, 288, 144]]));
   assert.equal(JSON.stringify(page.menuObject.menuItems.map(i => i.itemName)),
-    JSON.stringify(['Using: Terminus 6x12', 'Native text', 'Misc Fixed 9x15', 'GohuFont 8x14', 'Departure 7x14',
-      'Misc Fixed 6x13', 'Shinonome 6x12', 'Smaller fonts', 'Brightness 15', 'Compare fonts']));
-  // Ten items: the SDK's menu maximum.
-  assert.equal(page.menuObject.menuItems.length, 10);
+    JSON.stringify(['Using: Terminus 6x12', 'App brightness 15']));
   // Every possible label fits the menu without truncation (about 210px in the firmware font).
   for (const f of fineExports.FINE_FONTS) assert.ok(listExports.glassWidth(`Using: ${fineExports.fineLabel(f)}`) <= 210, fineExports.fineLabel(f));
   const layout = fineExports.fineLayout('terminus');
@@ -1412,15 +1407,18 @@ test('small text draws the whole screen, status row included, as four tiles and 
     }
     assert.ok(ink > 8, `${font} drew ${ink} pixels`);
   }
-  // Picking a font from the menu switches to it; the 'Using:' line changes nothing.
-  await h.menu(1112);
+  // Picking a font from the list switches to it. Leaving the list keeps the current face.
+  await h.menu(1101);
+  await h.pick(3);
   assert.deepEqual(saved.slice(-2), [['reader-text', 'departure'], ['reader-font', 'departure']]);
   assert.equal(h.pages.at(-1).menuObject.menuItems[0].itemName, 'Using: Departure 7x14');
   const pagesBefore = h.pages.length;
   await h.menu(1101);
-  assert.equal(h.pages.length, pagesBefore);
-  await h.menu(1106);
-  await h.pick(0);
+  await h.back();
+  assert.equal(h.pages.length, pagesBefore + 2);
+  assert.equal(h.pages.at(-1).menuObject.menuItems[0].itemName, 'Using: Departure 7x14');
+  await h.menu(1101);
+  await h.pick(6);
   assert.deepEqual(saved.at(-1), ['reader-font', 'terminus']);
   // 50 lines at 22 rows: three pages, opening on the newest. The tiles sent are
   // exactly the rendered screen with the status row drawn in.
@@ -1439,15 +1437,21 @@ test('small text draws the whole screen, status row included, as four tiles and 
   for (const tile of turned) assert.equal(JSON.stringify(tile.imageData), JSON.stringify(want[Number(tile.containerName.slice(5))]));
   assert.ok(!h.upgrades.some(u => ['body', 'voice', 'hint'].includes(u.containerName)));
   // The display test replaces the tiles; the next swipe restores the page.
-  await h.menu(1105); await h.flush();
+  await h.menu(1101); await h.pick(9); await h.flush();
   assert.equal(JSON.stringify(sent().slice(-4).map(i => i.imageData)), JSON.stringify(fineExports.renderFontComparison()));
   await h.scroll('down'); await h.flush();
   const restored = new Map(sent().slice(-4).map(i => [i.containerName, i.imageData]));
   for (const [name, data] of restored) assert.equal(JSON.stringify(data), JSON.stringify(want[Number(name.slice(5))]));
-  // Brightness is the panel's 16 steps. 8 draws the font and frame at byte 136, then native text uses its five-step scale.
+  // App brightness is steps 15 down to 1, ten rows a page, with no blank row and no 0.
   await h.menu(1107);
-  assert.equal(h.pages.at(-1).textObject[0].content, 'Brightness');
-  assert.deepEqual([...h.pages.at(-1).listObject[0].itemContainer.itemName].slice(0, 8), ['15 ✓', '14', '13', '12', '11', '10', '9', '8']);
+  const bright = h.pages.at(-1).textObject.find(c => c.containerName === 'body');
+  assert.equal(bright.yPosition, 4);
+  assert.equal(bright.height, 280);
+  assert.deepEqual(menuItems(h), ['15 ✓', '14', '13', '12', '11', '10', '9', '8', '7', '6']);
+  for (let i = 0; i < 10; i++) await h.scroll('down');
+  assert.deepEqual(menuItems(h), ['5', '4', '3', '2', '1']);
+  await h.scroll('up');
+  assert.equal(menuItems(h).at(-1), '6');
   const dimFrom = sent().length;
   await h.pick(7);
   assert.deepEqual(saved.at(-1), ['reader-ink', '8']);
@@ -1456,7 +1460,8 @@ test('small text draws the whole screen, status row included, as four tiles and 
   assert.equal(dimmed.length, 4);
   for (const tile of dimmed) assert.equal(JSON.stringify(tile.imageData), JSON.stringify(dim[Number(tile.containerName.slice(5))]));
   // Back to native text on the page holding the same first line, at the chosen ink.
-  await h.menu(1102);
+  await h.menu(1101);
+  await h.pick(0);
   assert.deepEqual(saved.at(-1), ['reader-text', 'native']);
   assert.equal(h.pages.at(-1).containerTotalNum, 7);
   const native = h.pages.at(-1);
@@ -1465,9 +1470,9 @@ test('small text draws the whole screen, status row included, as four tiles and 
   assert.equal(native.textObject.find(c => c.containerName === 'hint').textColor, 3);
 });
 
-test('reader ink follows the panel steps 0 through 15', () => {
+test('reader ink follows the panel steps 1 through 15', () => {
   assert.equal(fineExports.parseInk(''), 15);
-  assert.equal(fineExports.parseInk('0'), 0);
+  assert.equal(fineExports.parseInk('0'), 15);
   assert.equal(fineExports.parseInk('8'), 8);
   assert.equal(fineExports.parseInk('16'), 15);
   assert.equal(fineExports.inkByte(15), 255);
@@ -1573,7 +1578,7 @@ test('switching the phone language to Japanese redraws glasses labels and keeps 
     const hint = page.textObject.find(c => c.containerName === 'hint').content.trim();
     assert.match(hint, /^\[長押しで入力\] P1\/1$/);
     assert.ok(listExports.glassWidth(hint) <= 280 - 6);
-    assert.equal(JSON.stringify(page.menuObject.menuItems.slice(0, 2).map(i => i.itemName)), JSON.stringify(['現在: 標準フォント', '標準フォント']));
+    assert.equal(JSON.stringify(page.menuObject.menuItems.map(i => i.itemName)), JSON.stringify(['現在: 標準フォント', 'アプリの明るさ 15']));
     assert.equal(statusExports.readerStatus('waiting'), '/入力待ち');
     assert.match(statusExports.readerStatus('working', 0, 5000), /思考中\.$/);
     // The hint still shrinks step by step when the row is crowded.

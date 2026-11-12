@@ -47,7 +47,8 @@ export function nativeTextColor(level = INK_MAX): number {
 export function parseInk(value: unknown): number {
   if (value == null || value === '') return INK_MAX;
   const n = Number(value);
-  return Number.isInteger(n) && n >= 0 && n <= INK_MAX ? n : INK_MAX;
+  // 0 would draw nothing. A blank or a saved 0 stays at full white.
+  return Number.isInteger(n) && n >= 1 && n <= INK_MAX ? n : INK_MAX;
 }
 export const SCREEN = { width: 576, height: 288 };
 export const FINE_TILES = [0, 1, 2, 3].map(i => ({ xPosition: (i % 2) * 288, yPosition: Math.floor(i / 2) * 144, width: 288, height: 144 }));
