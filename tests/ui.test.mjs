@@ -1364,6 +1364,11 @@ test('small text draws the whole screen, status row included, as four tiles and 
   await h.menu(1101);
   assert.deepEqual(menuItems(h), ['Native text ✓', 'Misc Fixed 9x15', 'GohuFont 8x14', 'Departure 7x14', 'Misc Fixed 6x13',
     'Shinonome 6x12', 'Terminus 6x12', 'GohuFont 6x11', 'Scientifica 5x11', 'Compare fonts']);
+  const fontCursor = () => h.pages.at(-1).textObject.find(c => c.containerName === 'body').content.split('\n').findIndex(row => row.startsWith('>'));
+  await h.scroll('up');
+  assert.equal(fontCursor(), 9);
+  await h.scroll('down');
+  assert.equal(fontCursor(), 0);
   await h.pick(6);
   const page = h.pages.at(-1);
   assert.deepEqual(saved.slice(-2), [['reader-text', 'terminus'], ['reader-font', 'terminus']]);

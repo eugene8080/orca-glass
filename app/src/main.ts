@@ -496,8 +496,9 @@ function readerMenu() {
 
 // Ten native rows, no title and no blank row between entries. A swipe past the
 // last row opens the next page; a swipe past the first opens the previous one.
+// The font list also wraps: past the first row lands on the last, and the reverse.
 const TEXT_PICKER_ROWS = 10;
-function showTextPicker(reader: TextScreen, labels: string[], selected: number, onPick: (i: number) => unknown) {
+function showTextPicker(reader: TextScreen, labels: string[], selected: number, onPick: (i: number) => unknown, wrap = false) {
   const pageCount = Math.max(1, Math.ceil(labels.length / TEXT_PICKER_ROWS));
   const open = (page: number, cursor: number): Promise<void> => {
     const start = page * TEXT_PICKER_ROWS;
@@ -505,8 +506,8 @@ function showTextPicker(reader: TextScreen, labels: string[], selected: number, 
     const at = cursor < 0 ? items.length - 1 : Math.max(0, Math.min(cursor, items.length - 1));
     return show({
       kind: 'list', textPicker: true, title: ' ', items, selected: at, paintedSelection: at,
-      onPreviousPage: page > 0 ? () => open(page - 1, -1) : undefined,
-      onNextPage: page + 1 < pageCount ? () => open(page + 1, 0) : undefined,
+      onPreviousPage: page > 0 ? () => open(page - 1, -1) : wrap ? () => open(pageCount - 1, -1) : undefined,
+      onNextPage: page + 1 < pageCount ? () => open(page + 1, 0) : wrap ? () => open(0, 0) : undefined,
       onPick: i => onPick(start + i),
       onBack: () => show(reader),
     });
@@ -526,7 +527,7 @@ function showFonts() {
     { label: tr('compareFonts'), run: () => openComparison(reader) },
   ];
   const currentIndex = readerText === 'native' ? 0 : fonts.indexOf(readerText) + 1;
-  return showTextPicker(reader, rows.map((row, i) => i === currentIndex ? `${row.label} ✓` : row.label), currentIndex, i => rows[i].run());
+  return showTextPicker(reader, rows.map((row, i) => i === currentIndex ? `${row.label} ✓` : row.label), currentIndex, i => rows[i].run(), true);
 }
 
 // Steps 15 down to 1, ten per page. Click one and the reader comes back at that ink.

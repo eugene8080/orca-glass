@@ -53,6 +53,8 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-12 user: the font list wraps. A swipe past the first row lands on the last, and a swipe past the last lands on the first. App Brightness still pages and does not wrap. 164 tests. Beta 1.0.58 uploaded/promoted, CLI verified 203,585 bytes; prototype dist restored. App-only. G2 check pending.
+
 2026-11-12 user: the reader menu reads Font: with the current face, and App Brightness: with the level. 164 tests. Beta 1.0.57 uploaded/promoted, CLI verified 203,582 bytes; prototype dist restored. App-only. G2 check pending.
 
 2026-11-12 user: fonts, including Compare fonts, move to one list opened from the reader menu. Brightness is renamed App brightness, distinct from the system Brightness row. The list is steps 15 down to 1 (0 is not offered), ten rows a page with no blank row between levels; a swipe past the last row shows 5 through 1. 164 tests. Beta 1.0.56 uploaded/promoted, CLI verified 203,570 bytes; prototype dist restored. App-only. G2 check pending.
