@@ -28,7 +28,7 @@ vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../app/src/session-l
 
 // Exercise the real controller with a simulated Even bridge: no agent input,
 // microphone access, network, or hardware claims.
-async function harness(count = 2, voice = false, mode = 'tap', savedView = '', startupResult = 0, rejectAlignedMenu = false, savedWorkspaces = '', savedUsage = '') {
+async function harness(count = 2, voice = false, mode = 'tap', savedView = '', startupResult = 0, rejectAlignedMenu = false, savedWorkspaces = '', savedUsage = '', savedOpen = '') {
   const elements = new Map();
   const element = id => {
     if (!elements.has(id)) elements.set(id, { value: '', hidden: false, textContent: '', listeners: {}, addEventListener(name, fn) { this.listeners[name] = fn; } });
@@ -38,6 +38,7 @@ async function harness(count = 2, voice = false, mode = 'tap', savedView = '', s
   const pages = [], sends = [], choices = [], timers = new Map(), mic = [], upgrades = [], transcriptions = [], images = [];
   const animations = new Map();
   let timerId = 0, event, phoneDeps;
+  const windowListeners = new Map();
   const phoneCalls = [];
   const api = {
     activity: async () => ({ state: 'unknown' }),
@@ -52,7 +53,7 @@ async function harness(count = 2, voice = false, mode = 'tap', savedView = '', s
   };
   const bridge = {
     updateImageRawData: async value => { images.push(value); return 'success'; },
-    getLocalStorage: async key => key === 'code' ? 'demo' : key === 'recording-mode' ? mode : key === 'lang' ? 'en' : key === 'view-provider' ? savedView : key === 'view-workspaces' ? savedWorkspaces : key === 'usage-reset-mode' ? savedUsage : '',
+    getLocalStorage: async key => key === 'code' ? 'demo' : key === 'recording-mode' ? mode : key === 'lang' ? 'en' : key === 'view-provider' ? savedView : key === 'view-workspaces' ? savedWorkspaces : key === 'usage-reset-mode' ? savedUsage : key === 'open-thread' ? savedOpen : '',
     setLocalStorage: async () => {},
     createStartUpPageContainer: async p => { pages.push(p); return startupResult; },
     rebuildPageContainer: async p => { pages.push(p); return !(rejectAlignedMenu && p.textObject.some(c => c.containerName === 'menu-right') && (rejectAlignedMenu !== 'images' || !!p.imageObject)); },
@@ -81,7 +82,7 @@ async function harness(count = 2, voice = false, mode = 'tap', savedView = '', s
   const source = ts.transpileModule(readFileSync(new URL('../app/src/main.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
   vm.runInNewContext(source, {
     exports: {}, require: name => imports[name], document: { getElementById: element },
-    location: { search: '' }, window: { addEventListener() {} }, URLSearchParams, Uint8Array, TextEncoder,
+    location: { search: '' }, window: { addEventListener(name, fn) { windowListeners.set(name, fn); } }, URLSearchParams, Uint8Array, TextEncoder,
     setInterval: (fn, delay) => { (delay === 200 ? animations : timers).set(++timerId, fn); return timerId; },
     clearInterval: id => { timers.delete(id); animations.delete(id); },
   });
@@ -97,6 +98,7 @@ async function harness(count = 2, voice = false, mode = 'tap', savedView = '', s
     tap: async () => { event({ textEvent: { eventType: 0 } }); await flush(); },
     back: async () => { event({ textEvent: { eventType: 3 } }); await flush(); },
     scroll: async direction => { event({ textEvent: { eventType: direction === 'up' ? 1 : 2 } }); await flush(); },
+    pagehide: () => { windowListeners.get('pagehide')?.(); },
   };
 }
 
@@ -745,6 +747,21 @@ test('menu activity polling starts a spinner after a session becomes busy', asyn
   const bodyWrites = h.upgrades.filter(u => u.containerName === 'body');
   assert.equal(bodyWrites.length, 0);
   assert.match(after.split('\n')[2], /^[ >][ ·]{3}$/);
+});
+
+test('locking the phone keeps the open chat polling', async () => {
+  const h = await harness();
+  await h.pick(2);
+  const running = h.timers.size;
+  assert.ok(running >= 1);
+  h.pagehide();
+  assert.equal(h.timers.size, running);
+});
+
+test('a recreated page reopens the chat that was on screen', async () => {
+  const h = await harness(2, false, 'tap', '', 0, false, '', '', 'terminal-1');
+  assert.equal(h.pages.at(-1).textObject.find(c => c.containerName === 'body').content, 'Content terminal-1');
+  assert.ok(h.timers.size >= 1);
 });
 
 test('system exit stops menu activity polling and marker animation', async () => {

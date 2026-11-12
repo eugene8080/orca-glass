@@ -53,6 +53,8 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-11 user: chats stop loading when the Android screen turns off; they want to keep working with the screen off. Workout Glass keeps its countdown because it does not stop on pagehide and restores the saved run if Even recreates the page. Orca Glass was clearing every poll on pagehide. Beta 1.0.50 keeps the polls running, reopens the chat that was on screen, and drops a bridge read that stalls for 8 seconds so the next poll can try again. 160 tests. Uploaded/promoted, CLI verified beta channel 180,950 bytes; prototype dist restored. App-only. G2 check pending.
+
 2026-11-10 user: re-enable Japanese and Mac (chose both, Japanese first); language switch in the
 phone app only; code/comments not translated. J1 UI dictionary (6f1061f) + J3 Shinonome fonts.
 152 tests. Beta1.0.48 uploaded/promoted automatically, 180,892 bytes; prototype dist restored.

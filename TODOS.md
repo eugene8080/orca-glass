@@ -1,7 +1,7 @@
 # Orca Glass TODOs
 Updated: 2026-11-10
 
-Current beta: **1.0.48** (Japanese UI and pixel fonts; hanging indents). Public: **1.0.36**.
+Current beta: **1.0.50** (chats keep loading with the phone screen off). Public: **1.0.36**.
 Workspace-filter preview approved, released and retired with merged worktree cleanup.
 Future visual changes require preview approval before beta upload.
 Completed/superseded release notes: [history](docs/todo-history.md).

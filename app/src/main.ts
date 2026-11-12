@@ -114,6 +114,8 @@ function selectThread(t: Thread | null) {
     (document.getElementById('reply-text') as HTMLTextAreaElement).value = '';
     document.getElementById('send-reply')!.hidden = true;
     document.getElementById('reply-status')!.textContent = '';
+    // The open chat has to survive the phone recreating this page with the screen off.
+    void bridge.setLocalStorage('open-thread', t?.handle || '');
   }
   selectedThread = t;
   document.getElementById('composer')!.hidden = !t;
@@ -1301,7 +1303,7 @@ async function connect() {
   if (code === 'demo') {
     diag(tr('diagOk', 0, tr('viaDemo'), '-', 3));
     phone?.connection({ state: 'demo' });
-    return home();
+    return openSavedOrHome();
   }
   if (!pairing) {
     diag(tr('notPairedDiag'));
@@ -1318,6 +1320,7 @@ async function connect() {
     const ms = Date.now() - t0;
     diag(tr('diagOk', ms, tr('viaCode'), currentBase(), threads.length));
     phone?.connection({ state: 'connected', ms });
+    return openSavedOrHome(threads);
   } catch (e) {
     diag(tr('diagNg', (e as Error).message, tr('viaCode'), currentBase()));
     phone?.connection({ state: 'offline', error: (e as Error).message });
@@ -1328,7 +1331,19 @@ async function connect() {
       onClick: () => connect(),
     });
   }
-  await home();
+}
+
+// Workout Glass keeps its countdown across screen-off by restoring the saved run
+// when Even recreates the page. Do the same for the chat that was open.
+async function openSavedOrHome(known?: Thread[]) {
+  const handle = await bridge.getLocalStorage('open-thread');
+  if (handle) {
+    const list = known ?? await api.threads().catch(() => []);
+    const t = list.find(row => row.handle === handle);
+    if (t) return thread(t);
+    await bridge.setLocalStorage('open-thread', '');
+  }
+  return home();
 }
 
 function useLang(pref: string) {
@@ -1445,7 +1460,9 @@ async function main() {
     await connect();
   });
   bridge.onEvenHubEvent(onEvent);
-  window.addEventListener('pagehide', () => { clearInterval(poll); clearInterval(statusAnimation); clearInterval(menuAnimation); clearInterval(menuPoll); cancelCapture?.(); });
+  // Screen off delivers pagehide while this installed page stays alive, the same
+  // way Workout Glass's countdown keeps ticking. Clearing the polls here made
+  // chats stop until the phone was opened again. A real exit still stops them.
   await connect();
 }
 

@@ -38,6 +38,8 @@ async function call<T>(method: 'GET' | 'POST', path: string, body?: unknown): Pr
         'content-type': binary ? 'application/octet-stream' : 'application/json',
       },
       body: binary ? (body as BodyInit) : body ? JSON.stringify(body) : undefined,
+      // A read stalled by the phone radio must not pin the glasses poll until the screen is on.
+      signal: method === 'GET' && typeof AbortSignal?.timeout === 'function' ? AbortSignal.timeout(8000) : undefined,
     });
   let res: Response;
   try {
