@@ -484,7 +484,7 @@ function requestFineStatus(s: TextScreen) {
 }
 
 // Reader long-press menu. Fonts (native, every small face, and the comparison
-// page) and App brightness each open a ten-row list. The Using line shows the
+// page) and App Brightness each open a ten-row list. The Font line shows the
 // face in use and opens that list.
 function readerMenu() {
   const name = readerText === 'native' ? tr('nativeText') : fineLabel(readerText);

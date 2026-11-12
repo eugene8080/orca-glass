@@ -818,7 +818,7 @@ test('contextual actions refresh roster, open workspace picker and display usage
   await h.back(); await h.pick(2);
   // The reader's own menu only switches text size; session-list actions do nothing there.
   assert.equal(JSON.stringify(h.pages.at(-1).menuObject.menuItems.map(i => [i.itemID, i.itemName])),
-    JSON.stringify([[1101, 'Using: Native text'], [1107, 'App brightness 15']]));
+    JSON.stringify([[1101, 'Font: Native text'], [1107, 'App Brightness: 15']]));
   const pages = h.pages.length;
   await h.menu(1002);
   assert.equal(h.pages.length, pages);
@@ -1372,9 +1372,9 @@ test('small text draws the whole screen, status row included, as four tiles and 
   assert.equal(JSON.stringify(page.imageObject.map(i => [i.containerID, i.xPosition, i.yPosition, i.width, i.height])),
     JSON.stringify([[2, 0, 0, 288, 144], [3, 288, 0, 288, 144], [4, 0, 144, 288, 144], [5, 288, 144, 288, 144]]));
   assert.equal(JSON.stringify(page.menuObject.menuItems.map(i => i.itemName)),
-    JSON.stringify(['Using: Terminus 6x12', 'App brightness 15']));
+    JSON.stringify(['Font: Terminus 6x12', 'App Brightness: 15']));
   // Every possible label fits the menu without truncation (about 210px in the firmware font).
-  for (const f of fineExports.FINE_FONTS) assert.ok(listExports.glassWidth(`Using: ${fineExports.fineLabel(f)}`) <= 210, fineExports.fineLabel(f));
+  for (const f of fineExports.FINE_FONTS) assert.ok(listExports.glassWidth(`Font: ${fineExports.fineLabel(f)}`) <= 210, fineExports.fineLabel(f));
   const layout = fineExports.fineLayout('terminus');
   assert.deepEqual([layout.columns, layout.rows], [95, 22]);
   // Every font on its own whole-pixel grid, filling the 574px inside the frame.
@@ -1411,12 +1411,12 @@ test('small text draws the whole screen, status row included, as four tiles and 
   await h.menu(1101);
   await h.pick(3);
   assert.deepEqual(saved.slice(-2), [['reader-text', 'departure'], ['reader-font', 'departure']]);
-  assert.equal(h.pages.at(-1).menuObject.menuItems[0].itemName, 'Using: Departure 7x14');
+  assert.equal(h.pages.at(-1).menuObject.menuItems[0].itemName, 'Font: Departure 7x14');
   const pagesBefore = h.pages.length;
   await h.menu(1101);
   await h.back();
   assert.equal(h.pages.length, pagesBefore + 2);
-  assert.equal(h.pages.at(-1).menuObject.menuItems[0].itemName, 'Using: Departure 7x14');
+  assert.equal(h.pages.at(-1).menuObject.menuItems[0].itemName, 'Font: Departure 7x14');
   await h.menu(1101);
   await h.pick(6);
   assert.deepEqual(saved.at(-1), ['reader-font', 'terminus']);
@@ -1442,7 +1442,7 @@ test('small text draws the whole screen, status row included, as four tiles and 
   await h.scroll('down'); await h.flush();
   const restored = new Map(sent().slice(-4).map(i => [i.containerName, i.imageData]));
   for (const [name, data] of restored) assert.equal(JSON.stringify(data), JSON.stringify(want[Number(name.slice(5))]));
-  // App brightness is steps 15 down to 1, ten rows a page, with no blank row and no 0.
+  // App Brightness is steps 15 down to 1, ten rows a page, with no blank row and no 0.
   await h.menu(1107);
   const bright = h.pages.at(-1).textObject.find(c => c.containerName === 'body');
   assert.equal(bright.yPosition, 4);
@@ -1578,14 +1578,14 @@ test('switching the phone language to Japanese redraws glasses labels and keeps 
     const hint = page.textObject.find(c => c.containerName === 'hint').content.trim();
     assert.match(hint, /^\[長押しで入力\] P1\/1$/);
     assert.ok(listExports.glassWidth(hint) <= 280 - 6);
-    assert.equal(JSON.stringify(page.menuObject.menuItems.map(i => i.itemName)), JSON.stringify(['現在: 標準フォント', 'アプリの明るさ 15']));
+    assert.equal(JSON.stringify(page.menuObject.menuItems.map(i => i.itemName)), JSON.stringify(['フォント: 標準フォント', 'アプリの明るさ: 15']));
     assert.equal(statusExports.readerStatus('waiting'), '/入力待ち');
     assert.match(statusExports.readerStatus('working', 0, 5000), /思考中\.$/);
     // The hint still shrinks step by step when the row is crowded.
     assert.equal(hintExports.statusRight(null, false, 'P7/8', t => new TextEncoder().encode(t).length <= 10), '[T&H] P7/8');
     assert.equal(hintExports.statusRight(null, true, 'P1/2'), '[クリックで選択] P1/2');
     assert.equal(usageResetExports.resetModeLabel('absolute'), '残り時間');
-    for (const f of fineExports.FINE_FONTS) assert.ok(listExports.glassWidth(`現在: ${fineExports.fineLabel(f)}`) <= 210, fineExports.fineLabel(f));
+    for (const f of fineExports.FINE_FONTS) assert.ok(listExports.glassWidth(`フォント: ${fineExports.fineLabel(f)}`) <= 210, fineExports.fineLabel(f));
     for (const item of page.menuObject.menuItems) assert.ok(new TextEncoder().encode(item.itemName).length <= 32, item.itemName);
   } finally { select.value = 'en'; await select.listeners.change(); await h.flush(); }
   assert.equal(statusExports.readerStatus('waiting'), '/Waiting');

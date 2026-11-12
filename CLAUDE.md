@@ -53,6 +53,8 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-12 user: the reader menu reads Font: with the current face, and App Brightness: with the level. 164 tests. Beta 1.0.57 uploaded/promoted, CLI verified 203,582 bytes; prototype dist restored. App-only. G2 check pending.
+
 2026-11-12 user: fonts, including Compare fonts, move to one list opened from the reader menu. Brightness is renamed App brightness, distinct from the system Brightness row. The list is steps 15 down to 1 (0 is not offered), ten rows a page with no blank row between levels; a swipe past the last row shows 5 through 1. 164 tests. Beta 1.0.56 uploaded/promoted, CLI verified 203,570 bytes; prototype dist restored. App-only. G2 check pending.
 
 2026-11-12 user: remove Terminus 8x16, Terminus 8x14, Misc Fixed 8x13 and Departure 7x11. The long-press menu shows Misc Fixed 9x15, GohuFont 8x14, Departure 7x14, Misc Fixed 6x13 and Shinonome 6x12. Smaller fonts lists Terminus 6x12, GohuFont 6x11 and Scientifica 5x11. Brightness stays. 164 tests. Beta 1.0.55 uploaded/promoted, CLI verified 203,352 bytes; prototype dist restored. App-only. G2 check pending.
