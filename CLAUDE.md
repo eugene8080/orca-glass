@@ -53,6 +53,8 @@ do not fall back to pscapital.com.hk because it has an existing logged-in tab.
 
 ## Current work
 
+2026-11-12 user: remove Terminus 8x16, Terminus 8x14, Misc Fixed 8x13 and Departure 7x11. The long-press menu shows Misc Fixed 9x15, GohuFont 8x14, Departure 7x14, Misc Fixed 6x13 and Shinonome 6x12. Smaller fonts lists Terminus 6x12, GohuFont 6x11 and Scientifica 5x11. Brightness stays. 164 tests. Beta 1.0.55 uploaded/promoted, CLI verified 203,352 bytes; prototype dist restored. App-only. G2 check pending.
+
 2026-11-12 user: the reader is sometimes too bright. The panel has 16 ink steps, 0 through 15; the reader menu Brightness opens that list and redraws the font and frame at the chosen step. Native text only has five SDK steps, so its letters move in coarser jumps while the frame uses the full 0–15. Default stays 15. Departure 7x14 moved onto Smaller fonts so the menu still fits ten entries. 164 tests. Beta 1.0.54 uploaded/promoted, CLI verified 231,437 bytes; prototype dist restored. App-only. G2 check pending.
 
 2026-11-12 user: remove Misc Fixed 10x20; add Terminus 8x14, Terminus 8x16 and GohuFont 8x14, the native bitmap cells from the same releases already in the app. The long-press menu shows Misc Fixed 9x15, Terminus 8x16, Terminus 8x14, GohuFont 8x14, Misc Fixed 8x13 and Departure 7x14. Smaller fonts lists Departure 7x11, Misc Fixed 6x13, Shinonome, Terminus 6x12, GohuFont 6x11 and Scientifica. 163 tests. Beta 1.0.53 uploaded/promoted, CLI verified 231,113 bytes; prototype dist restored. App-only. G2 check pending.
