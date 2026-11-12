@@ -25,7 +25,7 @@ import { statusRight } from './footer-hint';
 import { formatReset, RESET_MODES, resetModeLabel, type ResetMode } from './usage-reset';
 import { orcaAgents, workspaceSections, toggleWorkspace, workspaceSummary, type PickerRow } from './filters';
 import { createPhone } from './phone';
-import { FINE_FONTS, FINE_TILES, fineLabel, alignMarkdownTables, SCANNER_WIDTH, fineLayout, fineMeasure, fineCells, renderFineScreen, renderFontComparison, type FineFont, type FineStatus } from './fine-text';
+import { FINE_FONTS, FINE_TILES, fineLabel, alignMarkdownTables, SCANNER_WIDTH, fineLayout, fineMeasure, fineCells, renderFineScreen, renderFontComparison, inkByte, nativeTextColor, parseInk, type FineFont, type FineStatus } from './fine-text';
 import { agentLabel, sessionRow, sessionListTitle, sessionHeading, MENU_LEFT, MENU_RIGHT, MENU_CURSOR, sessionAgentLabel, menuNativeText, menuCursorText, nativeRight, glassWidth, compactSessionTitle, type SessionColumns } from './session-list';
 
 // 画面 576x288。上に見出し(テキスト)、下に本文(リスト or テキスト)の2段構成で統一する。
@@ -85,6 +85,9 @@ type ReaderText = 'native' | FineFont;
 let readerText: ReaderText = 'native';
 // The small font the menu offers when native text is on (last one used).
 let smallFont: FineFont = 'terminus';
+// Reader ink, panel steps 0..15. 15 is full white. This is the font and frame, not the system brightness.
+let inkLevel = 15;
+const textBrightness = () => nativeTextColor(inkLevel);
 let usageResetMode: ResetMode = 'computer';
 let viewWorkspaces: Set<string> | null = null;
 // Hermes is not part of Orca: it has its own workspace selection and page.
@@ -193,10 +196,10 @@ function voiceBodyText(s: TextScreen) {
 }
 function voicePage(s: TextScreen, content: string) {
   return { containerTotalNum: 4, textObject: [
-    new TextContainerProperty({ ...VOICE_BODY, content, paddingLength: 0, isEventCapture: 1, zOrderIndex: 1 }),
-    new TextContainerProperty({ ...VOICE_HINT, content: s.voiceHint || ' ', textColor: 4, paddingLength: 0, isEventCapture: 0, zOrderIndex: 3 }),
-    new TextContainerProperty({ ...VOICE_FRAME, content: ' ', textColor: 4, borderWidth: 1, borderColor: 15, borderRadius: 0, isEventCapture: 0, zOrderIndex: 0 }),
-    new TextContainerProperty({ ...VOICE_DIVIDER, content: ' ', textColor: 4, borderWidth: 1, borderColor: 15, isEventCapture: 0, zOrderIndex: 2 }),
+    new TextContainerProperty({ ...VOICE_BODY, content, textColor: textBrightness(), paddingLength: 0, isEventCapture: 1, zOrderIndex: 1 }),
+    new TextContainerProperty({ ...VOICE_HINT, content: s.voiceHint || ' ', textColor: textBrightness(), paddingLength: 0, isEventCapture: 0, zOrderIndex: 3 }),
+    new TextContainerProperty({ ...VOICE_FRAME, content: ' ', textColor: textBrightness(), borderWidth: 1, borderColor: inkLevel, borderRadius: 0, isEventCapture: 0, zOrderIndex: 0 }),
+    new TextContainerProperty({ ...VOICE_DIVIDER, content: ' ', textColor: textBrightness(), borderWidth: 1, borderColor: inkLevel, isEventCapture: 0, zOrderIndex: 2 }),
   ] };
 }
 
@@ -284,14 +287,14 @@ function writePanel(label: string, active: () => boolean = () => true) {
     let visible = statusLeft(label, owner.model);
     try {
       await bridge.updateImageRawData(new ImageRawDataUpdate({ containerID: STATUS_ICON.containerID, containerName: STATUS_ICON.containerName,
-        imageData: statusPixels(label[0] !== '/' ? label[0] : '') }));
+        imageData: statusPixels(label[0] !== '/' ? label[0] : '', inkByte(inkLevel)) }));
     } catch (e) {
       // A missing image renderer must not prevent the status text.
       diag((e as Error).message);
       visible = owner.model ? `${owner.model} ${label}` : label;
     }
     if (!active()) return false;
-    return bridge.textContainerUpgrade(new TextContainerUpgrade({ containerID: VOICE.containerID, containerName: VOICE.containerName, content: visible || ' ', textColor: 4 }));
+    return bridge.textContainerUpgrade(new TextContainerUpgrade({ containerID: VOICE.containerID, containerName: VOICE.containerName, content: visible || ' ', textColor: textBrightness() }));
   });
   panelWrites = write.then(() => {}, () => {});
   return write;
@@ -304,7 +307,7 @@ async function inputHint() {
   const write = panelWrites.then(async () => {
     if (current !== owner) return;
     await bridge.textContainerUpgrade(new TextContainerUpgrade({ containerID: HINT.containerID, containerName: HINT.containerName,
-      content: readerHint(owner, owner.reportedSeconds), textColor: 4 }));
+      content: readerHint(owner, owner.reportedSeconds), textColor: textBrightness() }));
   });
   panelWrites = write.then(() => {}, () => {});
   await write;
@@ -359,13 +362,13 @@ async function show(s: Screen, reloadText = false) {
       : {
           containerTotalNum: s.reader ? 7 : s.usageMode ? 3 : 2,
           ...menu,
-          textObject: [head, new TextContainerProperty({ ...BODY, ...(s.usageMode ? { yPosition: 64, height: 224 } : {}), ...(s.reader ? { xPosition: 8, yPosition: READER_TOP, width: 560, paddingLength: 0, zOrderIndex: 2, height: READER_HEIGHT } : {}), content: uploadText ? '' : content, isEventCapture: 1 }),
+          textObject: [head, new TextContainerProperty({ ...BODY, ...(s.usageMode ? { yPosition: 64, height: 224 } : {}), ...(s.reader ? { xPosition: 8, yPosition: READER_TOP, width: 560, paddingLength: 0, zOrderIndex: 2, height: READER_HEIGHT, textColor: textBrightness() } : {}), content: uploadText ? '' : content, isEventCapture: 1 }),
             ...(s.usageMode ? [new TextContainerProperty({ ...USAGE_RESET, content: tr('resetLine', resetModeLabel(s.usageMode)), isEventCapture: 0 })] : []),
             ...(s.reader ? [
-              new TextContainerProperty({ ...HINT, content: readerHint(s, s.reportedSeconds), textColor: 4, isEventCapture: 0, paddingLength: 0, zOrderIndex: 6 }),
-              new TextContainerProperty({ ...VOICE, content: statusLeft(s.activityLabel!, s.model), textColor: 4, isEventCapture: 0, paddingLength: 0, zOrderIndex: 5 }),
-              new TextContainerProperty({ ...FRAME, content: ' ', textColor: 4, borderWidth: 1, borderColor: 15, borderRadius: 0, isEventCapture: 0, zOrderIndex: 0 }),
-              new TextContainerProperty({ ...DIVIDER, content: ' ', textColor: 4, borderWidth: 1, borderColor: 15, isEventCapture: 0, zOrderIndex: 3 }),
+              new TextContainerProperty({ ...HINT, content: readerHint(s, s.reportedSeconds), textColor: textBrightness(), isEventCapture: 0, paddingLength: 0, zOrderIndex: 6 }),
+              new TextContainerProperty({ ...VOICE, content: statusLeft(s.activityLabel!, s.model), textColor: textBrightness(), isEventCapture: 0, paddingLength: 0, zOrderIndex: 5 }),
+              new TextContainerProperty({ ...FRAME, content: ' ', textColor: textBrightness(), borderWidth: 1, borderColor: inkLevel, borderRadius: 0, isEventCapture: 0, zOrderIndex: 0 }),
+              new TextContainerProperty({ ...DIVIDER, content: ' ', textColor: textBrightness(), borderWidth: 1, borderColor: inkLevel, isEventCapture: 0, zOrderIndex: 3 }),
             ] : [])],
           ...(s.reader ? { imageObject: [new ImageContainerProperty({ ...STATUS_ICON, xPosition: statusIconX(s.model), zOrderIndex: 4 })] } : {}),
         };
@@ -408,7 +411,7 @@ async function show(s: Screen, reloadText = false) {
     if (s.kind === 'list' && s.sessionList && !s.compat) startMenuSpinner(s);
     if (s.kind === 'text' && s.reader) {
       if (s.fine && !s.voice) await paintFine(s, content, s.offset ?? 0);
-      else await bridge.updateImageRawData(new ImageRawDataUpdate({ containerID: STATUS_ICON.containerID, containerName: STATUS_ICON.containerName, imageData: statusPixels(s.activityLabel![0] === '/' ? '' : s.activityLabel![0]) })).catch(e => diag((e as Error).message));
+      else await bridge.updateImageRawData(new ImageRawDataUpdate({ containerID: STATUS_ICON.containerID, containerName: STATUS_ICON.containerName, imageData: statusPixels(s.activityLabel![0] === '/' ? '' : s.activityLabel![0], inkByte(inkLevel)) })).catch(e => diag((e as Error).message));
       startReaderUpdates(s);
     }
   } catch (e) {
@@ -422,7 +425,7 @@ async function show(s: Screen, reloadText = false) {
 // when the screen changed meanwhile; throws if the glasses reject a tile.
 async function paintFine(s: TextScreen, content: string, page: number, pattern = false): Promise<boolean> {
   const t0 = Date.now();
-  const tiles = pattern ? renderFontComparison() : renderFineScreen(content, s.fine!, fineStatus(s, page));
+  const tiles = pattern ? renderFontComparison(inkLevel) : renderFineScreen(content, s.fine!, fineStatus(s, page), inkLevel);
   let sent = 0;
   for (let i = 0; i < tiles.length; i++) {
     if (current !== s) return false;
@@ -472,11 +475,10 @@ function requestFineStatus(s: TextScreen) {
   readerWrites = run.catch(e => diag((e as Error).message));
 }
 
-// Reader long-press menu (2026-11-10): a 'Using:' line naming the current text,
-// then choices from largest to smallest, and in a small mode, Compare fonts.
-// The glasses menu holds ten entries. The six largest fonts stay here; the rest
-// are a list opened by Smaller fonts. Selecting the 'Using:' line changes nothing.
-const MENU_FONT_SLOTS = 6;
+// Reader long-press menu. The glasses menu holds ten entries: Using, Native,
+// the five largest fonts, Smaller fonts, Brightness, and in a small mode,
+// Compare fonts. Selecting the 'Using:' line changes nothing.
+const MENU_FONT_SLOTS = 5;
 function readerMenu() {
   const current = readerText === 'native' ? tr('nativeText') : fineLabel(readerText);
   const largestFirst = [...FINE_FONTS].reverse();
@@ -487,11 +489,30 @@ function readerMenu() {
     { id: 1102, label: tr('nativeText'), run: () => setReaderText('native') },
     ...shown.map((font, i) => ({ id: 1110 + i, label: fineLabel(font), run: () => setReaderText(font) })),
     ...(more.length ? [{ id: 1106, label: tr('smallerFonts'), run: () => showSmallerFonts(more) }] : []),
+    { id: 1107, label: tr('brightness', inkLevel), run: () => showBrightness() },
     ...(readerText === 'native' ? [] : [{ id: 1105, label: tr('compareFonts'), run: () => showFontComparison() }]),
   ];
 }
 
-// The four narrower fonts. Click one and the reader comes back in that face.
+// Panel steps 15 down to 0. Click one and the reader comes back at that ink.
+function showBrightness() {
+  const reader = current;
+  if (reader?.kind !== 'text' || !reader.reader) return;
+  const levels = Array.from({ length: 16 }, (_, i) => 15 - i);
+  return show({
+    kind: 'list',
+    title: tr('brightnessTitle'),
+    items: levels.map(n => n === inkLevel ? `${n} ✓` : String(n)),
+    onPick: async (i) => {
+      inkLevel = levels[i];
+      await bridge.setLocalStorage('reader-ink', String(inkLevel));
+      await show(reader);
+    },
+    onBack: () => show(reader),
+  });
+}
+
+// The narrower fonts. Click one and the reader comes back in that face.
 function showSmallerFonts(fonts: FineFont[]) {
   const reader = current;
   if (reader?.kind !== 'text' || !reader.reader) return;
@@ -959,7 +980,7 @@ async function record(t: Thread, hold = false) {
         if (!await bridge.textContainerUpgrade(new TextContainerUpgrade({ containerID: VOICE_BODY.containerID, containerName: VOICE_BODY.containerName, content: voiceBodyText(voiceScreen) })))
           throw new Error('Glasses rejected the voice text update.');
       }
-      if (before.hint !== hint && !await bridge.textContainerUpgrade(new TextContainerUpgrade({ containerID: VOICE_HINT.containerID, containerName: VOICE_HINT.containerName, content: hint || ' ', textColor: 4 })))
+      if (before.hint !== hint && !await bridge.textContainerUpgrade(new TextContainerUpgrade({ containerID: VOICE_HINT.containerID, containerName: VOICE_HINT.containerName, content: hint || ' ', textColor: textBrightness() })))
         throw new Error('Glasses rejected the voice instruction update.');
     });
     voiceWrites = write.catch(() => {});
@@ -1399,6 +1420,7 @@ async function main() {
   if (FINE_FONTS.includes(savedText as FineFont)) readerText = savedText as FineFont;
   const savedFont = await bridge.getLocalStorage('reader-font');
   smallFont = FINE_FONTS.includes(savedFont as FineFont) ? savedFont as FineFont : readerText === 'native' ? 'terminus' : readerText;
+  inkLevel = parseInk(await bridge.getLocalStorage('reader-ink'));
   const resetMode = await bridge.getLocalStorage('usage-reset-mode');
   if (RESET_MODES.includes(resetMode as ResetMode)) usageResetMode = resetMode as ResetMode;
   for (const [key, set] of [['view-workspaces', (v: Set<string>) => { viewWorkspaces = v; }], ['view-hermes-workspaces', (v: Set<string>) => { viewHermesWorkspaces = v; }]] as const) {

@@ -17,11 +17,11 @@ export function readerStatus(state: string, frame = 0, elapsedMs = frame * 200):
 
 // Native/simulator fonts can omit Braille. Rasterize the exact Unicode pattern
 // into a small Gray8 image, independent of the text renderer's glyph coverage.
-export function statusPixels(symbol: string): number[] {
+export function statusPixels(symbol: string, on = 255): number[] {
   const pixels = Array(20 * 28).fill(0);
   const line = (x0: number, y0: number, x1: number, y1: number) => {
     const steps = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0));
-    for (let i = 0; i <= steps; i++) pixels[Math.round(y0 + (y1 - y0) * i / steps) * 20 + Math.round(x0 + (x1 - x0) * i / steps)] = 255;
+    for (let i = 0; i <= steps; i++) pixels[Math.round(y0 + (y1 - y0) * i / steps) * 20 + Math.round(x0 + (x1 - x0) * i / steps)] = on;
   };
   if (symbol === '+' || symbol === '*') {
     line(3, 14, 17, 14); line(10, 6, 10, 22);
@@ -34,13 +34,13 @@ export function statusPixels(symbol: string): number[] {
   }
   if (symbol === '?') {
     line(5, 7, 14, 7); line(14, 7, 14, 13); line(14, 13, 10, 17); line(10, 17, 10, 19);
-    pixels[23 * 20 + 10] = 255;
+    pixels[23 * 20 + 10] = on;
     return pixels;
   }
   if (symbol === '/') {
     for (let y = 3; y < 25; y++) {
       const x = Math.round(15 - (y - 3) * 10 / 21);
-      for (let dx = -1; dx <= 1; dx++) pixels[y * 20 + x + dx] = 255;
+      for (let dx = -1; dx <= 1; dx++) pixels[y * 20 + x + dx] = on;
     }
     return pixels;
   }
@@ -49,7 +49,7 @@ export function statusPixels(symbol: string): number[] {
   for (const [bit, cx, cy] of [[0, 5, 4], [1, 5, 11], [2, 5, 18], [6, 5, 25], [3, 15, 4], [4, 15, 11], [5, 15, 18], [7, 15, 25]]) {
     if (!(bits & (1 << bit))) continue;
     for (let y = cy - 2; y <= cy + 2; y++) for (let x = cx - 2; x <= cx + 2; x++) {
-      if ((x - cx) ** 2 + (y - cy) ** 2 <= 4) pixels[y * 20 + x] = 255;
+      if ((x - cx) ** 2 + (y - cy) ** 2 <= 4) pixels[y * 20 + x] = on;
     }
   }
   return pixels;

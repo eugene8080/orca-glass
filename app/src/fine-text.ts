@@ -33,6 +33,24 @@ const NAMES: Record<FineFont, string> = {
 // 'Cozette 6x13': short name and native cell. The glasses menu truncates labels
 // beyond about 210px, so names are short (Pixeloid Mono -> Pixeloid).
 export const fineLabel = (font: FineFont) => `${NAMES[font]} ${TABLES[font].width}x${TABLES[font].height}`;
+// The panel is 4-bit: 16 steps, numbered 0 through 15. Full white is 15, which is
+// what the app drew before this control. An 8-bit image byte of n*17 lands on step n
+// whether the glasses keep the high nibble or scale 0..255 onto 0..15.
+export const INK_MAX = 15;
+export function inkByte(level = INK_MAX): number {
+  const n = Math.max(0, Math.min(INK_MAX, Math.round(level)));
+  return n * 17;
+}
+// Native text has five steps, 0..4 (SDK textColor). Any visible panel step stays visible.
+export function nativeTextColor(level = INK_MAX): number {
+  const n = Math.max(0, Math.min(INK_MAX, Math.round(level)));
+  return n <= 0 ? 0 : Math.ceil(n * 4 / INK_MAX);
+}
+export function parseInk(value: unknown): number {
+  if (value == null || value === '') return INK_MAX;
+  const n = Number(value);
+  return Number.isInteger(n) && n >= 0 && n <= INK_MAX ? n : INK_MAX;
+}
 export const SCREEN = { width: 576, height: 288 };
 export const FINE_TILES = [0, 1, 2, 3].map(i => ({ xPosition: (i % 2) * 288, yPosition: Math.floor(i / 2) * 144, width: 288, height: 144 }));
 
@@ -112,9 +130,12 @@ class Surface {
   private canvas: CanvasRenderingContext2D | null = null;
   private canvasUsed = false;
   // font is switchable so one screen can compare several fonts.
-  constructor(public font: FineFont) {}
-  set(x: number, y: number, level = 255) { if (x >= 0 && y >= 0 && x < SCREEN.width && y < SCREEN.height) this.pixels[y * SCREEN.width + x] = level; }
-  rect(x: number, y: number, w: number, h: number, level = 255) { for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) this.set(x + i, y + j, level); }
+  constructor(public font: FineFont, readonly ink = inkByte()) {}
+  set(x: number, y: number, level?: number) {
+    const v = level ?? this.ink;
+    if (x >= 0 && y >= 0 && x < SCREEN.width && y < SCREEN.height) this.pixels[y * SCREEN.width + x] = v;
+  }
+  rect(x: number, y: number, w: number, h: number, level?: number) { for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) this.set(x + i, y + j, level); }
   // Draw text from (x, y) in whole cells; stops at maxCells. Returns cells used.
   text(text: string, x: number, y: number, maxCells: number): number {
     const { width: cw, height: ch } = TABLES[this.font];
@@ -178,7 +199,7 @@ class Surface {
     if (this.canvasUsed) {
       // Fallback glyphs only: on/off at half coverage, like every other pixel here.
       const data = this.ctx().getImageData(0, 0, SCREEN.width, SCREEN.height).data;
-      for (let i = 0; i < this.pixels.length; i++) if (data[i * 4] >= 128) this.pixels[i] = 255;
+      for (let i = 0; i < this.pixels.length; i++) if (data[i * 4] >= 128) this.pixels[i] = this.ink;
     }
     return FINE_TILES.map(tile => {
       const out = new Array<number>(tile.width * tile.height);
@@ -210,8 +231,8 @@ export function scannerLevels(frame: number): number[] {
 }
 
 export type FineStatus = { left: string; right: string; model?: string; scanner?: number };
-export function renderFineScreen(text: string, font: FineFont, status: FineStatus): number[][] {
-  const s = new Surface(font);
+export function renderFineScreen(text: string, font: FineFont, status: FineStatus, level = INK_MAX): number[][] {
+  const s = new Surface(font, inkByte(level));
   const { line, rows, columns, textX, textWidth, statusY, dividerY } = fineLayout(font);
   s.rect(0, 0, SCREEN.width, FRAME); s.rect(0, SCREEN.height - FRAME, SCREEN.width, FRAME);
   s.rect(0, 0, FRAME, SCREEN.height); s.rect(SCREEN.width - FRAME, 0, FRAME, SCREEN.height);
@@ -227,7 +248,7 @@ export function renderFineScreen(text: string, font: FineFont, status: FineStatu
     const modelCells = status.model ? s.text(`${status.model} `, textX, statusY, leftCells) : 0;
     const x0 = textX + modelCells * cw, barCells = Math.ceil(SCANNER_WIDTH / cw) + 1;
     const h = Math.max(3, Math.floor(line / 3)), y0 = statusY + Math.floor((line - h) / 2);
-    scannerLevels(status.scanner).forEach((level, i) => { if (level) s.rect(x0 + i * (SCANNER_SEGMENT + SCANNER_GAP), y0, SCANNER_SEGMENT, h, level); });
+    scannerLevels(status.scanner).forEach((step, i) => { if (step) s.rect(x0 + i * (SCANNER_SEGMENT + SCANNER_GAP), y0, SCANNER_SEGMENT, h, Math.round(step * s.ink / 255)); });
     s.text(status.left, x0 + barCells * cw, statusY, Math.max(0, leftCells - modelCells - barCells));
   }
   return s.tiles();
@@ -241,8 +262,8 @@ export const FONT_SAMPLE = 'Quick brown fox 0O1lI| {}[] -> != ─┼─ ⠋';
 export const FONT_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz 0123456789';
 // Japanese mode shows kana, kanji and full-width punctuation on the second line instead.
 export const FONT_SAMPLE_JA = 'あいうえお アイウエオ 日本語の表示、漢字。「東雲」 ABC abc 0123';
-export function renderFontComparison(): number[][] {
-  const s = new Surface(FINE_FONTS[0]);
+export function renderFontComparison(level = INK_MAX): number[][] {
+  const s = new Surface(FINE_FONTS[0], inkByte(level));
   s.rect(0, 0, SCREEN.width, FRAME); s.rect(0, SCREEN.height - FRAME, SCREEN.width, FRAME);
   s.rect(0, 0, FRAME, SCREEN.height); s.rect(SCREEN.width - FRAME, 0, FRAME, SCREEN.height);
   const nameCells = Math.max(...FINE_FONTS.map(font => fineLabel(font).length)) + 2;
